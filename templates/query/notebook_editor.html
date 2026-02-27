@@ -2847,21 +2847,7 @@
         alert('Settings panel coming soon!');
     }
 
-    // Missing functions that were referenced
-    function updateStatus(message) {
-        const statusEl = document.getElementById('status-bar');
-        if (statusEl) {
-            statusEl.textContent = message;
-        }
-    }
-
-    function updateConnectionStatus(status) {
-        const statusEl = document.getElementById('connection-status');
-        if (statusEl) {
-            statusEl.textContent = status;
-        }
-    }
-
+    // Removed redefined updateStatus and updateConnectionStatus to allow base.html versions to work
     // Initialize file browser on load
     document.addEventListener('DOMContentLoaded', () => {
         // Force cache refresh
