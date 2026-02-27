@@ -145,6 +145,17 @@ def r_install():
         if not r_path:
             return jsonify({'success': False, 'message': 'No Rscript path specified'}), 400
         
+        # Debug: Log the received path
+        print(f"DEBUG: Received R path: '{r_path}'")
+        print(f"DEBUG: Path exists: {os.path.exists(r_path)}")
+        
+        # Check if Rscript exists at the specified path
+        if not os.path.exists(r_path):
+            return jsonify({
+                'success': False, 
+                'message': f'Rscript not found at: {r_path}'
+            }), 400
+        
         # Security: Validate package name (basic check)
         dangerous_patterns = [';', '&', '|', '>', '<', '`', '$', '&&', '||']
         for pattern in dangerous_patterns:
