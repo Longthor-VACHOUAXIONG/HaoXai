@@ -33,7 +33,6 @@
         --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         --sidebar-width: 260px;
         --activity-bar-width: 48px;
-        --panel-height: 180px;
         --tab-height: 35px;
     }
 
@@ -329,41 +328,6 @@
         font-size: 13px;
     }
 
-    /* Bottom Panel */
-    .bottom-panel {
-        height: var(--panel-height);
-        background: var(--bg-secondary);
-        border-top: 1px solid var(--border-color);
-        display: flex;
-        flex-direction: column;
-    }
-    .panel-header {
-        height: 28px;
-        background: var(--bg-tertiary);
-        border-bottom: 1px solid var(--border-color);
-        display: flex;
-        align-items: center;
-        padding: 0 12px;
-    }
-    .panel-tab {
-        padding: 6px 12px;
-        font-size: 11px;
-        color: var(--text-secondary);
-        cursor: pointer;
-        border-bottom: 2px solid transparent;
-    }
-    .panel-tab:hover { color: var(--text-primary); }
-    .panel-tab.active { color: var(--text-primary); border-bottom-color: var(--accent-primary); }
-    .panel-content {
-        flex: 1;
-        overflow: auto;
-        padding: 8px 12px;
-        font-family: var(--font-mono);
-        font-size: 12px;
-        line-height: 1.5;
-    }
-    .panel-resize-handle { height: 4px; background: transparent; cursor: ns-resize; }
-
     /* Package Panel */
     .package-panel { padding: 12px; }
     .package-input-group { display: flex; gap: 8px; margin-bottom: 12px; }
@@ -606,19 +570,6 @@
                 <button class="add-cell-btn" onclick="addNewCell()">
                     <i class="fas fa-plus"></i> Add New Cell
                 </button>
-            </div>
-        </div>
-
-        <!-- Bottom Panel -->
-        <div class="panel-resize-handle"></div>
-        <div class="bottom-panel">
-            <div class="panel-header">
-                <div class="panel-tab active" onclick="showPanel('terminal')">Terminal</div>
-                <div class="panel-tab" onclick="showPanel('output')">Output</div>
-            </div>
-            <div class="panel-content" id="panel-content">
-                <div id="panel-terminal">Ready to execute code...</div>
-                <div id="panel-output" style="display: none;"></div>
             </div>
         </div>
     </div>
@@ -2048,15 +1999,6 @@
         // Update activity bar
         document.querySelectorAll('.activity-item').forEach(i => i.classList.remove('active'));
         event.currentTarget.classList.add('active');
-    }
-
-    function showPanel(panel) {
-        // Update panel tabs
-        document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
-        event.target.classList.add('active');
-        // Show selected panel content
-        document.querySelectorAll('#panel-content > div').forEach(p => p.style.display = 'none');
-        document.getElementById('panel-' + panel).style.display = 'block';
     }
 
     function toggleSection(header) {
