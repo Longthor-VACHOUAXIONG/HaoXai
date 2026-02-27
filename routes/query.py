@@ -1588,26 +1588,22 @@ def execute_r():
 # R Code Execution
 {code}
 
-# Ensure any ggplot objects are printed
-if (exists(".Last.value") && inherits(.Last.value, "ggplot")) {{
-    print(.Last.value)
-}}
-
-# Force plot rendering and capture
+# Add explicit plot saving at the end
 if (length(dev.list()) > 0) {{
-    # Save the current plot
+    # Save the current plot directly
     tryCatch({{
-        temp_file <- tempfile(fileext = ".png")
-        png(temp_file, width = 800, height = 600, res = 150)
-        # Copy the current plot device
-        dev.off()
-        # Move to workspace
-        final_file <- paste0(getwd(), "/r_plot.png")
-        file.rename(temp_file, final_file)
+        ggsave("r_plot.png", width = 8, height = 6, dpi = 150, units = "in")
         cat("PLOT_SAVED:r_plot.png\\n")
     }}, error = function(e) {{
-        cat("PLOT_ERROR:", e$message, "\\n")
-        cat("PLOT_CREATED:TRUE\\n")
+        # Fallback to basic PNG device
+        tryCatch({{
+            png("r_plot.png", width = 800, height = 600, res = 150)
+            dev.off()
+            cat("PLOT_SAVED:r_plot.png\\n")
+        }}, error = function(e2) {{
+            cat("PLOT_ERROR:", e2$message, "\\n")
+            cat("PLOT_CREATED:TRUE\\n")
+        }})
     }})
 }} else {{
     cat("PLOT_CREATED:FALSE\\n")
