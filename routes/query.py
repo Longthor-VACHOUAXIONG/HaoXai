@@ -137,8 +137,13 @@ def r_install():
             return jsonify({'success': False, 'message': 'No data received'}), 400
         
         package = data.get('package', '').strip()
+        r_path = data.get('r_path', '').strip()
+        
         if not package:
             return jsonify({'success': False, 'message': 'No package specified'}), 400
+        
+        if not r_path:
+            return jsonify({'success': False, 'message': 'No Rscript path specified'}), 400
         
         # Security: Validate package name (basic check)
         dangerous_patterns = [';', '&', '|', '>', '<', '`', '$', '&&', '||']
@@ -173,11 +178,10 @@ tryCatch({{
             script_path = f.name
         
         try:
-            # Run R script with full path
+            # Run R script with user-provided path
             import subprocess
-            rscript_path = r"C:\Users\l.vachouaxiong\AppData\Local\Programs\R\R-4.5.2\bin\x64\Rscript.exe"
             result = subprocess.run(
-                [rscript_path, script_path],
+                [r_path, script_path],
                 capture_output=True,
                 text=True,
                 timeout=300  # 5 minute timeout for R packages

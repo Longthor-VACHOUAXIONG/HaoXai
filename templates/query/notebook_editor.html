@@ -377,6 +377,64 @@
         color: white;
         border-color: var(--accent-primary);
     }
+    .r-config-section {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+    .config-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+    .config-input-group {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    .config-input-group label {
+        font-size: 11px;
+        color: var(--text-secondary);
+        min-width: 80px;
+    }
+    .config-input {
+        flex: 1;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        padding: 6px 8px;
+        font-size: 11px;
+        font-family: var(--font-mono);
+        border-radius: 3px;
+    }
+    .config-input:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+    }
+    .config-btn {
+        padding: 6px 8px;
+        background: var(--accent-primary);
+        border: none;
+        color: white;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 11px;
+        transition: background 0.2s ease;
+    }
+    .config-btn:hover {
+        background: var(--accent-hover);
+    }
+    .config-help {
+        color: var(--text-muted);
+        font-style: italic;
+    }
 
     /* Add Cell Button */
     .add-cell-container { display: flex; justify-content: center; padding: 12px 0; }
@@ -537,6 +595,26 @@
                     <button class="package-lang-btn active" onclick="setPackageLanguage('python')" data-lang="python">Python</button>
                     <button class="package-lang-btn" onclick="setPackageLanguage('r')" data-lang="r">R</button>
                 </div>
+                
+                <!-- R Configuration Section -->
+                <div id="r-config-section" class="r-config-section" style="display: none;">
+                    <div class="config-header">
+                        <i class="fas fa-cog"></i> R Configuration
+                    </div>
+                    <div class="config-input-group">
+                        <label for="r-path-input">Rscript Path:</label>
+                        <input type="text" id="r-path-input" class="config-input" 
+                               placeholder="C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe"
+                               value="">
+                        <button class="config-btn" onclick="saveRPath()">
+                            <i class="fas fa-save"></i>
+                        </button>
+                    </div>
+                    <div class="config-help">
+                        <small>Path to Rscript.exe (usually in R\bin\x64 folder)</small>
+                    </div>
+                </div>
+                
                 <div class="package-input-group">
                     <input type="text" class="package-input" id="pip-package-input" placeholder="numpy, pandas...">
                     <button class="toolbar-btn primary" onclick="installPackage()">
@@ -2094,6 +2172,15 @@
             btn.classList.toggle('active', btn.dataset.lang === lang);
         });
         
+        // Show/hide R configuration section
+        const rConfigSection = document.getElementById('r-config-section');
+        if (lang === 'r') {
+            rConfigSection.style.display = 'block';
+            loadRPath(); // Load saved R path
+        } else {
+            rConfigSection.style.display = 'none';
+        }
+        
         // Update placeholder
         const input = document.getElementById('pip-package-input');
         if (lang === 'r') {
@@ -2106,6 +2193,37 @@
         const output = document.getElementById('pip-output');
         output.style.display = 'none';
         output.textContent = '';
+    }
+
+    function loadRPath() {
+        const savedPath = localStorage.getItem('rscript_path') || '';
+        const rPathInput = document.getElementById('r-path-input');
+        if (rPathInput) {
+            rPathInput.value = savedPath;
+        }
+    }
+
+    function saveRPath() {
+        const rPathInput = document.getElementById('r-path-input');
+        const rPath = rPathInput.value.trim();
+        
+        if (!rPath) {
+            alert('Please enter a valid Rscript path');
+            return;
+        }
+        
+        // Save to localStorage
+        localStorage.setItem('rscript_path', rPath);
+        
+        // Show success feedback
+        const originalValue = rPathInput.value;
+        rPathInput.style.borderColor = 'var(--accent-success)';
+        rPathInput.value = 'Saved!';
+        
+        setTimeout(() => {
+            rPathInput.style.borderColor = '';
+            rPathInput.value = originalValue;
+        }, 1500);
     }
 
     // Pip Install Functions
@@ -2130,7 +2248,13 @@
             
             if (currentPackageLanguage === 'r') {
                 endpoint = '/query/notebook/r-install';
-                payload = { package };
+                const rPath = localStorage.getItem('rscript_path') || '';
+                if (!rPath) {
+                    output.classList.add('error');
+                    output.textContent = 'Please configure Rscript path in R Configuration section';
+                    return;
+                }
+                payload = { package, r_path: rPath };
             } else {
                 endpoint = '/query/notebook/pip-install';
                 payload = { package };
