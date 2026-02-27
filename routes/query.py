@@ -168,7 +168,7 @@ def r_install():
         r_script = f'''
 # Install R package
 tryCatch({{
-    if (!require({package}, character.only = TRUE)) {{
+    if (!require("{package}", character.only = TRUE)) {{
         install.packages("{package}", repos = "https://cran.rstudio.com/")
         cat("Successfully installed {package}\\n")
     }} else {{
