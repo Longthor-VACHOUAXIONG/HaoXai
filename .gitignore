@@ -185,8 +185,8 @@ uploads/
 batch_results/
 outputs/
 
-# Model files (keep only essential ones)
-models/*.pkl
+# Model files (keep essential ones)
+!models/*.pkl
 enhanced_models/
 complete_models/
 master_python_models/
@@ -234,7 +234,10 @@ config.py
 backup_config.json
 db_settings.json
 sample_settings.json
-.env.example
+!.env.example
+!backup_config.example.json
+!db_settings.example.json
+!sample_settings.example.json
 
 # Empty files
 =
