@@ -1583,16 +1583,10 @@ def execute_r():
         
         # Create temporary R script file
         with tempfile.NamedTemporaryFile(mode='w', suffix='.R', delete=False) as f:
-            # Wrap user code in proper R script
+            # Simple R script execution - let R handle output naturally
             r_script = f'''
 # R Code Execution
-sink(tempfile(fileext = ".txt"), type = "output")
-
-# User code starts here
 {code}
-
-# User code ends here
-sink()
 '''
             f.write(r_script)
             script_path = f.name
