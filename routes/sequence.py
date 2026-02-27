@@ -2176,9 +2176,21 @@ def save_to_database():
                 'timestamp': datetime.datetime.now().isoformat()
             })
         
-        # Initialize database manager
+        # Initialize database manager and get fresh connection
         print(f"[DEBUG] Initializing SequenceDBManager with type: {db_type}")
         seq_db = SequenceDBManager(db_conn, db_type)
+        
+        # Get a fresh connection for this operation
+        fresh_conn = DatabaseManagerFlask.get_connection(db_conn, db_type)
+        if not fresh_conn:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to establish database connection for save operation'
+            }), 500
+        
+        # Update the sequence database manager to use the fresh connection
+        seq_db = SequenceDBManager(db_conn, db_type)
+        seq_db.set_connection(fresh_conn)  # Add this method if it doesn't exist
         
         project_name = data.get('project_name', 'Default')
         uploaded_by = session.get('username', 'Anonymous')
@@ -2188,7 +2200,7 @@ def save_to_database():
         
         # Save project record
         try:
-            cursor = seq_db._get_connection().cursor()
+            cursor = fresh_conn.cursor()
             if db_type == 'sqlite':
                 cursor.execute("""
                     INSERT INTO projects (project_name, description, created_by, created_date)
@@ -2199,7 +2211,7 @@ def save_to_database():
                     INSERT INTO projects (project_name, description, created_by, created_date)
                     VALUES (%s, %s, %s, NOW())
                 """, (project_name, f"Sequences uploaded on {datetime.datetime.now().strftime('%Y-%m-%d')}", uploaded_by))
-            seq_db._get_connection().commit()
+            fresh_conn.commit()
             print(f"Created project: {project_name}")
             
             # Emit real-time update for project creation
@@ -2475,15 +2487,20 @@ def save_to_database():
         if socketio:
             socketio.emit('save_operation_completed', {
                 'success': False,
-                'message': f'Failed to save to database: {str(e)}',
+                'message': f'Save operation failed: {str(e)}',
                 'timestamp': datetime.datetime.now().isoformat()
             })
         
-        return jsonify({
-            'success': False,
-            'message': f'Failed to save to database: {str(e)}',
-            'realtime_enabled': socketio is not None
-        }), 500
+        return jsonify({'error': str(e)}), 500
+    
+    finally:
+        # Ensure connection is properly closed
+        try:
+            if 'fresh_conn' in locals() and fresh_conn:
+                fresh_conn.close()
+                print("[DEBUG] Database connection closed")
+        except Exception as e:
+            print(f"[DEBUG] Error closing connection: {e}")
 
 
 def background_cleanup(session_id, upload_folder, socketio):
