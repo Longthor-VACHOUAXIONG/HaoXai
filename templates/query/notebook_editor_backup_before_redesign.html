@@ -247,25 +247,23 @@
         display: flex;
         align-items: center;
         overflow-x: auto;
-        padding: 0 10px;
+        padding: 0 8px;
     }
 
     .tab {
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 8px 14px;
-        background: transparent;
-        border: none;
-        border-bottom: 2px solid transparent;
+        padding: 8px 12px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-bottom: none;
         color: var(--text-secondary);
         cursor: pointer;
         font-size: 12px;
-        font-weight: 500;
-        min-width: 130px;
+        min-width: 120px;
         max-width: 200px;
         white-space: nowrap;
-        transition: all 0.2s;
     }
 
     .tab:hover {
@@ -275,25 +273,18 @@
 
     .tab.active {
         color: var(--text-primary);
-        border-bottom: 2px solid;
-        border-image: var(--gradient-accent) 1;
+        background: var(--bg-primary);
+        border-top: 2px solid var(--accent-primary);
     }
 
     .tab i {
-        font-size: 13px;
-        color: var(--accent-purple);
+        font-size: 12px;
     }
 
     .tab-close {
         margin-left: auto;
-        padding: 2px 5px;
-        border-radius: var(--radius-sm);
-        opacity: 0;
-        transition: opacity 0.2s;
-    }
-
-    .tab:hover .tab-close {
-        opacity: 1;
+        padding: 2px 4px;
+        border-radius: 3px;
     }
 
     .tab-close:hover {
@@ -303,12 +294,12 @@
 
     /* Toolbar */
     .toolbar {
-        height: 46px;
+        height: 40px;
         background: var(--bg-secondary);
         border-bottom: 1px solid var(--border-color);
         display: flex;
         align-items: center;
-        padding: 0 16px;
+        padding: 0 12px;
         gap: 8px;
     }
 
@@ -316,232 +307,135 @@
         display: flex;
         align-items: center;
         gap: 6px;
-        padding: 7px 14px;
+        padding: 6px 12px;
         background: var(--bg-tertiary);
         border: 1px solid var(--border-color);
         color: var(--text-primary);
         cursor: pointer;
         font-size: 12px;
-        font-weight: 500;
-        border-radius: 20px;
-        transition: all 0.25s ease;
+        border-radius: 4px;
+        transition: all 0.2s;
     }
 
     .toolbar-btn:hover {
         background: var(--bg-hover);
         border-color: var(--text-muted);
-        transform: translateY(-1px);
-        box-shadow: var(--shadow-sm);
     }
 
     .toolbar-btn.primary {
-        background: var(--gradient-primary);
-        border-color: transparent;
-        color: white;
+        background: var(--accent-primary);
+        border-color: var(--accent-primary);
     }
 
     .toolbar-btn.primary:hover {
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        background: #0066aa;
     }
 
     .toolbar-btn.success {
-        background: rgba(63, 185, 80, 0.15);
-        border-color: rgba(63, 185, 80, 0.4);
+        background: rgba(137, 209, 133, 0.2);
+        border-color: var(--accent-success);
         color: var(--accent-success);
     }
 
     .toolbar-btn.success:hover {
-        background: rgba(63, 185, 80, 0.25);
-        box-shadow: 0 4px 15px rgba(63, 185, 80, 0.2);
+        background: rgba(137, 209, 133, 0.3);
     }
 
     .toolbar-separator {
         width: 1px;
-        height: 22px;
+        height: 20px;
         background: var(--border-color);
-        margin: 0 6px;
+        margin: 0 4px;
     }
 
     /* Editor Content */
     .editor-content {
         flex: 1;
         overflow: auto;
-        padding: 24px;
-        background: var(--bg-primary);
+        padding: 20px;
     }
 
     .notebook-cells {
-        max-width: 960px;
+        max-width: 900px;
         margin: 0 auto;
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 16px;
     }
 
     /* Cell Styles */
     .cell {
         background: var(--bg-secondary);
         border: 1px solid var(--border-color);
-        border-left: 3px solid var(--accent-primary);
-        border-radius: var(--radius-md);
+        border-radius: 4px;
         overflow: hidden;
-        transition: all 0.25s ease;
-        box-shadow: var(--shadow-sm);
     }
 
     .cell:hover {
-        border-color: var(--text-muted);
-        box-shadow: var(--shadow-md);
+        border-color: var(--bg-hover);
     }
 
     .cell.active {
         border-color: var(--accent-primary);
-        box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.3), var(--shadow-md);
-    }
-
-    .cell.cell-python {
-        border-left-color: var(--accent-success);
-    }
-
-    .cell.cell-python.active {
-        border-color: var(--accent-success);
-        box-shadow: 0 0 0 1px rgba(63, 185, 80, 0.3), var(--shadow-md);
-    }
-
-    .cell.cell-r {
-        border-left-color: var(--accent-purple);
-    }
-
-    .cell.cell-r.active {
-        border-color: var(--accent-purple);
-        box-shadow: 0 0 0 1px rgba(188, 140, 255, 0.3), var(--shadow-md);
     }
 
     .cell-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 8px 12px;
+        padding: 6px 10px;
         background: var(--bg-tertiary);
         border-bottom: 1px solid var(--border-color);
-    }
-
-    .cell-info {
-        display: flex;
-        align-items: center;
-        gap: 10px;
     }
 
     .cell-type-selector {
         display: flex;
         gap: 2px;
-        background: var(--bg-primary);
-        border-radius: 20px;
-        padding: 2px;
     }
 
     .cell-type-btn {
-        padding: 4px 12px;
+        padding: 3px 10px;
         background: transparent;
         border: none;
-        color: var(--text-muted);
+        color: var(--text-secondary);
         cursor: pointer;
         font-size: 11px;
-        border-radius: 16px;
-        font-weight: 600;
-        transition: all 0.2s;
-        letter-spacing: 0.3px;
+        border-radius: 3px;
+        font-weight: 500;
     }
 
     .cell-type-btn:hover {
         color: var(--text-primary);
+        background: var(--bg-hover);
     }
 
     .cell-type-btn.active {
-        color: white;
+        color: var(--text-primary);
         background: var(--accent-primary);
-    }
-
-    .cell-exec-count {
-        font-family: var(--font-mono);
-        font-size: 11px;
-        color: var(--text-muted);
-        min-width: 24px;
-        text-align: center;
-    }
-
-    .cell-status-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--text-muted);
-        transition: all 0.3s;
-    }
-
-    .cell-status-dot.running {
-        background: var(--accent-warning);
-        animation: pulse-dot 1.2s ease-in-out infinite;
-    }
-
-    .cell-status-dot.success {
-        background: var(--accent-success);
-    }
-
-    .cell-status-dot.error {
-        background: var(--accent-danger);
-    }
-
-    @keyframes pulse-dot {
-
-        0%,
-        100% {
-            opacity: 1;
-            transform: scale(1)
-        }
-
-        50% {
-            opacity: 0.4;
-            transform: scale(1.3)
-        }
     }
 
     .cell-actions {
         display: flex;
-        gap: 2px;
-        opacity: 0;
-        transition: opacity 0.2s;
-    }
-
-    .cell:hover .cell-actions {
-        opacity: 1;
+        gap: 4px;
     }
 
     .cell-action-btn {
-        width: 28px;
-        height: 28px;
+        width: 24px;
+        height: 24px;
         border: none;
         background: transparent;
         color: var(--text-secondary);
         cursor: pointer;
-        border-radius: var(--radius-sm);
+        border-radius: 3px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 12px;
-        transition: all 0.2s;
+        font-size: 11px;
     }
 
     .cell-action-btn:hover {
         background: var(--bg-hover);
         color: var(--text-primary);
-    }
-
-    .cell-action-btn.run {
-        color: var(--accent-success);
-    }
-
-    .cell-action-btn.run:hover {
-        background: rgba(63, 185, 80, 0.15);
     }
 
     .cell-editor {
@@ -554,16 +448,7 @@
         background: var(--bg-secondary);
         font-family: var(--font-mono);
         font-size: 14px;
-        line-height: 1.7;
-    }
-
-    .cell-editor .CodeMirror-gutters {
-        background: var(--bg-secondary);
-        border-right: 1px solid var(--border-color);
-    }
-
-    .cell-editor .CodeMirror-linenumber {
-        color: var(--text-muted);
+        line-height: 1.6;
     }
 
     .cell-output {
@@ -574,26 +459,12 @@
 
     .cell-output.show {
         display: block;
-        animation: slideDown 0.3s ease;
-    }
-
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            max-height: 0
-        }
-
-        to {
-            opacity: 1;
-            max-height: 500px
-        }
     }
 
     .output-header {
-        padding: 8px 12px;
+        padding: 6px 10px;
         font-size: 11px;
         color: var(--text-muted);
-        font-weight: 500;
         background: var(--bg-tertiary);
         border-bottom: 1px solid var(--border-color);
         display: flex;
@@ -602,8 +473,8 @@
     }
 
     .output-content {
-        padding: 14px;
-        max-height: 350px;
+        padding: 12px;
+        max-height: 300px;
         overflow: auto;
         font-family: var(--font-mono);
         font-size: 13px;
@@ -747,43 +618,38 @@
     .add-cell-container {
         display: flex;
         justify-content: center;
-        padding: 16px 0;
+        padding: 12px 0;
     }
 
     .add-cell-btn {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 10px 24px;
-        background: transparent;
-        border: 2px dashed var(--border-color);
-        color: var(--text-muted);
+        gap: 6px;
+        padding: 8px 16px;
+        background: var(--bg-tertiary);
+        border: 1px dashed var(--border-color);
+        color: var(--text-secondary);
         cursor: pointer;
         font-size: 12px;
-        font-weight: 500;
-        border-radius: 20px;
-        transition: all 0.3s ease;
+        border-radius: 4px;
+        transition: all 0.2s;
     }
 
     .add-cell-btn:hover {
         border-color: var(--accent-primary);
         color: var(--accent-primary);
-        background: rgba(88, 166, 255, 0.05);
-        box-shadow: 0 0 20px rgba(88, 166, 255, 0.1);
-        transform: translateY(-1px);
     }
 
     /* Status Bar */
     .status-bar {
-        height: 24px;
-        background: var(--gradient-primary);
+        height: 22px;
+        background: var(--accent-primary);
         color: white;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0 14px;
-        font-size: 11px;
-        font-weight: 500;
+        padding: 0 12px;
+        font-size: 12px;
     }
 
     .status-item {
@@ -794,8 +660,8 @@
 
     /* Scrollbars */
     ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+        width: 10px;
+        height: 10px;
     }
 
     ::-webkit-scrollbar-track {
@@ -803,12 +669,12 @@
     }
 
     ::-webkit-scrollbar-thumb {
-        background: rgba(48, 54, 61, 0.6);
-        border-radius: 4px;
+        background: var(--border-color);
+        border-radius: 5px;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-        background: rgba(48, 54, 61, 0.9);
+        background: var(--bg-hover);
     }
 
     /* Schema Tree */
@@ -891,24 +757,16 @@
     .output-table th {
         background: var(--bg-tertiary);
         color: var(--text-primary);
-        padding: 10px 14px;
+        padding: 8px 12px;
         text-align: left;
         font-weight: 600;
-        border-bottom: 2px solid;
-        border-image: var(--gradient-accent) 1;
-        position: sticky;
-        top: 0;
-        z-index: 1;
+        border-bottom: 2px solid var(--accent-primary);
     }
 
     .output-table td {
-        padding: 8px 14px;
+        padding: 8px 12px;
         border-bottom: 1px solid var(--border-color);
         color: var(--text-secondary);
-    }
-
-    .output-table tr:nth-child(even) td {
-        background: rgba(22, 27, 34, 0.5);
     }
 
     .output-table tr:hover td {
@@ -917,26 +775,18 @@
 
     .output-success {
         color: var(--accent-success);
-        padding: 10px 0;
-        background: rgba(63, 185, 80, 0.08);
-        border-radius: var(--radius-sm);
-        padding: 10px 14px;
-        margin: 4px 0;
+        padding: 8px 0;
     }
 
     .output-error {
         color: var(--accent-danger);
-        padding: 10px 0;
-        background: rgba(248, 81, 73, 0.08);
-        border-radius: var(--radius-sm);
-        padding: 10px 14px;
-        margin: 4px 0;
+        padding: 8px 0;
     }
 
     .output-text {
         font-family: var(--font-mono);
         font-size: 13px;
-        line-height: 1.6;
+        line-height: 1.5;
         white-space: pre-wrap;
     }
 </style>
@@ -1711,8 +1561,7 @@
             type: 'sql',
             content: '',
             output: null,
-            status: 'idle',
-            execCount: 0
+            status: 'idle'
         };
 
         cells.push(cell);
@@ -1723,38 +1572,33 @@
 
     function renderCell(cell) {
         const container = document.getElementById('notebook-cells');
-        const cellIndex = cells.indexOf(cell);
 
         const cellDiv = document.createElement('div');
-        cellDiv.className = 'cell cell-' + cell.type + (cell.id === activeCellId ? ' active' : '');
+        cellDiv.className = 'cell' + (cell.id === activeCellId ? ' active' : '');
         cellDiv.id = cell.id;
-
-        const statusClass = cell.status === 'running' ? 'running' : cell.status === 'success' ? 'success' : cell.status === 'error' ? 'error' : '';
-        const execDisplay = cell.execCount ? '[' + cell.execCount + ']' : '[ ]';
 
         cellDiv.innerHTML = `
             <div class="cell-header">
                 <div class="cell-info">
-                    <span class="cell-exec-count">${execDisplay}</span>
-                    <div class="cell-status-dot ${statusClass}"></div>
                     <div class="cell-type-selector">
                         <button class="cell-type-btn ${cell.type === 'sql' ? 'active' : ''}" onclick="setCellType('${cell.id}', 'sql')">SQL</button>
                         <button class="cell-type-btn ${cell.type === 'python' ? 'active' : ''}" onclick="setCellType('${cell.id}', 'python')">Python</button>
                         <button class="cell-type-btn ${cell.type === 'r' ? 'active' : ''}" onclick="setCellType('${cell.id}', 'r')">R</button>
                     </div>
+                    <span style="font-size: 11px; color: var(--text-muted);">Cell ${cells.indexOf(cell) + 1}</span>
                 </div>
                 <div class="cell-actions">
-                    <button class="cell-action-btn run" onclick="runCell('${cell.id}')" title="Run (Ctrl+Enter)">
+                    <button class="cell-action-btn run" onclick="runCell('${cell.id}')" title="Run">
                         <i class="fas fa-play"></i>
                     </button>
                     <button class="cell-action-btn" onclick="moveCellUp('${cell.id}')" title="Move Up">
-                        <i class="fas fa-chevron-up"></i>
+                        <i class="fas fa-arrow-up"></i>
                     </button>
                     <button class="cell-action-btn" onclick="moveCellDown('${cell.id}')" title="Move Down">
-                        <i class="fas fa-chevron-down"></i>
+                        <i class="fas fa-arrow-down"></i>
                     </button>
                     <button class="cell-action-btn" onclick="deleteCell('${cell.id}')" title="Delete">
-                        <i class="fas fa-trash-alt"></i>
+                        <i class="fas fa-trash"></i>
                     </button>
                 </div>
             </div>
@@ -1877,18 +1721,13 @@
         const cell = cells.find(c => c.id === cellId);
         if (!cell) return;
 
-        const oldType = cell.type;
         cell.type = type;
         if (cell.editor) {
             cell.editor.setOption('mode', type === 'python' ? 'text/x-python' : type === 'r' ? 'text/x-rsrc' : 'text/x-sql');
         }
 
-        // Update cell class for colored left border
+        // Update UI
         const cellDiv = document.getElementById(cellId);
-        cellDiv.classList.remove('cell-sql', 'cell-python', 'cell-r');
-        cellDiv.classList.add('cell-' + type);
-
-        // Update type buttons
         const buttons = cellDiv.querySelectorAll('.cell-type-btn');
         buttons.forEach(btn => {
             btn.classList.toggle('active', btn.textContent.toLowerCase() === type);
@@ -1897,14 +1736,11 @@
         saveToLocalStorage();
     }
 
-    let globalExecCounter = 0;
-
     async function runCell(cellId) {
         const cell = cells.find(c => c.id === cellId);
         if (!cell || !cell.content.trim()) return;
 
         cell.status = 'running';
-        updateCellStatus(cellId, 'running');
         updateCellInfo(cellId);
 
         try {
@@ -1919,20 +1755,12 @@
 
             cell.output = result;
             cell.status = 'success';
-            globalExecCounter++;
-            cell.execCount = globalExecCounter;
-            updateCellStatus(cellId, 'success');
-            updateExecCount(cellId, cell.execCount);
 
             const outputDiv = document.getElementById(cellId + '-output');
             outputDiv.innerHTML = result;
             outputDiv.classList.add('show');
         } catch (error) {
             cell.status = 'error';
-            globalExecCounter++;
-            cell.execCount = globalExecCounter;
-            updateCellStatus(cellId, 'error');
-            updateExecCount(cellId, cell.execCount);
             const errorHtml = '<div class="output-error"><i class="fas fa-exclamation-circle"></i> ' + error.message + '</div>';
             cell.output = errorHtml;
 
@@ -1943,24 +1771,6 @@
 
         updateCellInfo(cellId);
         saveToLocalStorage();
-    }
-
-    function updateCellStatus(cellId, status) {
-        const cellDiv = document.getElementById(cellId);
-        if (!cellDiv) return;
-        const dot = cellDiv.querySelector('.cell-status-dot');
-        if (dot) {
-            dot.className = 'cell-status-dot ' + status;
-        }
-    }
-
-    function updateExecCount(cellId, count) {
-        const cellDiv = document.getElementById(cellId);
-        if (!cellDiv) return;
-        const counter = cellDiv.querySelector('.cell-exec-count');
-        if (counter) {
-            counter.textContent = '[' + count + ']';
-        }
     }
 
     function runCellAndAddNew(cellId) {
