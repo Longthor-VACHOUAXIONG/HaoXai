@@ -63,25 +63,6 @@ def create_app(config_class=Config):
     @app.before_request
     def validate_session_instance():
         """Ensure connection session is reset if program was restarted and 'remember' wasn't set"""
-        # Auto-connect to default database if not connected
-        if not session.get('db_connected') and app.config.get('DATABASE_PATH'):
-            db_path = app.config['DATABASE_PATH']
-            if os.path.exists(db_path):
-                try:
-                    # Test connection
-                    conn = DatabaseManagerFlask.get_connection(db_path, 'sqlite')
-                    if conn:
-                        session['db_path'] = db_path
-                        session['db_type'] = 'sqlite'
-                        session['db_name'] = os.path.basename(db_path)
-                        session['db_connected'] = True
-                        session['app_instance_id'] = app.config['APP_INSTANCE_ID']
-                        session['remember_connection'] = True  # Auto-remember
-                        print(f"[AUTO-CONNECT] Connected to default database: {db_path}")
-                        conn.close()
-                except Exception as e:
-                    print(f"[AUTO-CONNECT] Failed to connect to default database: {e}")
-        
         # We only care about this if a database connection is active
         if session.get('db_connected'):
             session_instance = session.get('app_instance_id')

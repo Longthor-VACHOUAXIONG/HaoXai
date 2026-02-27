@@ -2107,18 +2107,28 @@ def save_to_database():
     try:
         data = request.get_json()
         
+        # Enhanced debugging
+        print(f"[DEBUG] Full session data: {dict(session)}")
+        print(f"[DEBUG] Full request data: {data}")
+        
         # Check if database is connected (check session first, fallback to request data)
         db_connected = session.get('db_connected', data.get('db_connected', False))
         db_type = session.get('db_type', data.get('db_type'))
+        db_path = session.get('db_path')
+        db_name = session.get('db_name')
         
         print(f"[DEBUG] Save to database request - Connected: {db_connected}, Type: {db_type}")
-        print(f"[DEBUG] Session keys: {list(session.keys())}")
-        print(f"[DEBUG] Request data keys: {list(data.keys())}")
+        print(f"[DEBUG] Session db_path: {db_path}")
+        print(f"[DEBUG] Session db_name: {db_name}")
         
         if not db_connected:
             return jsonify({
                 'success': False,
-                'message': 'No database connection configured. Please connect to a database first from the Database Connection page.'
+                'message': 'No database connection configured. Please connect to a database first from the Database Connection page.',
+                'debug': {
+                    'session_keys': list(session.keys()),
+                    'request_keys': list(data.keys()) if data else []
+                }
             }), 400
         
         # Get database connection info from session or request data
