@@ -1,0 +1,638 @@
+{% extends "base.html" %}
+
+{% block title %}Auto-Linking - ViroDB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .step-card {
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+
+    .step-number {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 12px;
+    }
+
+    .column-selector {
+        background: rgba(15, 23, 42, 0.4);
+        border: 1px solid rgba(148, 163, 184, 0.1);
+        border-radius: 12px;
+        padding: 15px;
+    }
+
+    .match-row {
+        background: rgba(99, 102, 241, 0.05);
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 8px;
+    }
+
+    .preview-table {
+        font-size: 0.85rem;
+    }
+
+    .preview-table th {
+        background: rgba(15, 23, 42, 0.6);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+
+    .stats-badge {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        border-radius: 6px;
+        background: rgba(30, 41, 59, 0.8);
+        border: 1px solid rgba(148, 163, 184, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4 animate-fade-in">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold mb-1">
+                    <i class="bi bi-link-45deg text-primary"></i> Auto-Linking Manager
+                </h2>
+                <p class="text-muted mb-0">Bulk link records across different tables using common identifiers</p>
+            </div>
+            <div id="link-stats-container" class="d-flex gap-2">
+                <!-- Stats will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <!-- Step 1: Select Tables -->
+    <div class="col-md-4">
+        <div class="glass-card step-card p-4">
+            <div class="d-flex align-items-center mb-4">
+                <div class="step-number">1</div>
+                <h5 class="fw-bold mb-0">Select Tables</h5>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-bold">SOURCE TABLE (Host/Master)</label>
+                <select id="source-table" class="form-select glass-input">
+                    <option value="">Select source...</option>
+                </select>
+                <div class="form-text mt-1 small">Contains the primary entities</div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label text-muted small fw-bold">TARGET TABLE (Data/Detail)</label>
+                <select id="target-table" class="form-select glass-input">
+                    <option value="">Select target...</option>
+                </select>
+                <div class="form-text mt-1 small">Records to be linked to source</div>
+            </div>
+
+            <div class="mb-0">
+                <label class="form-label text-muted small fw-bold">LINK TABLE (Relationship)</label>
+                <div class="input-group">
+                    <select id="link-table" class="form-select glass-input">
+                        <option value="">Select link table...</option>
+                    </select>
+                    <button class="btn btn-outline-primary" type="button" onclick="showCreateLinkModal()"
+                        title="Create New Link Table">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </div>
+                <div class="form-text mt-1 small">Stores the relationship IDs</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 2: Match Columns -->
+    <div class="col-md-4">
+        <div class="glass-card step-card p-4">
+            <div class="d-flex align-items-center mb-4">
+                <div class="step-number">2</div>
+                <h5 class="fw-bold mb-0">Match Columns</h5>
+            </div>
+
+            <div id="column-matching-container">
+                <p class="text-muted text-center py-5">Select source and target tables first</p>
+            </div>
+
+            <div id="add-match-btn-container" class="mt-3 d-none">
+                <button type="button" class="btn btn-link btn-sm text-primary p-0" onclick="addMatchRow()">
+                    <i class="bi bi-plus-circle me-1"></i> Add matching condition
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 3: Preview & Execute -->
+    <div class="col-md-4">
+        <div class="glass-card step-card p-4">
+            <div class="d-flex align-items-center mb-4">
+                <div class="step-number">3</div>
+                <h5 class="fw-bold mb-0">Execute Action</h5>
+            </div>
+
+            <div class="mb-4">
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="create-trigger" checked>
+                    <label class="form-check-label fw-medium" for="create-trigger">
+                        Setup Automated Trigger
+                    </label>
+                    <div class="form-text small">Automatically link future record additions</div>
+                </div>
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="bidirectional" checked>
+                    <label class="form-check-label fw-medium" for="bidirectional">
+                        Bidirectional Linkage
+                    </label>
+                    <div class="form-text small">Link from both Source to Target and vice-versa</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">NOTES</label>
+                    <textarea id="link-notes" class="form-control glass-input" rows="2"
+                        placeholder="Reason for linking..."></textarea>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button id="preview-btn" class="btn btn-glass" onclick="previewLinks()" disabled>
+                    <i class="bi bi-eye me-2"></i> Preview Matches
+                </button>
+                <button id="execute-btn" class="btn btn-gradient" onclick="executeLinking()" disabled>
+                    <i class="bi bi-lightning-charge me-2"></i> Execute Bulk Linking
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Results Area -->
+<div id="preview-container" class="row mb-5 d-none animate-slide-up">
+    <div class="col-12">
+        <div class="glass-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">
+                    Match Preview <span id="match-count-badge" class="badge bg-primary ms-2">0 matches found</span>
+                </h5>
+                <button class="btn btn-sm btn-link text-muted" onclick="hidePreview()">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-dark table-hover preview-table mb-0">
+                    <thead id="preview-thead"></thead>
+                    <tbody id="preview-tbody"></tbody>
+                </table>
+            </div>
+            <div id="has-more-info" class="text-center mt-3 text-muted small d-none">
+                Showing first 100 matches. Total count may be higher.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Link Table Modal -->
+<div class="modal fade" id="createLinkModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card" style="border-radius: 20px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-plus-square text-primary me-2"></i>New Link Table
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1);"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">TABLE NAME</label>
+                    <input type="text" id="new-link-table-name" class="form-control glass-input"
+                        placeholder="e.g. bat_screening_link">
+                    <div class="form-text small">Convention: source_target_link</div>
+                </div>
+                <div id="link-preview-info" class="alert alert-info py-2 small mb-0">
+                    <i class="bi bi-info-circle me-1"></i> Will link <strong><span
+                            id="modal-source-name">-</span></strong> and <strong><span
+                            id="modal-target-name">-</span></strong>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-gradient" onclick="createLinkTable()">Create Table</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let allTables = [];
+    let sourceColumns = [];
+    let targetColumns = [];
+    let linkTablesList = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadTables();
+        loadLinkStats();
+    });
+
+    async function loadTables() {
+        try {
+            const response = await fetch('/auto-link/get-tables');
+            const data = await response.json();
+            if (data.success) {
+                const sourceSelect = document.getElementById('source-table');
+                const targetSelect = document.getElementById('target-table');
+                const linkSelect = document.getElementById('link-table');
+
+                // Clear existing
+                sourceSelect.innerHTML = '<option value="">Select source...</option>';
+                targetSelect.innerHTML = '<option value="">Select target...</option>';
+                linkSelect.innerHTML = '<option value="">Select link table...</option>';
+
+                data.data_tables.forEach(table => {
+                    sourceSelect.innerHTML += `<option value="${table}">${table}</option>`;
+                    targetSelect.innerHTML += `<option value="${table}">${table}</option>`;
+                });
+
+                data.link_tables.forEach(table => {
+                    linkSelect.innerHTML += `<option value="${table}">${table}</option>`;
+                });
+
+                allTables = data.all_tables;
+                linkTablesList = data.link_tables;
+
+                // Event Listeners
+                sourceSelect.addEventListener('change', () => {
+                    updateMatchColumns();
+                    updateExecuteStatus();
+                });
+                targetSelect.addEventListener('change', () => {
+                    updateMatchColumns();
+                    updateExecuteStatus();
+                });
+                linkSelect.addEventListener('change', updateExecuteStatus);
+            }
+        } catch (error) {
+            showToast('Failed to load tables: ' + error.message, 'danger');
+        }
+    }
+
+    async function loadLinkStats() {
+        try {
+            const response = await fetch('/auto-link/get-link-stats');
+            const data = await response.json();
+            if (data.success) {
+                const container = document.getElementById('link-stats-container');
+                container.innerHTML = '';
+                data.stats.slice(0, 3).forEach(stat => {
+                    container.innerHTML += `<div class="stats-badge"><span class="text-primary me-1">${stat.count}</span> <span class="text-muted small">${stat.table}</span></div>`;
+                });
+            }
+        } catch (e) { }
+    }
+
+    async function updateMatchColumns() {
+        const source = document.getElementById('source-table').value;
+        const target = document.getElementById('target-table').value;
+        const container = document.getElementById('column-matching-container');
+
+        if (!source || !target) {
+            container.innerHTML = '<p class="text-muted text-center py-5">Select source and target tables first</p>';
+            document.getElementById('add-match-btn-container').classList.add('d-none');
+            return;
+        }
+
+        container.innerHTML = '<div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div></div>';
+
+        try {
+            const [sourceRes, targetRes] = await Promise.all([
+                fetch('/auto-link/get-columns', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ table_name: source })
+                }),
+                fetch('/auto-link/get-columns', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ table_name: target })
+                })
+            ]);
+
+            const sourceData = await sourceRes.json();
+            const targetData = await targetRes.json();
+
+            if (sourceData.success && targetData.success) {
+                sourceColumns = sourceData.columns;
+                targetColumns = targetData.columns;
+
+                container.innerHTML = '';
+                document.getElementById('add-match-btn-container').classList.remove('d-none');
+
+                // Add initial row and try to auto-match
+                addMatchRow();
+                autoSuggestMatch();
+            }
+        } catch (error) {
+            container.innerHTML = '<div class="alert alert-danger p-2 small">Error loading columns</div>';
+        }
+    }
+
+    function addMatchRow() {
+        const container = document.getElementById('column-matching-container');
+        const rowIndex = container.querySelectorAll('.match-row').length;
+
+        const row = document.createElement('div');
+        row.className = 'match-row animate-fade-in';
+        row.innerHTML = `
+            <div class="row g-2 align-items-center">
+                <div class="col-5">
+                    <select class="form-select form-select-sm glass-input source-col-select">
+                        <option value="">Source Field</option>
+                        ${sourceColumns.map(col => `<option value="${col}">${col}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="col-1 text-center text-muted small">=</div>
+                <div class="col-5">
+                    <select class="form-select form-select-sm glass-input target-col-select">
+                        <option value="">Target Field</option>
+                        ${targetColumns.map(col => `<option value="${col}">${col}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="col-1">
+                    <button type="button" class="btn btn-link btn-sm text-danger p-0" onclick="removeRow(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        container.appendChild(row);
+
+        row.querySelectorAll('select').forEach(sel => {
+            sel.addEventListener('change', updateExecuteStatus);
+        });
+    }
+
+    function removeRow(btn) {
+        btn.closest('.match-row').remove();
+        updateExecuteStatus();
+        if (document.getElementById('column-matching-container').children.length === 0) {
+            addMatchRow();
+        }
+    }
+
+    function autoSuggestMatch() {
+        const sourceSel = document.querySelector('.source-col-select');
+        const targetSel = document.querySelector('.target-col-select');
+
+        const commonIdNames = ['Id', 'ID', 'Field_ID', 'Sample_ID', 'source_id', 'SourceID'];
+
+        // Try exact matches
+        for (const s of sourceColumns) {
+            if (targetColumns.includes(s)) {
+                sourceSel.value = s;
+                targetSel.value = s;
+                updateExecuteStatus();
+                return;
+            }
+        }
+
+        // Try loose matches for IDs
+        for (const s of sourceColumns) {
+            const sLower = s.toLowerCase();
+            for (const t of targetColumns) {
+                const tLower = t.toLowerCase();
+                if (sLower.includes('id') && tLower.includes('id')) {
+                    if (sLower === tLower || sLower.replace('_', '') === tLower.replace('_', '')) {
+                        sourceSel.value = s;
+                        targetSel.value = s;
+                        updateExecuteStatus();
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    function updateExecuteStatus() {
+        const source = document.getElementById('source-table').value;
+        const target = document.getElementById('target-table').value;
+        const link = document.getElementById('link-table').value;
+
+        const matches = [];
+        document.querySelectorAll('.match-row').forEach(row => {
+            const s = row.querySelector('.source-col-select').value;
+            const t = row.querySelector('.target-col-select').value;
+            if (s && t) matches.push({ source: s, target: t });
+        });
+
+        const hasRequired = source && target && matches.length > 0;
+        document.getElementById('preview-btn').disabled = !hasRequired;
+        document.getElementById('execute-btn').disabled = !(hasRequired && link);
+    }
+
+    async function previewLinks() {
+        const source = document.getElementById('source-table').value;
+        const target = document.getElementById('target-table').value;
+        const matches = [];
+        document.querySelectorAll('.match-row').forEach(row => {
+            const s = row.querySelector('.source-col-select').value;
+            const t = row.querySelector('.target-col-select').value;
+            if (s && t) matches.push({ source: s, target: t });
+        });
+
+        showLoading('Matching records...');
+        try {
+            const response = await fetch('/auto-link/preview-matches', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    source_table: source,
+                    target_table: target,
+                    match_columns: matches
+                })
+            });
+
+            const data = await response.json();
+            hideLoading();
+
+            if (data.success) {
+                showPreview(data);
+            } else {
+                showToast(data.error, 'danger');
+            }
+        } catch (error) {
+            hideLoading();
+            showToast('Preview failed: ' + error.message, 'danger');
+        }
+    }
+
+    function showPreview(data) {
+        const container = document.getElementById('preview-container');
+        const thead = document.getElementById('preview-thead');
+        const tbody = document.getElementById('preview-tbody');
+        const badge = document.getElementById('match-count-badge');
+
+        container.classList.remove('d-none');
+        badge.textContent = `${data.match_count} matches found`;
+
+        if (data.matches.length === 0) {
+            thead.innerHTML = '';
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4">No matching records found with selected conditions.</td></tr>';
+            return;
+        }
+
+        // Build header
+        const cols = Object.keys(data.matches[0]);
+        thead.innerHTML = `<tr>${cols.map(c => `<th>${c.replace(/_/g, ' ')}</th>`).join('')}</tr>`;
+
+        // Build rows
+        tbody.innerHTML = data.matches.map(row => `
+            <tr>${cols.map(c => `<td>${row[c] || '<span class="text-muted">null</span>'}</td>`).join('')}</tr>
+        `).join('');
+
+        if (data.has_more) {
+            document.getElementById('has-more-info').classList.remove('d-none');
+        } else {
+            document.getElementById('has-more-info').classList.add('d-none');
+        }
+
+        container.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function hidePreview() {
+        document.getElementById('preview-container').classList.add('d-none');
+    }
+
+    async function executeLinking() {
+        const source = document.getElementById('source-table').value;
+        const target = document.getElementById('target-table').value;
+        const link = document.getElementById('link-table').value;
+        const notes = document.getElementById('link-notes').value;
+        const trigger = document.getElementById('create-trigger').checked;
+        const bidi = document.getElementById('bidirectional').checked;
+
+        const matches = [];
+        document.querySelectorAll('.match-row').forEach(row => {
+            const s = row.querySelector('.source-col-select').value;
+            const t = row.querySelector('.target-col-select').value;
+            if (s && t) matches.push({ source: s, target: t });
+        });
+
+        if (!confirm(`Are you sure you want to perform bulk linking in ${link}?`)) return;
+
+        showLoading('Executing bulk linking...');
+        try {
+            const response = await fetch('/auto-link/execute-linking', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    source_table: source,
+                    target_table: target,
+                    link_table: link,
+                    match_columns: matches,
+                    notes: notes,
+                    create_trigger: trigger,
+                    bidirectional_trigger: bidi
+                })
+            });
+
+            const data = await response.json();
+            hideLoading();
+
+            if (data.success) {
+                let msg = `Successfully created ${data.links_created} new links.`;
+                if (data.trigger_created) msg += ' Automated triggers are now active.';
+                if (data.trigger_error) showToast(data.trigger_error, 'warning');
+
+                showToast(msg, 'success');
+                hidePreview();
+                loadLinkStats();
+            } else {
+                showToast(data.error, 'danger');
+            }
+        } catch (error) {
+            hideLoading();
+            showToast('Linking failed: ' + error.message, 'danger');
+        }
+    }
+
+    function showCreateLinkModal() {
+        const source = document.getElementById('source-table').value;
+        const target = document.getElementById('target-table').value;
+
+        if (!source || !target) {
+            showToast('Please select source and target tables first', 'warning');
+            return;
+        }
+
+        document.getElementById('modal-source-name').textContent = source;
+        document.getElementById('modal-target-name').textContent = target;
+
+        const cleanS = source.replace('sample_', '').replace('_data', '').toLowerCase();
+        const cleanT = target.replace('sample_', '').replace('_data', '').toLowerCase();
+        document.getElementById('new-link-table-name').value = `${cleanS}_${cleanT}_link`;
+
+        new bootstrap.Modal(document.getElementById('createLinkModal')).show();
+    }
+
+    async function createLinkTable() {
+        const source = document.getElementById('source-table').value;
+        const target = document.getElementById('target-table').value;
+        const linkName = document.getElementById('new-link-table-name').value;
+
+        if (!linkName) return;
+
+        showLoading('Creating link table...');
+        try {
+            const response = await fetch('/auto-link/create-link-table', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    source_table: source,
+                    target_table: target,
+                    link_table_name: linkName
+                })
+            });
+
+            const data = await response.json();
+            hideLoading();
+
+            if (data.success) {
+                showToast(data.message, 'success');
+                bootstrap.Modal.getInstance(document.getElementById('createLinkModal')).hide();
+
+                // Add to list and select it
+                const select = document.getElementById('link-table');
+                const opt = document.createElement('option');
+                opt.value = linkName;
+                opt.textContent = linkName;
+                select.appendChild(opt);
+                select.value = linkName;
+
+                updateExecuteStatus();
+            } else {
+                showToast(data.error, 'danger');
+            }
+        } catch (error) {
+            hideLoading();
+            showToast('Failed to create table: ' + error.message, 'danger');
+        }
+    }
+</script>
+{% endblock %}

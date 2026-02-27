@@ -1,0 +1,992 @@
+{% extends "base.html" %}
+
+{% block title %}Extraction Settings{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --vpro-accent: #6366f1;
+        --vpro-success: #10b981;
+        --vpro-warning: #f59e0b;
+        --vpro-danger: #ef4444;
+        --vpro-glass: rgba(15, 23, 42, 0.7);
+        --vpro-border: rgba(255, 255, 255, 0.08);
+    }
+
+    .vpro-dashboard {
+        display: flex;
+        gap: 2rem;
+        height: calc(100vh - 120px);
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+
+    .vpro-sidebar {
+        flex: 0 0 340px;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        height: 100%;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+
+    .vpro-canvas {
+        flex: 1;
+        height: 100%;
+        overflow-y: auto;
+        padding: 0 0.5rem 2rem;
+    }
+
+    .vpro-card {
+        background: var(--vpro-glass);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--vpro-border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .vpro-card-title {
+        font-size: 0.8rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .vpro-card-title i {
+        color: var(--vpro-accent);
+    }
+
+    .btn-vpro {
+        padding: 0.75rem 1.25rem;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        letter-spacing: 0.03em;
+        transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-vpro-primary {
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        color: #fff;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25);
+    }
+
+    .btn-vpro-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        color: #fff;
+    }
+
+    .btn-vpro-primary:active {
+        transform: scale(0.95);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-vpro-success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: #fff;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);
+    }
+
+    .btn-vpro-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        color: #fff;
+    }
+
+    .btn-vpro-success:active {
+        transform: scale(0.95);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-vpro-danger {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: #fff;
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25);
+    }
+
+    .btn-vpro-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+        color: #fff;
+    }
+
+    .btn-vpro-danger:active {
+        transform: scale(0.95);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-vpro-secondary {
+        background: rgba(255, 255, 255, 0.04);
+        color: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .btn-vpro-secondary:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        transform: translateY(-1px);
+    }
+
+    .btn-vpro-secondary:active {
+        transform: scale(0.96);
+    }
+
+    /* Ripple effect for all vpro buttons */
+    .btn-vpro::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: inherit;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .btn-vpro:active::after {
+        opacity: 1;
+        transition: opacity 0s;
+    }
+
+    .vpro-input {
+        background: rgba(0, 0, 0, 0.3) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #fff !important;
+        padding: 0.6rem 1rem !important;
+        border-radius: 8px !important;
+        font-size: 0.85rem !important;
+    }
+
+    .vpro-input:focus {
+        border-color: var(--vpro-accent) !important;
+        box-shadow: 0 0 10px rgba(99, 102, 241, 0.15) !important;
+    }
+
+    /* Section Cards */
+    .settings-section {
+        background: var(--vpro-glass);
+        border: 1px solid var(--vpro-border);
+        border-radius: 16px;
+        padding: 1.75rem;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .section-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .section-title i {
+        color: var(--vpro-accent);
+        font-size: 1.2rem;
+    }
+
+    .section-desc {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.4);
+        margin-bottom: 1.25rem;
+    }
+
+    /* Prefix row */
+    .prefix-row {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        animation: slideIn 0.2s ease-out;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .prefix-row .form-control {
+        flex: 1;
+    }
+
+    .prefix-row .btn-remove {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        background: rgba(239, 68, 68, 0.08);
+        color: #ef4444;
+        cursor: pointer;
+        transition: all 0.15s;
+        flex-shrink: 0;
+    }
+
+    .prefix-row .btn-remove:hover {
+        background: rgba(239, 68, 68, 0.2);
+        transform: scale(1.1);
+    }
+
+    .prefix-row .btn-remove:active {
+        transform: scale(0.9);
+    }
+
+    /* Tag inputs */
+    .tag-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        padding: 0.5rem;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        min-height: 42px;
+        align-items: center;
+    }
+
+    .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.6rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        animation: slideIn 0.15s ease;
+    }
+
+    .tag-pool {
+        background: rgba(16, 185, 129, 0.15);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        color: #34d399;
+    }
+
+    .tag-nopool {
+        background: rgba(245, 158, 11, 0.15);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        color: #fbbf24;
+    }
+
+    .tag-ana {
+        background: rgba(99, 102, 241, 0.15);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        color: #818cf8;
+    }
+
+    .tag-sal {
+        background: rgba(6, 182, 212, 0.15);
+        border: 1px solid rgba(6, 182, 212, 0.3);
+        color: #22d3ee;
+    }
+
+    .tag-pt {
+        background: rgba(168, 85, 247, 0.15);
+        border: 1px solid rgba(168, 85, 247, 0.3);
+        color: #c084fc;
+    }
+
+    .tag-tis {
+        background: rgba(236, 72, 153, 0.15);
+        border: 1px solid rgba(236, 72, 153, 0.3);
+        color: #f472b6;
+    }
+
+    .tag-int {
+        background: rgba(244, 63, 94, 0.15);
+        border: 1px solid rgba(244, 63, 94, 0.3);
+        color: #fb7185;
+    }
+
+    .tag .tag-remove {
+        cursor: pointer;
+        opacity: 0.5;
+        transition: opacity 0.1s;
+    }
+
+    .tag .tag-remove:hover {
+        opacity: 1;
+    }
+
+    .tag-input {
+        background: transparent !important;
+        border: none !important;
+        color: #fff !important;
+        font-size: 0.8rem !important;
+        outline: none !important;
+        min-width: 80px;
+        flex: 1;
+        padding: 0 !important;
+        box-shadow: none !important;
+    }
+
+    /* Toggle Switch */
+    .toggle-group {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.65rem 1rem;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        margin-bottom: 0.5rem;
+    }
+
+    .toggle-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .toggle-switch {
+        position: relative;
+        width: 44px;
+        height: 24px;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        transition: all 0.3s;
+    }
+
+    .toggle-slider::before {
+        content: '';
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        left: 3px;
+        bottom: 3px;
+        background: white;
+        border-radius: 50%;
+        transition: all 0.3s;
+    }
+
+    .toggle-switch input:checked+.toggle-slider {
+        background: var(--vpro-accent);
+    }
+
+    .toggle-switch input:checked+.toggle-slider::before {
+        transform: translateX(20px);
+    }
+
+    /* Radio Group */
+    .radio-group {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .radio-chip {
+        padding: 0.4rem 0.8rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.2);
+        color: rgba(255, 255, 255, 0.5);
+        transition: all 0.15s;
+    }
+
+    .radio-chip:hover {
+        border-color: var(--vpro-accent);
+        color: #fff;
+    }
+
+    .radio-chip input {
+        display: none;
+    }
+
+    .radio-chip.active {
+        background: rgba(99, 102, 241, 0.15);
+        border-color: var(--vpro-accent);
+        color: #fff;
+    }
+
+    /* Nav Sidebar Tabs */
+    .section-nav-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        width: 100%;
+        padding: 0.7rem 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(0, 0, 0, 0.15);
+        color: rgba(255, 255, 255, 0.5);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .section-nav-btn:hover {
+        background: rgba(99, 102, 241, 0.05);
+        border-color: rgba(99, 102, 241, 0.2);
+        color: #fff;
+    }
+
+    .section-nav-btn.active {
+        background: rgba(99, 102, 241, 0.1);
+        border-color: rgba(99, 102, 241, 0.3);
+        color: #fff;
+    }
+
+    .section-nav-btn i {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        background: rgba(99, 102, 241, 0.15);
+        color: var(--vpro-accent);
+        font-size: 0.9rem;
+    }
+
+    /* Save status toast */
+    .save-toast {
+        position: fixed;
+        top: 90px;
+        right: 24px;
+        z-index: 5000;
+        padding: 0.75rem 1.25rem;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        animation: toastIn 0.3s ease;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .save-toast.success {
+        background: var(--vpro-success);
+        color: #fff;
+    }
+
+    .save-toast.error {
+        background: var(--vpro-danger);
+        color: #fff;
+    }
+
+    @keyframes toastIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="vpro-dashboard">
+    <!-- Sidebar -->
+    <aside class="vpro-sidebar">
+        <div class="vpro-card">
+            <h1 class="h5 text-white fw-800 mb-1">Settings</h1>
+            <p class="text-muted small mb-3">Configure extraction processor</p>
+            <div class="d-grid gap-2">
+                <a href="/extraction" class="btn btn-vpro btn-vpro-secondary w-100"><i class="bi bi-arrow-left"></i>Back
+                    to Builder</a>
+            </div>
+        </div>
+
+        <!-- Section Navigation -->
+        <div class="vpro-card">
+            <div class="vpro-card-title"><i class="bi bi-list-ul"></i>Sections</div>
+            <div class="d-grid gap-2">
+                <button class="section-nav-btn active" onclick="scrollToSection('prefixSection')"><i
+                        class="bi bi-arrow-left-right"></i>Prefix Mapping</button>
+                <button class="section-nav-btn" onclick="scrollToSection('poolSection')"><i
+                        class="bi bi-layers"></i>Pool Rules</button>
+                <button class="section-nav-btn" onclick="scrollToSection('classifySection')"><i
+                        class="bi bi-tags"></i>Classification</button>
+                <button class="section-nav-btn" onclick="scrollToSection('processingSection')"><i
+                        class="bi bi-gear"></i>Processing</button>
+                <button class="section-nav-btn" onclick="scrollToSection('h2oSection')"><i class="bi bi-droplet"></i>H₂O
+                    Config</button>
+            </div>
+        </div>
+
+        <!-- Action Sidebar -->
+        <div class="vpro-card" style="position:sticky; bottom:0;">
+            <div class="d-grid gap-2">
+                <button class="btn btn-vpro btn-vpro-success w-100" onclick="saveSettings()" id="saveBtn">
+                    <i class="bi bi-check-lg"></i>Save All Settings
+                </button>
+                <button class="btn btn-vpro btn-vpro-secondary w-100" onclick="loadSettings()">
+                    <i class="bi bi-arrow-clockwise"></i>Reload from Server
+                </button>
+                <button class="btn btn-vpro btn-vpro-danger w-100" onclick="resetDefaults()">
+                    <i class="bi bi-arrow-counterclockwise"></i>Reset Defaults
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Canvas -->
+    <main class="vpro-canvas" id="settingsCanvas">
+        <form id="settingsForm" autocomplete="off">
+
+            <!-- PREFIX MAPPING -->
+            <div class="settings-section" id="prefixSection">
+                <div class="section-title"><i class="bi bi-arrow-left-right"></i>Prefix Mapping</div>
+                <div class="section-desc">Map original sample prefixes to short codes used internally</div>
+
+                <div id="prefixList"></div>
+
+                <button type="button" class="btn btn-vpro btn-vpro-secondary mt-2" onclick="addPrefixRow()">
+                    <i class="bi bi-plus-lg"></i>Add Mapping
+                </button>
+            </div>
+
+            <!-- POOL ASSIGNMENT -->
+            <div class="settings-section" id="poolSection">
+                <div class="section-title"><i class="bi bi-layers"></i>Pool Assignment Rules</div>
+                <div class="section-desc">Define which prefixes are pooled and which are individual</div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold">POOL SAMPLES</label>
+                        <div class="tag-container" id="poolSamplesContainer">
+                            <input class="tag-input" placeholder="Type prefix, press Enter..."
+                                onkeydown="addTag(event, 'poolSamples', 'tag-pool')">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold">NO-POOL SAMPLES</label>
+                        <div class="tag-container" id="noPoolSamplesContainer">
+                            <input class="tag-input" placeholder="Type prefix, press Enter..."
+                                onkeydown="addTag(event, 'noPoolSamples', 'tag-nopool')">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold">SAMPLES PER POOL</label>
+                        <input type="number" id="samplesPerPool" class="form-control vpro-input" value="8" min="1">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold">SAMPLE ID PATTERN</label>
+                        <input type="text" id="sampleIdPattern" class="form-control vpro-input"
+                            placeholder="e.g. ([A-Z_]+)(\d{2})_(\d+)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- CLASSIFICATION -->
+            <div class="settings-section" id="classifySection">
+                <div class="section-title"><i class="bi bi-tags"></i>Sample Classification</div>
+                <div class="section-desc">Assign original prefixes to extraction categories</div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold" style="color:#818cf8;">ANA SAMPLES</label>
+                        <div class="tag-container" id="anaSamplesContainer">
+                            <input class="tag-input" placeholder="Add ANA prefix..."
+                                onkeydown="addTag(event, 'anaSamples', 'tag-ana')">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold" style="color:#22d3ee;">SAL SAMPLES</label>
+                        <div class="tag-container" id="salSamplesContainer">
+                            <input class="tag-input" placeholder="Add SAL prefix..."
+                                onkeydown="addTag(event, 'salSamples', 'tag-sal')">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold" style="color:#c084fc;">PT SAMPLES</label>
+                        <div class="tag-container" id="ptSamplesContainer">
+                            <input class="tag-input" placeholder="Add PT prefix..."
+                                onkeydown="addTag(event, 'ptSamples', 'tag-pt')">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold" style="color:#f472b6;">TIS SAMPLES</label>
+                        <div class="tag-container" id="tisSamplesContainer">
+                            <input class="tag-input" placeholder="Add TIS prefix..."
+                                onkeydown="addTag(event, 'tisSamples', 'tag-tis')">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold" style="color:#fb7185;">INT SAMPLES</label>
+                        <div class="tag-container" id="intSamplesContainer">
+                            <input class="tag-input" placeholder="Add INT prefix..."
+                                onkeydown="addTag(event, 'intSamples', 'tag-int')">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROCESSING -->
+            <div class="settings-section" id="processingSection">
+                <div class="section-title"><i class="bi bi-gear"></i>Processing Rules</div>
+                <div class="section-desc">Configure sample sorting and generic sample handling</div>
+
+                <div class="toggle-group">
+                    <span class="toggle-label">Enable Sample Sorting</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="enableSampleSorting">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="mt-3">
+                    <label class="form-label text-muted small fw-bold">GENERIC SAMPLE CATEGORY</label>
+                    <div class="radio-group" id="genericCatGroup">
+                        <label class="radio-chip" data-value="swab"><input type="radio" name="generic_sample_category"
+                                value="swab">Swab</label>
+                        <label class="radio-chip" data-value="tissue"><input type="radio" name="generic_sample_category"
+                                value="tissue">Tissue</label>
+                        <label class="radio-chip" data-value="none"><input type="radio" name="generic_sample_category"
+                                value="none">None</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- H2O CONFIG -->
+            <div class="settings-section" id="h2oSection">
+                <div class="section-title"><i class="bi bi-droplet"></i>H₂O Randomization</div>
+                <div class="section-desc">Controls for water control placement on plates</div>
+
+                <div class="toggle-group mb-3">
+                    <span class="toggle-label">Enable H₂O Randomization</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="enableH2ORandom">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold">NUMBER OF H₂O WELLS</label>
+                        <input type="number" id="h2oCount" class="form-control vpro-input" value="2" min="1" max="10">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold">POSITION PREFERENCE</label>
+                        <div class="radio-group" id="h2oPosGroup">
+                            <label class="radio-chip" data-value="random"><input type="radio"
+                                    name="h2o_position_preference" value="random">Random</label>
+                            <label class="radio-chip" data-value="edges"><input type="radio"
+                                    name="h2o_position_preference" value="edges">Edges</label>
+                            <label class="radio-chip" data-value="center"><input type="radio"
+                                    name="h2o_position_preference" value="center">Center</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ============================================================
+    // Tag-based data stores
+    // ============================================================
+    const tagData = {
+        poolSamples: [],
+        noPoolSamples: [],
+        anaSamples: [],
+        salSamples: [],
+        ptSamples: [],
+        tisSamples: [],
+        intSamples: []
+    };
+
+    const tagClassMap = {
+        poolSamples: 'tag-pool',
+        noPoolSamples: 'tag-nopool',
+        anaSamples: 'tag-ana',
+        salSamples: 'tag-sal',
+        ptSamples: 'tag-pt',
+        tisSamples: 'tag-tis',
+        intSamples: 'tag-int'
+    };
+
+    // ============================================================
+    // Tag Input System
+    // ============================================================
+    function addTag(event, group, cls) {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        const val = event.target.value.trim();
+        if (!val || tagData[group].includes(val)) { event.target.value = ''; return; }
+        tagData[group].push(val);
+        renderTags(group);
+        event.target.value = '';
+    }
+
+    function removeTag(group, idx) {
+        tagData[group].splice(idx, 1);
+        renderTags(group);
+    }
+
+    function renderTags(group) {
+        const cls = tagClassMap[group];
+        const container = document.getElementById(group + 'Container');
+        const input = container.querySelector('.tag-input');
+
+        // Remove all existing tags
+        container.querySelectorAll('.tag').forEach(t => t.remove());
+
+        // Add tags before the input
+        tagData[group].forEach((val, idx) => {
+            const tag = document.createElement('span');
+            tag.className = `tag ${cls}`;
+            tag.innerHTML = `${val} <span class="tag-remove" onclick="removeTag('${group}', ${idx})">&times;</span>`;
+            container.insertBefore(tag, input);
+        });
+    }
+
+    // ============================================================
+    // Prefix Mapping
+    // ============================================================
+    function addPrefixRow(original = '', mapped = '') {
+        const list = document.getElementById('prefixList');
+        const row = document.createElement('div');
+        row.className = 'prefix-row';
+        row.innerHTML = `
+            <input type="text" class="form-control vpro-input" name="original_prefix[]" placeholder="Original (e.g. CANB_ANA25)" value="${original}">
+            <i class="bi bi-arrow-right text-muted"></i>
+            <input type="text" class="form-control vpro-input" name="new_prefix[]" placeholder="Short (e.g. BA25)" value="${mapped}">
+            <div class="btn-remove" onclick="this.parentNode.remove()"><i class="bi bi-x"></i></div>
+        `;
+        list.appendChild(row);
+    }
+
+    // ============================================================
+    // Radio Chips
+    // ============================================================
+    function initRadioChips() {
+        document.querySelectorAll('.radio-group').forEach(group => {
+            group.querySelectorAll('.radio-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    group.querySelectorAll('.radio-chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    chip.querySelector('input').checked = true;
+                });
+            });
+        });
+    }
+
+    function setRadioValue(name, value) {
+        document.querySelectorAll(`input[name="${name}"]`).forEach(radio => {
+            const chip = radio.closest('.radio-chip');
+            if (radio.value === value) {
+                radio.checked = true;
+                chip.classList.add('active');
+            } else {
+                radio.checked = false;
+                chip.classList.remove('active');
+            }
+        });
+    }
+
+    // ============================================================
+    // Section Navigation
+    // ============================================================
+    function scrollToSection(id) {
+        document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.querySelectorAll('.section-nav-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.closest('.section-nav-btn').classList.add('active');
+    }
+
+    // ============================================================
+    // Toast Notifications
+    // ============================================================
+    function showSettingsToast(msg, type = 'success') {
+        const existing = document.querySelector('.save-toast');
+        if (existing) existing.remove();
+        const toast = document.createElement('div');
+        toast.className = `save-toast ${type}`;
+        toast.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>${msg}`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    // ============================================================
+    // Load Settings
+    // ============================================================
+    async function loadSettings() {
+        try {
+            const response = await fetch('/extraction/api/settings');
+            const settings = await response.json();
+
+            // Prefix mapping
+            document.getElementById('prefixList').innerHTML = '';
+            if (settings.prefix_mapping) {
+                Object.entries(settings.prefix_mapping).forEach(([orig, mapped]) => {
+                    addPrefixRow(orig, mapped);
+                });
+            }
+            if (document.getElementById('prefixList').children.length === 0) addPrefixRow();
+
+            // Pool samples
+            tagData.poolSamples = settings.pool_samples || [];
+            tagData.noPoolSamples = settings.no_pool_samples || [];
+            tagData.anaSamples = settings.ana_samples || [];
+            tagData.salSamples = settings.sal_samples || [];
+            tagData.ptSamples = settings.pt_samples || [];
+            tagData.tisSamples = settings.tis_samples || [];
+            tagData.intSamples = settings.int_samples || [];
+
+            Object.keys(tagData).forEach(renderTags);
+
+            // Numeric fields
+            document.getElementById('samplesPerPool').value = settings.samples_per_pool || 8;
+            document.getElementById('sampleIdPattern').value = settings.sample_id_pattern || '';
+            document.getElementById('h2oCount').value = settings.h2o_count || 2;
+
+            // Toggles
+            document.getElementById('enableSampleSorting').checked = settings.enable_sample_sorting ?? true;
+            document.getElementById('enableH2ORandom').checked = settings.enable_h2o_random ?? false;
+
+            // Radio chips
+            setRadioValue('generic_sample_category', settings.generic_sample_category || 'swab');
+            setRadioValue('h2o_position_preference', settings.h2o_position_preference || 'random');
+
+        } catch (error) {
+            showSettingsToast('Failed to load settings: ' + error.message, 'error');
+        }
+    }
+
+    // ============================================================
+    // Save Settings
+    // ============================================================
+    async function saveSettings() {
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>Saving...';
+        saveBtn.disabled = true;
+
+        try {
+            // Build prefix mapping
+            const prefixMapping = {};
+            const originals = document.querySelectorAll('input[name="original_prefix[]"]');
+            const newPrefixes = document.querySelectorAll('input[name="new_prefix[]"]');
+            originals.forEach((orig, i) => {
+                if (orig.value && newPrefixes[i].value) {
+                    prefixMapping[orig.value] = newPrefixes[i].value;
+                }
+            });
+
+            const settings = {
+                prefix_mapping: prefixMapping,
+                pool_samples: tagData.poolSamples,
+                no_pool_samples: tagData.noPoolSamples,
+                samples_per_pool: parseInt(document.getElementById('samplesPerPool').value) || null,
+                sample_id_pattern: document.getElementById('sampleIdPattern').value,
+                enable_sample_sorting: document.getElementById('enableSampleSorting').checked,
+                ana_samples: tagData.anaSamples,
+                sal_samples: tagData.salSamples,
+                pt_samples: tagData.ptSamples,
+                tis_samples: tagData.tisSamples,
+                int_samples: tagData.intSamples,
+                enable_h2o_random: document.getElementById('enableH2ORandom').checked,
+                h2o_count: parseInt(document.getElementById('h2oCount').value) || 2,
+                h2o_position_preference: document.querySelector('input[name="h2o_position_preference"]:checked')?.value || 'random',
+                generic_sample_category: document.querySelector('input[name="generic_sample_category"]:checked')?.value || 'swab'
+            };
+
+            const response = await fetch('/extraction/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showSettingsToast('Settings saved successfully!', 'success');
+            } else {
+                showSettingsToast('Save failed: ' + result.error, 'error');
+            }
+        } catch (error) {
+            showSettingsToast('Network error: ' + error.message, 'error');
+        } finally {
+            saveBtn.innerHTML = '<i class="bi bi-check-lg"></i>Save All Settings';
+            saveBtn.disabled = false;
+        }
+    }
+
+    // ============================================================
+    // Reset Defaults
+    // ============================================================
+    function resetDefaults() {
+        if (!confirm('This will reset ALL settings to defaults. Continue?')) return;
+
+        document.getElementById('prefixList').innerHTML = '';
+        addPrefixRow();
+
+        Object.keys(tagData).forEach(key => tagData[key] = []);
+        Object.keys(tagData).forEach(renderTags);
+
+        document.getElementById('samplesPerPool').value = 8;
+        document.getElementById('sampleIdPattern').value = '';
+        document.getElementById('h2oCount').value = 2;
+        document.getElementById('enableSampleSorting').checked = true;
+        document.getElementById('enableH2ORandom').checked = false;
+        setRadioValue('generic_sample_category', 'swab');
+        setRadioValue('h2o_position_preference', 'random');
+
+        showSettingsToast('Reset to defaults. Click Save to apply.', 'success');
+    }
+
+    // ============================================================
+    // Init
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        initRadioChips();
+        loadSettings();
+    });
+</script>
+{% endblock %}

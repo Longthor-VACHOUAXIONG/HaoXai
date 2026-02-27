@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - HaoXai{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h1 class="mb-4"><i class="bi bi-gear"></i> Admin Dashboard</h1>
+    <p class="text-muted">System administration and management</p>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="bi bi-shield-check fs-1 text-success"></i>
+                    <h5 class="card-title mt-2">Security</h5>
+                    <p class="card-text">Manage users, roles, and security settings</p>
+                    <a href="/admin/security" class="btn btn-success">
+                        <i class="bi bi-arrow-right"></i> Security Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="bi bi-people fs-1 text-primary"></i>
+                    <h5 class="card-title mt-2">Users</h5>
+                    <p class="card-text">Manage user accounts and permissions</p>
+                    <a href="/admin/users" class="btn btn-primary">
+                        <i class="bi bi-arrow-right"></i> User Management
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="bi bi-gear fs-1 text-warning"></i>
+                    <h5 class="card-title mt-2">Settings</h5>
+                    <p class="card-text">Configure system settings</p>
+                    <a href="/admin/settings" class="btn btn-warning">
+                        <i class="bi bi-arrow-right"></i> System Settings
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="bi bi-speedometer2 fs-1 text-info"></i>
+                    <h5 class="card-title mt-2">Main Dashboard</h5>
+                    <p class="card-text">Return to main application</p>
+                    <a href="/main/dashboard" class="btn btn-info">
+                        <i class="bi bi-arrow-right"></i> Main Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-info-circle"></i> Quick Stats</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h3 class="text-primary" id="admin-users-count">1</h3>
+                            <p class="mb-0">Admin Users</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-success" id="security-roles-count">4</h3>
+                            <p class="mb-0">Security Roles</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-info" id="audit-logs-count">0</h3>
+                            <p class="mb-0">Audit Logs</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-warning" id="backups-count">0</h3>
+                            <p class="mb-0">Backups</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Quick Stats -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadAdminQuickStats();
+});
+
+function loadAdminQuickStats() {
+    fetch('/api/security/stats')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('admin-users-count').textContent = data.total_users || 0;
+                document.getElementById('security-roles-count').textContent = data.active_users || 0;
+                document.getElementById('audit-logs-count').textContent = data.audit_count || 0;
+                document.getElementById('backups-count').textContent = data.backups_count || 0;
+            }
+        })
+        .catch(error => console.error('Error loading admin quick stats:', error));
+}
+</script>
+{% endblock %}

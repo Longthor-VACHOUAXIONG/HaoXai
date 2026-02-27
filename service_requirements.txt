@@ -1,0 +1,16 @@
+# Requirements for HaoXai Backup Service
+# Install with: pip install -r service_requirements.txt
+
+# Windows service framework
+pywin32>=306
+
+# Core dependencies (should already be installed)
+# These are listed for completeness
+# sqlite3 - Built into Python
+# json - Built into Python
+# os - Built into Python
+# time - Built into Python
+# datetime - Built into Python
+# threading - Built into Python
+# glob - Built into Python
+# shutil - Built into Python

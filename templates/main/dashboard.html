@@ -1,0 +1,628 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dashboard Grid Layout */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    /* Stat Cards - IDE Panel Style */
+    .stat-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: 4px;
+        padding: 16px;
+        transition: border-color 0.15s;
+    }
+
+    .stat-card:hover {
+        border-color: var(--accent-primary);
+    }
+
+    .stat-card .stat-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+    }
+
+    .stat-card .stat-value {
+        font-family: var(--font-mono);
+        font-size: 24px;
+        font-weight: 500;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .stat-card .stat-delta {
+        font-size: 12px;
+        color: var(--accent-success);
+    }
+
+    .stat-card .stat-delta.negative {
+        color: var(--accent-error);
+    }
+
+    /* Quick Actions - List Style */
+    .action-list {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: 4px;
+    }
+
+    .action-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border-primary);
+        cursor: pointer;
+        transition: background 0.15s;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .action-item:last-child {
+        border-bottom: none;
+    }
+
+    .action-item:hover {
+        background: var(--bg-hover);
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .action-item i {
+        color: var(--text-secondary);
+        font-size: 14px;
+        width: 18px;
+    }
+
+    .action-item:hover i {
+        color: var(--accent-primary);
+    }
+
+    .action-item .action-text {
+        flex: 1;
+        font-size: 13px;
+    }
+
+    .action-item .action-shortcut {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+
+    /* Panel Cards */
+    .panel-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .panel-header {
+        background: var(--bg-tertiary);
+        border-bottom: 1px solid var(--border-primary);
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .panel-header i {
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+
+    .panel-body {
+        padding: 12px;
+    }
+
+    /* Data Table - Compact */
+    .data-table {
+        width: 100%;
+        font-size: 12px;
+        border-collapse: collapse;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 6px 10px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-primary);
+    }
+
+    .data-table th {
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        font-size: 10px;
+        letter-spacing: 0.3px;
+        background: var(--bg-tertiary);
+    }
+
+    .data-table td {
+        font-family: var(--font-mono);
+        color: var(--text-primary);
+    }
+
+    .data-table tr:hover td {
+        background: var(--bg-hover);
+    }
+
+    .data-table .row-count {
+        color: var(--accent-secondary);
+    }
+
+    /* Welcome Banner */
+    .welcome-banner {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-left: 3px solid var(--accent-primary);
+        border-radius: 4px;
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .welcome-banner .banner-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--accent-primary);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 18px;
+    }
+
+    .welcome-banner .banner-content {
+        flex: 1;
+    }
+
+    .welcome-banner .banner-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 2px;
+    }
+
+    .welcome-banner .banner-subtitle {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    /* Connection Status Badge */
+    .conn-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 500;
+    }
+
+    .conn-badge.online {
+        background: rgba(78, 201, 176, 0.15);
+        color: var(--accent-success);
+    }
+
+    .conn-badge.offline {
+        background: rgba(244, 67, 54, 0.15);
+        color: var(--accent-error);
+    }
+
+    .conn-badge i {
+        font-size: 8px;
+    }
+
+    /* Chart Container */
+    .chart-container {
+        position: relative;
+        height: 250px;
+    }
+
+    /* Section Headers */
+    .section-header {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border-primary);
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-muted);
+    }
+
+    .empty-state i {
+        font-size: 32px;
+        margin-bottom: 12px;
+        display: block;
+    }
+
+    /* Terminal-like output */
+    .terminal-output {
+        background: var(--bg-input);
+        border: 1px solid var(--border-primary);
+        border-radius: 4px;
+        padding: 12px;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--text-primary);
+    }
+
+    .terminal-output .prompt {
+        color: var(--accent-success);
+    }
+
+    .terminal-output .command {
+        color: var(--text-primary);
+    }
+
+    .terminal-output .output {
+        color: var(--text-muted);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    {% if error %}
+    <div class="alert alert-danger mb-4">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-x-circle"></i>
+            <span>{{ error }}</span>
+        </div>
+        <div class="mt-2">
+            <a href="/auth/connect" class="btn btn-primary btn-sm">
+                <i class="bi bi-plug me-1"></i>Connect to Database
+            </a>
+        </div>
+    </div>
+    {% else %}
+
+    <!-- Welcome Banner -->
+    <div class="welcome-banner">
+        <div class="banner-icon">
+            <i class="bi bi-terminal"></i>
+        </div>
+        <div class="banner-content">
+            <div class="banner-title">Welcome back, {{ session.username }}</div>
+            <div class="banner-subtitle">
+                Database: <strong>{{ stats.db_name if stats else 'N/A' }}</strong>
+                <span class="mx-2">|</span>
+                <span class="conn-badge online">
+                    <i class="bi bi-circle-fill"></i>
+                    Online
+                </span>
+                <span class="mx-2">|</span>
+                <span>{{ stats.tables|length if stats and stats.tables else 0 }} tables</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="dashboard-grid">
+        <div class="stat-card">
+            <div class="stat-label">Total Records</div>
+            <div class="stat-value" id="total-records">
+                {% if stats and stats.tables %}
+                {{ "{:,}".format(stats.tables|sum(attribute='rows')) }}
+                {% else %}0{% endif %}
+            </div>
+            <div class="stat-delta">
+                <i class="bi bi-arrow-up-short"></i>across all tables
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Database Tables</div>
+            <div class="stat-value" id="stat-tables">
+                {{ stats.tables|length if stats and stats.tables else 0 }}
+            </div>
+            <div class="stat-delta">
+                <i class="bi bi-table"></i>active
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Host Records</div>
+            <div class="stat-value" id="stat-hosts">--</div>
+            <div class="stat-delta">
+                <i class="bi bi-bug"></i>wildlife data
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Sample Records</div>
+            <div class="stat-value" id="stat-samples">--</div>
+            <div class="stat-delta">
+                <i class="bi bi-droplet"></i>collected
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- Quick Actions -->
+        <div class="col-lg-4">
+            <div class="section-header">
+                <i class="bi bi-lightning-charge me-1"></i>Quick Actions
+            </div>
+            <div class="action-list">
+                <a href="/excel/import" class="action-item">
+                    <i class="bi bi-file-earmark-arrow-up"></i>
+                    <span class="action-text">Import Excel Data</span>
+                    <span class="action-shortcut">Ctrl+I</span>
+                </a>
+                <a href="/query/editor" class="action-item">
+                    <i class="bi bi-code-square"></i>
+                    <span class="action-text">SQL Editor</span>
+                    <span class="action-shortcut">Ctrl+Q</span>
+                </a>
+                <a href="/auto-link" class="action-item">
+                    <i class="bi bi-link-45deg"></i>
+                    <span class="action-text">Auto Link Tables</span>
+                    <span class="action-shortcut">Ctrl+L</span>
+                </a>
+                <a href="/chat/" class="action-item">
+                    <i class="bi bi-chat-dots"></i>
+                    <span class="action-text">AI Assistant</span>
+                    <span class="action-shortcut">Ctrl+K</span>
+                </a>
+                <a href="/extraction" class="action-item">
+                    <i class="bi bi-table"></i>
+                    <span class="action-text">Extraction Layout</span>
+                    <span class="action-shortcut"></span>
+                </a>
+                <a href="/file_manager" class="action-item">
+                    <i class="bi bi-folder2-open"></i>
+                    <span class="action-text">File Manager</span>
+                    <span class="action-shortcut">Ctrl+O</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Database Tables -->
+        <div class="col-lg-4">
+            <div class="section-header">
+                <i class="bi bi-database me-1"></i>Database Tables
+            </div>
+            <div class="panel-card">
+                <div class="panel-body p-0">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Table Name</th>
+                                <th class="text-end">Rows</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if stats and stats.tables %}
+                            {% for table in stats.tables[:8] %}
+                            <tr>
+                                <td>
+                                    <i class="bi bi-table text-muted me-1"></i>
+                                    {{ table.name }}
+                                </td>
+                                <td class="text-end row-count">{{ "{:,}".format(table.rows) }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="2" class="text-center py-3 text-muted">No tables found</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Info -->
+        <div class="col-lg-4">
+            <div class="section-header">
+                <i class="bi bi-info-circle me-1"></i>System Info
+            </div>
+            <div class="panel-card">
+                <div class="panel-body">
+                    <div class="terminal-output mb-0">
+                        <div><span class="prompt"></span> <span class="command">haoxai --status</span></div>
+                        <div class="output mt-2">
+                            <div>Database: {{ stats.db_name if stats else 'N/A' }}</div>
+                            <div>Tables: {{ stats.tables|length if stats and stats.tables else 0 }}</div>
+                            <div>User: {{ session.username }}</div>
+                            <div>Role: {{ session.role|title }}</div>
+                            <div>Status: <span style="color: var(--accent-success)">Online</span></div>
+                        </div>
+                        <div class="mt-2"><span class="prompt"></span> <span class="command">_</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Visualization -->
+    <div class="row g-3 mt-2">
+        <div class="col-12">
+            <div class="section-header">
+                <i class="bi bi-bar-chart-line me-1"></i>Data Distribution
+            </div>
+            <div class="panel-card">
+                <div class="panel-body">
+                    <div class="chart-container">
+                        <canvas id="dataChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+
+<!-- Hidden data for JavaScript -->
+<script id="dashboard-data" type="application/json">
+{{ ((stats.tables if stats and stats.tables else [])|tojson|safe) if not error else '[]' }}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Animate numbers
+    function animateValue(id, start, end, duration) {
+        const obj = document.getElementById(id);
+        if (!obj) return;
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
+            if (progress < 1) window.requestAnimationFrame(step);
+        };
+        window.requestAnimationFrame(step);
+    }
+
+    // Helper to get dashboard data
+    function getDashboardTables() {
+        const dataEl = document.getElementById('dashboard-data');
+        if (!dataEl) return [];
+        
+        try {
+            const tablesData = dataEl.textContent.trim();
+            if (!tablesData || tablesData === '[]') return [];
+            return JSON.parse(tablesData);
+        } catch (e) {
+            console.error('Error parsing dashboard data:', e);
+            return [];
+        }
+    }
+
+    // Load table counts for stats
+    async function loadTableCounts() {
+        const tables = getDashboardTables();
+        const counts = { hosts: 0, samples: 0, screening: 0 };
+
+        for (const table of tables) {
+            if (table.name === 'hosts') counts.hosts = table.rows;
+            if (table.name === 'samples') counts.samples = table.rows;
+            if (table.name === 'screening_results') counts.screening = table.rows;
+        }
+
+        setTimeout(() => animateValue('stat-hosts', 0, counts.hosts, 800), 100);
+        setTimeout(() => animateValue('stat-samples', 0, counts.samples, 800), 200);
+    }
+
+    // Initialize Chart - IDE Dark Theme
+    function initDataChart() {
+        const ctx = document.getElementById('dataChart');
+        if (!ctx) return;
+
+        const tables = getDashboardTables();
+        const labels = [];
+        const data = [];
+
+        tables.slice(0, 10).forEach(table => {
+            labels.push(table.name);
+            data.push(table.rows);
+        });
+
+        // IDE-inspired chart colors
+        const colors = [
+            '#569cd6', '#4ec9b0', '#ce9178', '#b5cea8', '#c586c0',
+            '#9cdcfe', '#dcdcaa', '#d7ba7d', '#ffd700', '#da70d6'
+        ];
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Records',
+                    data: data,
+                    backgroundColor: colors,
+                    borderWidth: 0,
+                    borderRadius: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { 
+                            color: '#808080', 
+                            font: { family: "'JetBrains Mono', monospace", size: 10 }
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { 
+                            color: '#808080', 
+                            font: { family: "'JetBrains Mono', monospace", size: 10 },
+                            maxRotation: 30
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', () => {
+        loadTableCounts();
+        initDataChart();
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey) {
+                switch(e.key) {
+                    case 'i':
+                        e.preventDefault();
+                        window.location.href = '/excel/import';
+                        break;
+                    case 'q':
+                        e.preventDefault();
+                        window.location.href = '/query/editor';
+                        break;
+                    case 'l':
+                        e.preventDefault();
+                        window.location.href = '/auto-link';
+                        break;
+                    case 'o':
+                        e.preventDefault();
+                        window.location.href = '/file_manager';
+                        break;
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

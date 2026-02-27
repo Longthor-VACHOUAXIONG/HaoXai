@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: calc(100vh - 200px);">
+    <div class="col-md-5 col-lg-4">
+        <!-- Login Card -->
+        <div class="glass-card" style="border-radius: 24px; overflow: hidden;">
+            <!-- Header -->
+            <div class="text-center mb-4">
+                <div class="brand-logo mx-auto mb-3" style="width: 64px; height: 64px; border-radius: 16px;">
+                    <i class="bi bi-shield-lock" style="font-size: 32px;"></i>
+                </div>
+                <h3 class="fw-bold mb-1">Welcome Back</h3>
+                <p class="text-muted mb-0">Sign in to HaoXai System</p>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'info' if category == 'info' else 'danger' }} alert-dismissible fade show mb-3"
+                style="background: rgba(239, 68, 68, 0.2); border: none; color: #f87171;">
+                <i class="bi bi-{{ 'info-circle' if category == 'info' else 'exclamation-triangle' }}"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" style="filter: invert(1);"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <!-- Error Message -->
+            {% if error %}
+            <div class="alert mb-3" style="background: rgba(239, 68, 68, 0.2); border: none; color: #f87171;">
+                <i class="bi bi-exclamation-triangle me-2"></i> {{ error }}
+            </div>
+            {% endif %}
+
+            <!-- Login Form -->
+            <form method="POST" action="/auth/login" id="loginForm">
+                <div class="mb-4">
+                    <label class="form-label text-muted small text-uppercase fw-semibold">Username</label>
+                    <div class="input-group">
+                        <span class="input-group-text"
+                            style="background: rgba(99, 102, 241, 0.1); border-color: rgba(148, 163, 184, 0.2);">
+                            <i class="bi bi-person text-primary"></i>
+                        </span>
+                        <input type="text" class="form-control" id="username" name="username"
+                            placeholder="Enter username" required autofocus
+                            style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-muted small text-uppercase fw-semibold">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text"
+                            style="background: rgba(99, 102, 241, 0.1); border-color: rgba(148, 163, 184, 0.2);">
+                            <i class="bi bi-lock text-primary"></i>
+                        </span>
+                        <input type="password" class="form-control" id="password" name="password"
+                            placeholder="Enter password" required
+                            style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="rememberMe" name="rememberMe">
+                        <label class="form-check-label text-muted" for="rememberMe">Remember me</label>
+                    </div>
+                    <a href="#" class="text-primary text-decoration-none small">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="btn btn-gradient w-100 mb-3">
+                    <i class="bi bi-box-arrow-in-right me-2"></i> Sign In
+                </button>
+
+                <a href="/auth/connect" class="btn btn-glass w-100">
+                    <i class="bi bi-database me-2"></i> Connect to Database
+                </a>
+            </form>
+
+            <!-- Security Warning -->
+            <div class="mt-4 p-3 rounded"
+                style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);">
+                <div class="d-flex align-items-start gap-2">
+                    <i class="bi bi-exclamation-triangle-fill text-danger mt-1"></i>
+                    <div class="small">
+                        <strong class="text-danger">SECURITY WARNING:</strong><br>
+                        <span class="text-muted">Default: admin / admin123</span><br>
+                        <span class="text-muted">Change after first login</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-focus on username field
+    document.getElementById('username').focus();
+
+    // Handle Enter key in form
+    document.getElementById('loginForm').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('loginForm').submit();
+        }
+    });
+</script>
+{% endblock %}

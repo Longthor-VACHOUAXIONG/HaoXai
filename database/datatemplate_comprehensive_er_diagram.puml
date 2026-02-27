@@ -1,0 +1,203 @@
+@startuml DataTemplate_Comprehensive_ER_Diagram
+
+' Define entities for normalized schema + enhanced storage
+entity hosts {
+  * id : INT <<PK>>
+  --
+  * host_type : ENUM <<bat,rodent,market>>
+  * source_id : VARCHAR(50)
+  * bag_code : VARCHAR(50)
+  * field_id : VARCHAR(50)
+  * collection_id : VARCHAR(50)
+  * ring_no : VARCHAR(50)
+  * bag_id : VARCHAR(50)
+  * voucher_code : VARCHAR(50)
+  --
+  * kingdom : VARCHAR(50)
+  * phylum : VARCHAR(50)
+  * class : VARCHAR(50)
+  * order_name : VARCHAR(50)
+  * family : VARCHAR(50)
+  * genus : VARCHAR(50)
+  * species : VARCHAR(50)
+  * scientific_name : VARCHAR(255)
+  * common_name : VARCHAR(255)
+  --
+  * sex : VARCHAR(10)
+  * status : VARCHAR(20)
+  * age : VARCHAR(20)
+  * measurements : JSON
+  --
+  * location : VARCHAR(255)
+  * village : VARCHAR(100)
+  * district : VARCHAR(100)
+  * province : VARCHAR(100)
+  * country : VARCHAR(100)
+  * altitude : VARCHAR(50)
+  * latitude : DECIMAL(10,8)
+  * longitude : DECIMAL(11,8)
+  * habitat_description : TEXT
+  --
+  * collection_date : DATE
+  * capture_time : TIME
+  * collectors : TEXT
+  * trap_type : VARCHAR(50)
+  * recorder_model : VARCHAR(100)
+  * call_record_file : VARCHAR(255)
+  * record_type : VARCHAR(50)
+  * photo : VARCHAR(255)
+  * habitat_photo : VARCHAR(255)
+  --
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity samples {
+  * id : INT <<PK>>
+  --
+  * host_id : INT <<FK>>
+  * sample_id : VARCHAR(50)
+  * sample_type : ENUM <<swab,tissue,blood,plasma,other>>
+  * sample_subtype : VARCHAR(50)
+  --
+  * saliva_id : VARCHAR(50)
+  * anal_id : VARCHAR(50)
+  * urine_id : VARCHAR(50)
+  * ecto_id : VARCHAR(50)
+  * blood_id : VARCHAR(50)
+  * tissue_id : VARCHAR(50)
+  * tissue_sample_type : VARCHAR(50)
+  * intestine : VARCHAR(50)
+  * intestine_type : VARCHAR(50)
+  * adipose_id : VARCHAR(50)
+  * plasma_id : VARCHAR(50)
+  --
+  * rna_plate : VARCHAR(50)
+  * cdna_date : DATE
+  --
+  * bottle_no : VARCHAR(50)
+  * cabinet_no : VARCHAR(50)
+  * cabinet_floor : VARCHAR(50)
+  * floor_row : VARCHAR(50)
+  * floor_column : VARCHAR(50)
+  * box_no : VARCHAR(50)
+  --
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity screening_results {
+  * id : INT <<PK>>
+  --
+  * sample_id : INT <<FK>>
+  --
+  * pancorona_date : DATE
+  * panparamyxo_date : DATE
+  * panhanta_date : DATE
+  * panflavi_date : DATE
+  --
+  * pancorona : VARCHAR(20)
+  * panparamyxo : VARCHAR(20)
+  * panhanta : VARCHAR(20)
+  * panflavi : VARCHAR(20)
+  --
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity freezers {
+  * id : INT <<PK>>
+  --
+  * freezer_name : VARCHAR(100)
+  * freezer_model : VARCHAR(100)
+  * freezer_type : ENUM <<ultra_low,low_temp,refrigerator,other>>
+  * temperature_range : VARCHAR(50)
+  * location : VARCHAR(255)
+  * manufacturer : VARCHAR(100)
+  * serial_number : VARCHAR(100)
+  * installation_date : DATE
+  * last_maintenance_date : DATE
+  * next_maintenance_date : DATE
+  * status : ENUM <<active,maintenance,inactive>>
+  * capacity_shelves : INT
+  --
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity freezer_shelves {
+  * id : INT <<PK>>
+  --
+  * freezer_id : INT <<FK>>
+  * shelf_number : INT
+  * shelf_name : VARCHAR(50)
+  * temperature_monitor : VARCHAR(100)
+  --
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity freezer_racks {
+  * id : INT <<PK>>
+  --
+  * shelf_id : INT <<FK>>
+  * rack_number : INT
+  * rack_name : VARCHAR(50)
+  * rack_type : VARCHAR(50)
+  * capacity_positions : INT
+  --
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity storage_boxes {
+  * id : INT <<PK>>
+  --
+  * rack_id : INT <<FK>>
+  * box_number : INT
+  * box_name : VARCHAR(50)
+  * box_type : VARCHAR(50)
+  * capacity_positions : INT
+  * color : VARCHAR(50)
+  * barcode : VARCHAR(100)
+  --
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity storage_locations {
+  * id : INT <<PK>>
+  --
+  * sample_id : INT <<FK>>
+  * box_id : INT <<FK>>
+  * position_number : INT
+  * position_coordinates : VARCHAR(20)
+  * storage_date : DATE
+  * stored_by : VARCHAR(100)
+  * removal_date : DATE
+  * removed_by : VARCHAR(100)
+  * purpose : VARCHAR(100)
+  * status : ENUM <<stored,removed,consumed,expired>>
+  --
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+' Define relationships
+hosts ||--o{ samples : host_id
+samples ||--o{ screening_results : sample_id
+
+freezers ||--o{ freezer_shelves : freezer_id
+freezer_shelves ||--o{ freezer_racks : shelf_id
+freezer_racks ||--o{ storage_boxes : rack_id
+storage_boxes ||--o{ storage_locations : box_id
+samples ||--o{ storage_locations : sample_id
+
+' Add notes
+note right of hosts : Unified host/animal data\n(bats, rodents, market)
+note right of samples : Unified sample types\n(swabs, tissues, blood, etc.)
+note right of screening_results : Lab screening results\nfor all pathogens
+note right of freezers : Freezer specifications\nand maintenance
+note bottom of storage_locations : Sample storage positions\nwith lifecycle tracking
+
+@enduml

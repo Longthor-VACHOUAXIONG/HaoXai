@@ -1,0 +1,1042 @@
+{% extends "base.html" %}
+
+{% block title %}ML Model Training{% endblock %}
+
+{% block extra_css %}
+<style>
+.training-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.training-header {
+    background: linear-gradient(135deg, var(--gradient-primary));
+    color: white;
+    padding: 40px;
+    border-radius: 20px;
+    margin-bottom: 30px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.training-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+    opacity: 0.3;
+}
+
+.training-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 1;
+}
+
+.training-header p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    position: relative;
+    z-index: 1;
+}
+
+.training-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.training-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.2);
+}
+
+.training-card h3 {
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.training-card h3 i {
+    color: var(--primary);
+    font-size: 1.2rem;
+}
+
+.status-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+    animation: pulse 2s infinite;
+}
+
+.status-trained { 
+    background: linear-gradient(135deg, var(--success), #10b981);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.status-not-trained { 
+    background: linear-gradient(135deg, var(--danger), #ef4444);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+.status-loading { 
+    background: linear-gradient(135deg, var(--warning), #f59e0b);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.1); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+.model-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.model-item {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05));
+    padding: 25px;
+    border-radius: 15px;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.model-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+}
+
+.model-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+    border-color: rgba(99, 102, 241, 0.4);
+}
+
+.model-item h5 {
+    color: var(--primary-light);
+    font-weight: 600;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.model-item h5 i {
+    font-size: 1.1rem;
+}
+
+.training-progress {
+    display: none;
+    margin-top: 25px;
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05));
+    border-radius: 15px;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 15px 0;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-light), var(--accent));
+    width: 0%;
+    transition: width 0.5s ease;
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.test-section {
+    margin-top: 30px;
+    padding: 30px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+}
+
+.prediction-result {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(34, 197, 94, 0.05));
+    padding: 20px;
+    border-radius: 12px;
+    margin-top: 20px;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-left: 4px solid var(--success);
+}
+
+.prediction-result h5 {
+    color: var(--success);
+    font-weight: 600;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    border: none;
+    padding: 12px 25px;
+    border-radius: 10px;
+    color: white;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn-primary:hover::before {
+    left: 100%;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, var(--secondary), #06b6d4);
+    border: none;
+    padding: 12px 25px;
+    border-radius: 10px;
+    color: white;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, var(--danger), #ef4444);
+    border: none;
+    padding: 12px 25px;
+    border-radius: 10px;
+    color: white;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+}
+
+.info-box, .warning-box, .success-box {
+    padding: 20px;
+    border-radius: 12px;
+    margin: 15px 0;
+    border-left: 4px solid;
+    backdrop-filter: blur(10px);
+}
+
+.info-box {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+    border-left-color: var(--info);
+    color: #93c5fd;
+}
+
+.warning-box {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05));
+    border-left-color: var(--warning);
+    color: #fcd34d;
+}
+
+.success-box {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
+    border-left-color: var(--success);
+    color: #86efac;
+}
+
+.form-control {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border-radius: 10px;
+    padding: 12px 15px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    color: var(--text-primary);
+}
+
+.form-control::placeholder {
+    color: var(--text-muted);
+}
+
+.form-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.version-item {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(167, 139, 250, 0.05));
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    transition: all 0.3s ease;
+}
+
+.version-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+}
+
+.version-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.version-id {
+    font-family: 'Courier New', monospace;
+    background: rgba(139, 92, 246, 0.2);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.version-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.version-actions .btn {
+    padding: 8px 15px;
+    font-size: 0.9rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary-light);
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* Dark theme adjustments */
+@media (prefers-color-scheme: dark) {
+    .training-container {
+        color: var(--text-primary);
+    }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .training-container {
+        padding: 15px;
+    }
+    
+    .training-header {
+        padding: 25px;
+    }
+    
+    .training-header h1 {
+        font-size: 2rem;
+    }
+    
+    .model-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="training-container">
+    <!-- Header -->
+    <div class="training-header">
+        <h1>🐍 ML Model Training</h1>
+        <p class="mb-0">Train custom AI models on your database for intelligent chat responses</p>
+    </div>
+
+    <!-- Training Status Card -->
+    <div class="training-card">
+        <h3><i class="bi bi-cpu"></i> Training Status</h3>
+        <div id="training-status">
+            <div class="info-box">
+                <strong><i class="bi bi-info-circle"></i> About Model Training</strong><br>
+                This feature trains machine learning models on your database structure and data to:
+                <ul class="mb-0 mt-2">
+                    <li><i class="bi bi-bullseye"></i> Better understand user questions (intent classification)</li>
+                    <li><i class="bi bi-table"></i> Predict which database tables to query (table classification)</li>
+                    <li><i class="bi bi-chat-dots"></i> Generate more accurate responses (response templates)</li>
+                </ul>
+            </div>
+            
+            <div class="text-center mt-4">
+                <button id="check-status-btn" class="btn btn-primary">
+                    <i class="bi bi-arrow-clockwise"></i> Check Training Status
+                </button>
+            </div>
+        </div>
+        
+        <div id="model-info" style="display: none;">
+            <!-- Model information will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Training Controls -->
+    <div class="training-card">
+        <h3><i class="bi bi-gear"></i> Training Controls</h3>
+        
+        <div class="training-progress" id="training-progress">
+            <h5><i class="bi bi-hourglass-split"></i> Training in Progress...</h5>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <p class="mt-2 mb-0" id="training-message">Collecting training data...</p>
+        </div>
+        
+        <div class="text-center">
+            <button id="start-training-btn" class="btn btn-primary me-2">
+                <i class="bi bi-play-circle"></i> Start Training
+            </button>
+            <button id="retrain-btn" class="btn btn-secondary me-2">
+                <i class="bi bi-arrow-repeat"></i> Force Retrain
+            </button>
+            <button id="delete-models-btn" class="btn btn-danger">
+                <i class="bi bi-trash"></i> Delete Models
+            </button>
+        </div>
+        
+        <div id="training-result" style="display: none;">
+            <!-- Training results will be shown here -->
+        </div>
+    </div>
+
+    <!-- Model Testing -->
+    <div class="test-section">
+        <h3><i class="bi bi-virus"></i> Test Trained Models</h3>
+        <p>Test your trained models with automatically generated questions from your database.</p>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="form-group">
+                    <label for="test-question" class="form-label">
+                        <i class="bi bi-chat-text"></i> Test Question:
+                    </label>
+                    <input type="text" class="form-control" id="test-question" 
+                           placeholder="Type a question or select from generated samples below">
+                </div>
+                <div class="d-flex gap-2">
+                    <button id="test-prediction-btn" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Test Prediction
+                    </button>
+                    <button id="generate-questions-btn" class="btn btn-secondary">
+                        <i class="bi bi-magic"></i> Generate Questions from Database
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="sample-questions" class="form-label">
+                        <i class="bi bi-list-ul"></i> Auto-Generated Questions:
+                    </label>
+                    <select class="form-control" id="sample-questions">
+                        <option value="">Click "Generate Questions" to load...</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div id="prediction-result" style="display: none;">
+            <!-- Prediction results will be shown here -->
+        </div>
+    </div>
+
+    <!-- Model Details -->
+    <div class="training-card">
+        <h3><i class="bi bi-info-square"></i> Model Details</h3>
+        <div id="model-details">
+            <p>Click "Check Training Status" to see detailed model information.</p>
+        </div>
+    </div>
+
+    <!-- Model Versions -->
+    <div class="training-card">
+        <h3><i class="bi bi-git"></i> Model Versions</h3>
+        <div id="model-versions">
+            <p>Click "Check Training Status" to see model version history.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Training management
+let trainingInProgress = false;
+
+// Check training status
+async function checkTrainingStatus() {
+    try {
+        const response = await fetch('/chat/training/status');
+        const data = await response.json();
+        
+        if (data.success) {
+            displayModelInfo(data.model_info, data.training_status);
+        } else {
+            showError(data.error);
+        }
+    } catch (error) {
+        showError('Error checking training status: ' + error.message);
+    }
+}
+
+// Display model information
+function displayModelInfo(modelInfo, trainingStatus) {
+    const modelInfoDiv = document.getElementById('model-info');
+    const modelDetailsDiv = document.getElementById('model-details');
+    const modelVersionsDiv = document.getElementById('model-versions');
+    
+    // Update status display
+    let statusHtml = '<h5><i class="bi bi-graph-up"></i> Model Status</h5>';
+    
+    if (modelInfo.models_available.length === 0) {
+        statusHtml += '<div class="warning-box"><strong><i class="bi bi-exclamation-triangle"></i> No Models Trained</strong><br>Click "Start Training" to train models on your database.</div>';
+    } else {
+        statusHtml += '<div class="success-box"><strong><i class="bi bi-check-circle"></i> Models Available</strong><br>';
+        statusHtml += `Trained models: ${modelInfo.models_available.join(', ')}</div>`;
+    }
+    
+    if (trainingStatus) {
+        statusHtml += `<div class="info-box mt-3"><strong><i class="bi bi-calendar-check"></i> Training Information</strong><br>`;
+        statusHtml += `<i class="bi bi-clock"></i> Training date: ${new Date(trainingStatus.training_date).toLocaleString()}<br>`;
+        statusHtml += `<i class="bi bi-database"></i> Training examples: ${trainingStatus.training_examples}<br>`;
+        statusHtml += `<i class="bi bi-cpu"></i> Models trained: ${trainingStatus.models_trained}/3<br>`;
+        statusHtml += `<i class="bi bi-tags"></i> Categories: ${trainingStatus.categories.join(', ')}<br>`;
+        statusHtml += `<i class="bi bi-table"></i> Tables: ${trainingStatus.tables.join(', ')}</div>`;
+        
+        // Add performance stats if available
+        if (trainingStatus.performance) {
+            statusHtml += `<div class="stats-grid">`;
+            if (trainingStatus.performance.intent_accuracy) {
+                statusHtml += `<div class="stat-item">
+                    <div class="stat-value">${(trainingStatus.performance.intent_accuracy * 100).toFixed(1)}%</div>
+                    <div class="stat-label">Intent Accuracy</div>
+                </div>`;
+            }
+            if (trainingStatus.performance.table_accuracy) {
+                statusHtml += `<div class="stat-item">
+                    <div class="stat-value">${(trainingStatus.performance.table_accuracy * 100).toFixed(1)}%</div>
+                    <div class="stat-label">Table Accuracy</div>
+                </div>`;
+            }
+            statusHtml += `</div>`;
+        }
+    }
+    
+    modelInfoDiv.innerHTML = statusHtml;
+    modelInfoDiv.style.display = 'block';
+    
+    // Update model details
+    let detailsHtml = '<h5><i class="bi bi-cpu"></i> Available Models</h5>';
+    detailsHtml += '<div class="model-grid">';
+    
+    const modelDescriptions = {
+        'intent_classifier': '<i class="bi bi-bullseye"></i> Classifies user question intent (find, count, filter, schema)',
+        'table_classifier': '<i class="bi bi-table"></i> Predicts which database table to query',
+        'response_templates': '<i class="bi bi-chat-dots"></i> Template responses for common question patterns'
+    };
+    
+    ['intent_classifier', 'table_classifier', 'response_templates'].forEach(model => {
+        const isTrained = modelInfo.models_available.includes(model);
+        detailsHtml += `
+            <div class="model-item">
+                <h5>
+                    <span class="status-indicator ${isTrained ? 'status-trained' : 'status-not-trained'}"></span>
+                    ${model.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </h5>
+                <p>${modelDescriptions[model] || 'No description available'}</p>
+                <p><strong>Status:</strong> ${isTrained ? '<i class="bi bi-check-circle text-success"></i> Trained' : '<i class="bi bi-x-circle text-danger"></i> Not Trained'}</p>
+            </div>
+        `;
+    });
+    
+    detailsHtml += '</div>';
+    modelDetailsDiv.innerHTML = detailsHtml;
+    
+    // Load and display model versions
+    loadModelVersions();
+}
+
+// Load model versions
+async function loadModelVersions() {
+    try {
+        const response = await fetch('/chat/training/versions');
+        const data = await response.json();
+        
+        const modelVersionsDiv = document.getElementById('model-versions');
+        
+        if (data.success && data.versions.length > 0) {
+            let versionsHtml = '<h5><i class="bi bi-git"></i> Model Version History</h5>';
+            
+            data.versions.forEach(version => {
+                versionsHtml += `
+                    <div class="version-item">
+                        <div class="version-header">
+                            <strong><i class="bi bi-hash"></i> Version: <span class="version-id">${version.version_id}</span></strong>
+                            <small class="text-muted">${new Date(version.created_at).toLocaleString()}</small>
+                        </div>
+                        <p><i class="bi bi-database"></i> Database Type: ${version.db_type}</p>
+                        <p><i class="bi bi-fingerprint"></i> Config Hash: ${version.db_config_hash}</p>
+                        <div class="version-actions">
+                            <button class="btn btn-sm btn-primary" onclick="rollbackToVersion('${version.version_id}')">
+                                <i class="bi bi-arrow-counterclockwise"></i> Rollback
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="viewVersionDetails('${version.version_id}')">
+                                <i class="bi bi-eye"></i> Details
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteVersion('${version.version_id}')">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            modelVersionsDiv.innerHTML = versionsHtml;
+        } else {
+            modelVersionsDiv.innerHTML = '<p><i class="bi bi-info-circle"></i> No model versions available yet.</p>';
+        }
+    } catch (error) {
+        console.error('Error loading model versions:', error);
+    }
+}
+
+// Start training
+async function startTraining(forceRetrain = false) {
+    if (trainingInProgress) {
+        alert('Training is already in progress. Please wait for it to complete.');
+        return;
+    }
+    
+    trainingInProgress = true;
+    const progressDiv = document.getElementById('training-progress');
+    const progressFill = document.getElementById('progress-fill');
+    const trainingMessage = document.getElementById('training-message');
+    
+    progressDiv.style.display = 'block';
+    
+    // Simulate progress
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 90) progress = 90;
+        progressFill.style.width = progress + '%';
+        
+        if (progress < 30) {
+            trainingMessage.textContent = 'Collecting training data from database...';
+        } else if (progress < 60) {
+            trainingMessage.textContent = 'Training intent classifier...';
+        } else if (progress < 80) {
+            trainingMessage.textContent = 'Training table classifier...';
+        } else {
+            trainingMessage.textContent = 'Generating response templates...';
+        }
+    }, 500);
+    
+    try {
+        const response = await fetch('/chat/training/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                force_retrain: forceRetrain
+            })
+        });
+        
+        clearInterval(progressInterval);
+        progressFill.style.width = '100%';
+        trainingMessage.textContent = 'Training completed!';
+        
+        const data = await response.json();
+        
+        setTimeout(() => {
+            progressDiv.style.display = 'none';
+            trainingInProgress = false;
+            
+            if (data.success) {
+                showSuccess(data.message);
+                checkTrainingStatus(); // Refresh status
+            } else {
+                showError(data.error);
+            }
+        }, 1000);
+        
+    } catch (error) {
+        clearInterval(progressInterval);
+        progressDiv.style.display = 'none';
+        trainingInProgress = false;
+        showError('Training error: ' + error.message);
+    }
+}
+
+// Generate questions from database
+async function generateQuestionsFromDatabase() {
+    try {
+        const response = await fetch('/chat/training/generate-questions');
+        const data = await response.json();
+        
+        if (data.success) {
+            const selectElement = document.getElementById('sample-questions');
+            selectElement.innerHTML = '<option value="">Select a generated question...</option>';
+            
+            data.questions.forEach((question, index) => {
+                const option = document.createElement('option');
+                option.value = question.question;
+                option.textContent = `${index + 1}. ${question.question} (${question.category})`;
+                selectElement.appendChild(option);
+            });
+            
+            showSuccess(`Generated ${data.questions.length} questions from your database`);
+        } else {
+            showError(data.error || 'Failed to generate questions');
+        }
+    } catch (error) {
+        showError('Error generating questions: ' + error.message);
+    }
+}
+
+// Test prediction
+async function testPrediction() {
+    const question = document.getElementById('test-question').value.trim();
+    
+    if (!question) {
+        showError('Please enter a test question');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/chat/training/predict', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                question: question
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayPredictionResult(data);
+        } else {
+            showError(data.error);
+        }
+    } catch (error) {
+        showError('Prediction error: ' + error.message);
+    }
+}
+
+// Display prediction results
+function displayPredictionResult(data) {
+    const resultDiv = document.getElementById('prediction-result');
+    
+    let html = '<div class="prediction-result">';
+    html += `<h5><i class="bi bi-search"></i> Prediction Results for: "${data.question}"</h5>`;
+    
+    if (data.intent_prediction) {
+        const confidencePercent = (data.intent_prediction.confidence * 100).toFixed(1);
+        const confidenceColor = confidencePercent > 80 ? 'success' : confidencePercent > 60 ? 'warning' : 'danger';
+        html += `<p><strong><i class="bi bi-bullseye"></i> Intent:</strong> ${data.intent_prediction.intent} 
+                 <span class="badge bg-${confidenceColor}">${confidencePercent}% confidence</span></p>`;
+    }
+    
+    if (data.table_prediction) {
+        const confidencePercent = (data.table_prediction.confidence * 100).toFixed(1);
+        const confidenceColor = confidencePercent > 80 ? 'success' : confidencePercent > 60 ? 'warning' : 'danger';
+        html += `<p><strong><i class="bi bi-table"></i> Predicted Table:</strong> ${data.table_prediction.table} 
+                 <span class="badge bg-${confidenceColor}">${confidencePercent}% confidence</span></p>`;
+    }
+    
+    html += '</div>';
+    
+    resultDiv.innerHTML = html;
+    resultDiv.style.display = 'block';
+}
+
+// Version management functions
+async function rollbackToVersion(versionId) {
+    if (!confirm(`Are you sure you want to rollback to version ${versionId}?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/chat/training/versions/${versionId}/rollback`, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showSuccess(data.message);
+            checkTrainingStatus(); // Refresh status
+        } else {
+            showError(data.error);
+        }
+    } catch (error) {
+        showError('Error rolling back to version: ' + error.message);
+    }
+}
+
+async function viewVersionDetails(versionId) {
+    try {
+        const response = await fetch(`/chat/training/versions/${versionId}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const versionInfo = data.version_info;
+            let detailsHtml = `
+                <div class="modal fade" id="versionDetailsModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title"><i class="bi bi-info-square"></i> Version Details: ${versionId}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p><strong><i class="bi bi-calendar"></i> Created:</strong> ${new Date(versionInfo.created_at).toLocaleString()}</p>
+                                <p><strong><i class="bi bi-database"></i> Database Type:</strong> ${versionInfo.db_type}</p>
+                                <p><strong><i class="bi bi-fingerprint"></i> Config Hash:</strong> ${versionInfo.db_config_hash}</p>
+                                ${versionInfo.model_files ? `
+                                    <h6><i class="bi bi-files"></i> Model Files:</h6>
+                                    <ul>
+                                        ${versionInfo.model_files.map(file => `
+                                            <li><strong>${file.name}</strong> - ${(file.size / 1024).toFixed(1)} KB</li>
+                                        `).join('')}
+                                    </ul>
+                                ` : ''}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if any
+            const existingModal = document.getElementById('versionDetailsModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add new modal to body and show it
+            document.body.insertAdjacentHTML('beforeend', detailsHtml);
+            const modal = new bootstrap.Modal(document.getElementById('versionDetailsModal'));
+            modal.show();
+        } else {
+            showError(data.error);
+        }
+    } catch (error) {
+        showError('Error getting version details: ' + error.message);
+    }
+}
+
+async function deleteVersion(versionId) {
+    if (!confirm(`Are you sure you want to delete version ${versionId}? This action cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/chat/training/versions/${versionId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                confirm: true
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showSuccess(data.message);
+            loadModelVersions(); // Refresh versions list
+        } else {
+            showError(data.error);
+        }
+    } catch (error) {
+        showError('Error deleting version: ' + error.message);
+    }
+}
+
+// Delete models
+async function deleteModels() {
+    if (!confirm('Are you sure you want to delete all trained models? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/chat/training/delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                models: ['intent_classifier', 'table_classifier', 'response_templates']
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showSuccess(data.message);
+            checkTrainingStatus(); // Refresh status
+        } else {
+            showError(data.error);
+        }
+    } catch (error) {
+        showError('Error deleting models: ' + error.message);
+    }
+}
+
+// Utility functions
+function showSuccess(message) {
+    const resultDiv = document.getElementById('training-result');
+    resultDiv.innerHTML = `<div class="success-box">✅ ${message}</div>`;
+    resultDiv.style.display = 'block';
+    setTimeout(() => {
+        resultDiv.style.display = 'none';
+    }, 5000);
+}
+
+function showError(message) {
+    const resultDiv = document.getElementById('training-result');
+    resultDiv.innerHTML = `<div class="warning-box">❌ ${message}</div>`;
+    resultDiv.style.display = 'block';
+    setTimeout(() => {
+        resultDiv.style.display = 'none';
+    }, 5000);
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Check initial status
+    checkTrainingStatus();
+    
+    // Button event listeners
+    document.getElementById('check-status-btn').addEventListener('click', checkTrainingStatus);
+    document.getElementById('start-training-btn').addEventListener('click', () => startTraining(false));
+    document.getElementById('retrain-btn').addEventListener('click', () => startTraining(true));
+    document.getElementById('delete-models-btn').addEventListener('click', deleteModels);
+    document.getElementById('test-prediction-btn').addEventListener('click', testPrediction);
+    document.getElementById('generate-questions-btn').addEventListener('click', generateQuestionsFromDatabase);
+    
+    // Sample questions dropdown
+    document.getElementById('sample-questions').addEventListener('change', function() {
+        const selectedQuestion = this.value;
+        if (selectedQuestion) {
+            document.getElementById('test-question').value = selectedQuestion;
+        }
+    });
+    
+    // Auto-refresh status every 30 seconds
+    setInterval(checkTrainingStatus, 30000);
+    
+    // Auto-generate questions when models are loaded
+    document.addEventListener('modelsLoaded', function() {
+        generateQuestionsFromDatabase();
+    });
+});
+</script>
+{% endblock %}

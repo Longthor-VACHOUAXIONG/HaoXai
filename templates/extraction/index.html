@@ -1,0 +1,614 @@
+{% extends "base.html" %}
+
+{% block title %}Extraction Builder Pro - ViroDB{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --vpro-accent: #6366f1;
+        --vpro-success: #10b981;
+        --vpro-warning: #f59e0b;
+        --vpro-danger: #ef4444;
+        --vpro-glass: rgba(15, 23, 42, 0.7);
+        --vpro-border: rgba(255, 255, 255, 0.08);
+    }
+
+    .vpro-dashboard {
+        display: flex;
+        gap: 2rem;
+        height: calc(100vh - 120px);
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+
+    /* Sidebar Controls */
+    .vpro-sidebar {
+        flex: 0 0 400px;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        height: 100%;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+
+    /* Main Workspace */
+    .vpro-canvas {
+        flex: 1;
+        height: 100%;
+        overflow-y: auto;
+        padding: 0.5rem;
+    }
+
+    /* Professional Card */
+    .vpro-card {
+        background: var(--vpro-glass);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--vpro-border);
+        border-radius: 16px;
+        padding: 1.75rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        transition: border-color 0.3s, transform 0.3s;
+    }
+
+    .vpro-card:hover {
+        border-color: rgba(99, 102, 241, 0.3);
+    }
+
+    .vpro-card-title {
+        font-size: 1rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.6);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .vpro-card-title i {
+        color: var(--vpro-accent);
+    }
+
+    /* Tactile Buttons */
+    .btn-vpro {
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-vpro-primary {
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        color: #fff;
+    }
+
+    .btn-vpro-primary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        color: #fff;
+    }
+
+    .btn-vpro-primary:active {
+        transform: scale(0.95);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-vpro-secondary {
+        background: rgba(255, 255, 255, 0.05);
+        color: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-vpro-secondary:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+    }
+
+    /* Upload Zone */
+    .vpro-upload-zone {
+        border: 2px dashed rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .vpro-upload-zone:hover {
+        border-color: var(--vpro-accent);
+        background: rgba(99, 102, 241, 0.05);
+    }
+
+    .vpro-upload-zone i {
+        font-size: 2.5rem;
+        color: var(--vpro-accent);
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    /* Mapping Canvas */
+    .mapping-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .sheet-card-vpro {
+        border-top: 4px solid var(--vpro-accent);
+    }
+
+    .column-tag {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        margin: 0.3rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .column-tag:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+    }
+
+    .column-tag.selected {
+        background: var(--vpro-accent);
+        color: #fff;
+        border-color: transparent;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    /* Terminal Log */
+    .vpro-terminal {
+        background: #0a0b10;
+        border-radius: 12px;
+        padding: 1.25rem;
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        font-size: 0.85rem;
+        height: 200px;
+        overflow-y: auto;
+        color: #a0aec0;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .log-line {
+        margin-bottom: 0.3rem;
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .log-time {
+        color: #4a5568;
+        min-width: 65px;
+    }
+
+    .log-msg.success {
+        color: var(--vpro-success);
+    }
+
+    .log-msg.error {
+        color: var(--vpro-danger);
+    }
+
+    .log-msg.warning {
+        color: var(--vpro-warning);
+    }
+
+    /* Empty State */
+    .canvas-empty {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255, 255, 255, 0.1);
+        text-align: center;
+    }
+
+    .canvas-empty i {
+        font-size: 8rem;
+        margin-bottom: 2rem;
+    }
+
+    /* Custom Input */
+    .vpro-input {
+        background: rgba(0, 0, 0, 0.3) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #fff !important;
+        padding: 0.75rem 1rem !important;
+        border-radius: 10px !important;
+    }
+
+    .vpro-input:focus {
+        border-color: var(--vpro-accent) !important;
+        box-shadow: 0 0 15px rgba(99, 102, 241, 0.2) !important;
+    }
+
+    ::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="vpro-dashboard">
+    <!-- Sidebar: Control Panel -->
+    <aside class="vpro-sidebar">
+        <!-- Header & Nav -->
+        <div class="vpro-card p-4">
+            <h1 class="h4 text-white fw-800 mb-1">Extraction</h1>
+            <p class="text-muted small mb-4">Automated Plate Layout Generator</p>
+            <div class="d-grid gap-2">
+                <a href="/extraction/viewer" class="btn btn-vpro btn-vpro-secondary w-100">
+                    <i class="bi bi-collection-play"></i>View Plates
+                </a>
+                <a href="/extraction/settings" class="btn btn-vpro btn-vpro-secondary w-100">
+                    <i class="bi bi-sliders"></i>System Settings
+                </a>
+            </div>
+        </div>
+
+        <!-- Job Configuration -->
+        <div class="vpro-card">
+            <div class="vpro-card-title"><i class="bi bi-cpu"></i>Job Parameters</div>
+            <form id="uploadForm">
+                <div class="mb-4">
+                    <label class="form-label text-muted small fw-bold">PROJECT IDENTIFIER</label>
+                    <input type="text" class="form-control vpro-input" id="customOutput" name="custom_output"
+                        placeholder="AUTO_GENERATE">
+                </div>
+
+                <div class="vpro-upload-zone mb-4" onclick="document.getElementById('sourceFile').click()"
+                    id="dropZone">
+                    <i class="bi bi-cloud-arrow-up"></i>
+                    <div class="text-white small fw-bold">SOURCE SPREADSHEET</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">Drop Excel file here</div>
+                    <input type="file" id="sourceFile" name="source_file" accept=".xlsx,.xls" class="d-none">
+                </div>
+                <div id="fileInfo" class="mb-4 text-accent small fw-bold text-center"
+                    style="display: none; color: var(--vpro-accent);"></div>
+
+                <button type="submit" class="btn btn-vpro btn-vpro-primary w-100" id="uploadBtn">
+                    <i class="bi bi-play-circle-fill"></i>INITIALIZE PIPELINE
+                </button>
+            </form>
+        </div>
+
+        <!-- Runtime Terminal -->
+        <div class="vpro-card" id="terminalCard">
+            <div class="vpro-card-title"><i class="bi bi-terminal"></i>Process Logic</div>
+            <div class="vpro-terminal" id="logOutput">
+                <div class="log-line">
+                    <span class="log-time">00:00:00</span>
+                    <span class="log-msg">KERNEL_READY: Waiting for instructions...</span>
+                </div>
+            </div>
+
+            <div class="mt-4" id="processingControls" style="display: none;">
+                <button class="btn btn-vpro btn-vpro-primary w-100 mb-2" id="processBtn">
+                    <i class="bi bi-lightning-fill"></i>EXECUTE BUILD
+                </button>
+                <div class="progress mb-3" style="height: 6px; background: rgba(0,0,0,0.5);">
+                    <div id="progressBar" class="progress-bar bg-primary" style="width: 0%"></div>
+                </div>
+                <button class="btn btn-vpro btn-vpro-secondary w-100 text-danger" id="resetBtn">
+                    <i class="bi bi-arrow-counterclockwise"></i>DETACH SESSION
+                </button>
+            </div>
+        </div>
+
+        <!-- Output Hub -->
+        <div class="vpro-card" id="outputCard" style="display: none;">
+            <div class="vpro-card-title"><i class="bi bi-folder2-open"></i>Pipeline Assets</div>
+            <div id="outputFiles" class="d-flex flex-column gap-2"></div>
+        </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="vpro-canvas">
+        <div id="workspaceInit" class="canvas-empty">
+            <i class="bi bi-layers-half"></i>
+            <h2 class="text-white">Workspace Idle</h2>
+            <p class="text-muted">Upload a dataset to begin schema mapping</p>
+        </div>
+
+        <div id="mappingWorkspace" style="display: none;">
+            <div class="d-flex justify-content-between align-items-end mb-4">
+                <div>
+                    <h2 class="text-white mb-0">Schema Mapping</h2>
+                    <p class="text-muted mb-0">Define relationships between source columns and extraction logic</p>
+                </div>
+                <div id="globalMappingActions">
+                    <!-- Dynamic actions -->
+                </div>
+            </div>
+
+            <div class="mapping-grid" id="sheetsContainer"></div>
+
+            <!-- Preview Canvas -->
+            <div class="vpro-card mt-4" id="previewCard" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="vpro-card-title mb-0"><i class="bi bi-table"></i>Data Inspection</div>
+                    <span id="previewSheetName" class="badge bg-primary px-3 py-2">Sheet 1</span>
+                </div>
+                <div id="previewContainer" class="table-container"
+                    style="max-height: 400px; overflow: auto; border-radius: 8px;"></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Refined Modal -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content vpro-card p-0 overflow-hidden">
+            <div class="modal-body text-center p-5">
+                <div class="mb-4">
+                    <i class="bi bi-shield-check text-success" style="font-size: 5rem;"></i>
+                </div>
+                <h2 class="text-white mb-3">Pipeline Success</h2>
+                <p class="text-muted mb-5">All extraction protocols have been executed and plates are ready for
+                    download.</p>
+                <div class="d-grid gap-2">
+                    <a href="/extraction/viewer" class="btn btn-vpro btn-vpro-primary py-3">VIEW GENERATED PLATES</a>
+                    <button type="button" class="btn btn-vpro btn-vpro-secondary py-3"
+                        data-bs-dismiss="modal">DISMISS</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentSourcePath = '', currentDestPath = '', progressInterval = null;
+    let spreadsheetData = null;
+
+    // Drag-and-Drop & File Logic
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('sourceFile');
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => {
+        dropZone.addEventListener(e, (ev) => { ev.preventDefault(); ev.stopPropagation(); });
+    });
+
+    ['dragenter', 'dragover'].forEach(e => {
+        dropZone.addEventListener(e, () => dropZone.style.borderColor = 'var(--vpro-accent)');
+    });
+
+    ['dragleave', 'drop'].forEach(e => {
+        dropZone.addEventListener(e, () => dropZone.style.borderColor = 'rgba(255, 255, 255, 0.1)');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        fileInput.files = e.dataTransfer.files;
+        handleFileSelect(fileInput.files[0]);
+    });
+
+    fileInput.addEventListener('change', (e) => handleFileSelect(e.target.files[0]));
+
+    function handleFileSelect(file) {
+        if (!file) return;
+        const info = document.getElementById('fileInfo');
+        info.innerHTML = `<i class="bi bi-check2-all me-2"></i>LINKED: ${file.name}`;
+        info.style.display = 'block';
+        addToLog(`File linked: ${file.name}`, 'warning');
+    }
+
+    // Pipeline Logic
+    document.getElementById('uploadForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const uploadBtn = document.getElementById('uploadBtn');
+        const originalText = uploadBtn.innerHTML;
+
+        uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>ANALYZING...';
+        uploadBtn.disabled = true;
+
+        try {
+            const response = await fetch('/extraction/upload', { method: 'POST', body: formData });
+            const data = await response.json();
+
+            if (response.ok) {
+                currentSourcePath = data.source_path;
+                currentDestPath = data.dest_path;
+                spreadsheetData = data.sheets;
+
+                document.getElementById('workspaceInit').style.display = 'none';
+                document.getElementById('mappingWorkspace').style.display = 'block';
+                document.getElementById('processingControls').style.display = 'block';
+
+                displaySheets(data.sheets);
+                addToLog('System initialized: Spreadsheet analysis complete', 'success');
+            } else {
+                showToast(data.error, 'danger');
+                addToLog(`Init failed: ${data.error}`, 'error');
+            }
+        } catch (error) {
+            showToast('Protocol failure: Server unreachable', 'danger');
+            addToLog('Kernel panic: Source stream disconnected', 'error');
+        } finally {
+            uploadBtn.innerHTML = originalText;
+            uploadBtn.disabled = false;
+        }
+    });
+
+    function displaySheets(sheets) {
+        const container = document.getElementById('sheetsContainer');
+        container.innerHTML = '';
+
+        Object.entries(sheets).forEach(([sheetName, sheetData], idx) => {
+            const card = document.createElement('div');
+            card.className = 'vpro-card sheet-card-vpro p-4';
+            card.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="form-check form-switch p-0 m-0">
+                            <input class="form-check-input sheet-checkbox ms-0" type="checkbox" id="sheet_${sheetName}" data-sheet="${sheetName}">
+                        </div>
+                        <h5 class="text-white mb-0 fw-bold">${sheetName}</h5>
+                    </div>
+                    <button class="btn btn-link btn-sm text-accent p-0" onclick="previewSheet('${sheetName}')">
+                        <i class="bi bi-search me-1"></i>Inspect
+                    </button>
+                </div>
+                <div class="d-flex flex-wrap gap-1 mt-3" id="columns_${sheetName}">
+                    ${sheetData.columns.map((col, cIdx) => `
+                        <div class="column-tag" data-column="${cIdx}" onclick="toggleColumn(this)">
+                            ${col}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            container.appendChild(card);
+            if (idx === 0) previewSheet(sheetName);
+        });
+    }
+
+    function toggleColumn(el) {
+        el.classList.toggle('selected');
+        const sheetCard = el.closest('.sheet-card-vpro');
+        const checkbox = sheetCard.querySelector('.sheet-checkbox');
+        checkbox.checked = sheetCard.querySelectorAll('.column-tag.selected').length > 0;
+    }
+
+    function previewSheet(name) {
+        const sheetData = spreadsheetData[name];
+        document.getElementById('previewSheetName').textContent = name;
+        document.getElementById('previewContainer').innerHTML = sheetData.preview;
+        document.getElementById('previewCard').style.display = 'block';
+        addToLog(`Inspecting sheet: ${name}`);
+    }
+
+    document.getElementById('processBtn').addEventListener('click', async function () {
+        const sheetsInfo = {};
+        document.querySelectorAll('.sheet-checkbox:checked').forEach(cb => {
+            const sheetName = cb.dataset.sheet;
+            const columns = [];
+            document.getElementById(`columns_${sheetName}`).querySelectorAll('.column-tag.selected').forEach(tag => {
+                columns.push(parseInt(tag.dataset.column));
+            });
+            if (columns.length > 0) sheetsInfo[sheetName] = columns;
+        });
+
+        if (Object.keys(sheetsInfo).length === 0) {
+            showToast('Mapping required: No columns selected', 'warning');
+            return;
+        }
+
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>EXECUTING...';
+        addToLog('Starting extraction sequence...', 'warning');
+
+        try {
+            const response = await fetch('/extraction/process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ source_path: currentSourcePath, dest_path: currentDestPath, sheets_info: sheetsInfo })
+            });
+
+            if (response.ok) {
+                startProgressMonitoring();
+            } else {
+                const data = await response.json();
+                showToast(data.error, 'danger');
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-lightning-fill"></i>EXECUTE BUILD';
+            }
+        } catch (error) {
+            showToast('Execution error', 'danger');
+            this.disabled = false;
+            this.innerHTML = '<i class="bi bi-lightning-fill"></i>EXECUTE BUILD';
+        }
+    });
+
+    function startProgressMonitoring() {
+        progressInterval = setInterval(async function () {
+            try {
+                const response = await fetch('/extraction/progress');
+                const progress = await response.json();
+
+                document.getElementById('progressBar').style.width = progress.progress + '%';
+                if (progress.message) addToLog(progress.message);
+
+                if (progress.status === 'completed') {
+                    clearInterval(progressInterval);
+                    new bootstrap.Modal(document.getElementById('successModal')).show();
+                    loadOutputFiles();
+                    document.getElementById('processBtn').innerHTML = '<i class="bi bi-check-circle-fill"></i>DONE';
+                    addToLog('Sequence complete: Pipeline assets generated', 'success');
+                } else if (progress.status === 'error') {
+                    clearInterval(progressInterval);
+                    showToast(progress.error, 'danger');
+                    addToLog(`ERROR: ${progress.error}`, 'error');
+                    document.getElementById('processBtn').disabled = false;
+                    document.getElementById('processBtn').innerHTML = '<i class="bi bi-lightning-fill"></i>RETRY BUILD';
+                }
+            } catch (error) { console.error('Pulse sync lost'); }
+        }, 1000);
+    }
+
+    async function loadOutputFiles() {
+        try {
+            const response = await fetch('/extraction/outputs');
+            const data = await response.json();
+            if (response.ok && data.files.length > 0) {
+                const container = document.getElementById('outputFiles');
+                container.innerHTML = data.files.map(file => `
+                    <div class="vpro-card p-3 d-flex justify-content-between align-items-center mb-2" style="background: rgba(16, 185, 129, 0.05)">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="bi bi-file-earmark-excel-fill text-success fs-5"></i>
+                            <div>
+                                <div class="text-white small fw-bold">${file.name}</div>
+                                <div class="text-muted" style="font-size: 0.7rem;">${file.modified}</div>
+                            </div>
+                        </div>
+                        <a href="/extraction/download/${file.name}" class="btn btn-sm btn-vpro btn-vpro-secondary p-2">
+                            <i class="bi bi-download"></i>
+                        </a>
+                    </div>
+                `).join('');
+                document.getElementById('outputCard').style.display = 'block';
+            }
+        } catch (e) { console.error('Vault lookup error'); }
+    }
+
+    document.getElementById('resetBtn').addEventListener('click', function () {
+        globalConfirm('Clear current workspace and pipeline data?', 'Detach Session', () => location.reload());
+    });
+
+    function addToLog(message, type = 'info') {
+        const logOutput = document.getElementById('logOutput');
+        const entry = document.createElement('div');
+        entry.className = 'log-line';
+        entry.innerHTML = `
+            <span class="log-time">${new Date().toLocaleTimeString()}</span>
+            <span class="log-msg ${type}">${message}</span>
+        `;
+        logOutput.appendChild(entry);
+        logOutput.scrollTop = logOutput.scrollHeight;
+    }
+
+    window.addEventListener('load', loadOutputFiles);
+</script>
+{% endblock %}

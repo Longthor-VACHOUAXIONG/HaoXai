@@ -1,0 +1,911 @@
+{% extends "base.html" %}
+
+{% block title %}User Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* User Management Modern Styling */
+    .user-management-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    
+    /* Enhanced Page Header */
+    .page-header-enhanced {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 20px;
+        padding: 24px 32px;
+        margin-bottom: 24px;
+        backdrop-filter: blur(10px);
+    }
+    
+    .page-title-enhanced {
+        font-size: 28px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 8px;
+    }
+    
+    .page-subtitle-enhanced {
+        color: var(--text-muted);
+        font-size: 14px;
+        font-weight: 500;
+    }
+    
+    /* Create User Card - Glassmorphism */
+    .create-user-card {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.9) 100%);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 20px;
+        padding: 28px;
+        margin-bottom: 28px;
+        box-shadow: 0 8px 32px rgba(99, 102, 241, 0.1), 0 2px 8px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(10px);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .create-user-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+    }
+    
+    .section-title-enhanced {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+    
+    .section-title-enhanced i {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 18px;
+    }
+    
+    /* Enhanced Form Controls */
+    .form-control-enhanced {
+        background: rgba(15, 23, 42, 0.6) !important;
+        border: 1px solid rgba(148, 163, 184, 0.2) !important;
+        border-radius: 12px !important;
+        padding: 12px 16px !important;
+        color: var(--text-primary) !important;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control-enhanced:focus {
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+        background: rgba(15, 23, 42, 0.8) !important;
+    }
+    
+    .form-label-enhanced {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+    }
+    
+    /* Create Button */
+    .btn-create {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        border: none;
+        border-radius: 12px;
+        padding: 12px 24px;
+        font-weight: 600;
+        font-size: 14px;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+    
+    .btn-create:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    }
+    
+    /* Users List Card */
+    .users-list-card {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.9) 100%);
+        border: 1px solid rgba(148, 163, 184, 0.1);
+        border-radius: 20px;
+        padding: 28px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(10px);
+    }
+    
+    .users-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    }
+    
+    .user-count-badge {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        color: #818cf8;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 13px;
+    }
+    
+    /* Enhanced Table */
+    .users-table-container {
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.1);
+    }
+    
+    .users-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .users-table thead th {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 16px;
+        border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+    }
+    
+    .users-table tbody tr {
+        transition: all 0.2s ease;
+    }
+    
+    .users-table tbody tr:hover {
+        background: rgba(99, 102, 241, 0.05);
+    }
+    
+    .users-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.05);
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+    
+    /* User Info Cell */
+    .user-info-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .user-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: white;
+    }
+    
+    .user-details .username {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 15px;
+    }
+    
+    .user-details .email {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+    
+    /* Role Badges */
+    .role-badge {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .role-admin {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #f87171;
+    }
+    
+    .role-researcher {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        color: #4ade80;
+    }
+    
+    .role-analyst {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        color: #60a5fa;
+    }
+    
+    .role-viewer {
+        background: linear-gradient(135deg, rgba(107, 114, 128, 0.2) 0%, rgba(107, 114, 128, 0.1) 100%);
+        border: 1px solid rgba(107, 114, 128, 0.3);
+        color: #9ca3af;
+    }
+    
+    /* Status Badges */
+    .status-badge {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .status-badge::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+    
+    .status-active {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.05) 100%);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        color: #4ade80;
+    }
+    
+    .status-active::before {
+        background: #22c55e;
+        box-shadow: 0 0 8px #22c55e;
+    }
+    
+    .status-inactive {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.05) 100%);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #f87171;
+    }
+    
+    .status-inactive::before {
+        background: #ef4444;
+    }
+    
+    /* Action Buttons */
+    .action-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+        cursor: pointer;
+        margin-right: 6px;
+    }
+    
+    .action-btn-edit {
+        background: rgba(59, 130, 246, 0.1);
+        border-color: rgba(59, 130, 246, 0.3);
+        color: #60a5fa;
+    }
+    
+    .action-btn-edit:hover {
+        background: rgba(59, 130, 246, 0.2);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+    }
+    
+    .action-btn-password {
+        background: rgba(245, 158, 11, 0.1);
+        border-color: rgba(245, 158, 11, 0.3);
+        color: #fbbf24;
+    }
+    
+    .action-btn-password:hover {
+        background: rgba(245, 158, 11, 0.2);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+    }
+    
+    .action-btn-delete {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: rgba(239, 68, 68, 0.3);
+        color: #f87171;
+    }
+    
+    .action-btn-delete:hover {
+        background: rgba(239, 68, 68, 0.2);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+    }
+    
+    /* Enhanced Modal */
+    .modal-enhanced .modal-content {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.95) 100%);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        border-radius: 24px;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    }
+    
+    .modal-enhanced .modal-header {
+        border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+        padding: 24px;
+    }
+    
+    .modal-enhanced .modal-title {
+        font-size: 20px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .modal-enhanced .modal-title i {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+    
+    .modal-enhanced .modal-body {
+        padding: 28px;
+    }
+    
+    .modal-enhanced .modal-footer {
+        border-top: 1px solid rgba(148, 163, 184, 0.1);
+        padding: 20px 28px;
+    }
+    
+    /* Refresh Button */
+    .btn-refresh {
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        color: #818cf8;
+        border-radius: 12px;
+        padding: 10px 20px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-refresh:hover {
+        background: rgba(99, 102, 241, 0.2);
+        transform: translateY(-1px);
+    }
+    
+    .btn-refresh i {
+        transition: transform 0.3s ease;
+    }
+    
+    .btn-refresh:hover i {
+        transform: rotate(180deg);
+    }
+    
+    /* Loading Spinner */
+    .loading-spinner-enhanced {
+        width: 48px;
+        height: 48px;
+        border: 3px solid rgba(99, 102, 241, 0.1);
+        border-top-color: #6366f1;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+    
+    .empty-state i {
+        font-size: 64px;
+        color: var(--text-muted);
+        opacity: 0.5;
+        margin-bottom: 20px;
+    }
+    
+    .empty-state h5 {
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header-enhanced">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="page-title-enhanced"><i class="bi bi-people-fill me-3"></i>User Management</h1>
+            <p class="page-subtitle-enhanced">Manage user accounts, roles and permissions</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <button class="btn-refresh" onclick="refreshUsers()">
+                <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Messages -->
+<div id="message-container"></div>
+
+<!-- Create User Card -->
+<div class="create-user-card">
+    <div class="section-title-enhanced">
+        <i class="bi bi-person-plus-fill"></i>Create New User
+    </div>
+    
+    <form id="createUserForm">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label-enhanced">Username</label>
+                <input type="text" class="form-control form-control-enhanced" name="username" placeholder="Enter username" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label-enhanced">Email</label>
+                <input type="email" class="form-control form-control-enhanced" name="email" placeholder="Enter email" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label-enhanced">Password</label>
+                <input type="password" class="form-control form-control-enhanced" name="password" placeholder="Password" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label-enhanced">Role</label>
+                <select class="form-select form-control-enhanced" name="role" required>
+                    <option value="viewer">Viewer</option>
+                    <option value="analyst">Analyst</option>
+                    <option value="researcher">Researcher</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn-create w-100">
+                    <i class="bi bi-plus-lg"></i>Create
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Users List -->
+<div class="users-list-card">
+    <div class="users-header">
+        <div class="section-title-enhanced mb-0">
+            <i class="bi bi-people"></i>Existing Users
+        </div>
+        <span class="user-count-badge" id="user-count">Loading...</span>
+    </div>
+    
+    <div class="users-table-container">
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Last Login</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="users-table">
+                <tr>
+                    <td colspan="6" class="text-center py-5">
+                        <div class="loading-spinner-enhanced"></div>
+                        <p class="mt-3 text-muted">Loading users...</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade modal-enhanced" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil-square"></i>Edit User
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm">
+                    <input type="hidden" id="editUserId" name="user_id">
+                    <div class="mb-3">
+                        <label class="form-label-enhanced">Username</label>
+                        <input type="text" class="form-control form-control-enhanced" id="editUsername" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-enhanced">Email</label>
+                        <input type="email" class="form-control form-control-enhanced" id="editEmail" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-enhanced">Role</label>
+                        <select class="form-select form-control-enhanced" id="editRole" name="role" required>
+                            <option value="viewer">Viewer</option>
+                            <option value="analyst">Analyst</option>
+                            <option value="researcher">Researcher</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-enhanced">Status</label>
+                        <select class="form-select form-control-enhanced" id="editStatus" name="is_active" required>
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-enhanced">New Password (optional)</label>
+                        <input type="password" class="form-control form-control-enhanced" id="editPassword" name="password" placeholder="Leave blank to keep current">
+                    </div>
+                    <div class="mb-3 pt-3 border-top border-secondary">
+                        <label class="form-label-enhanced text-warning">
+                            <i class="bi bi-shield-lock me-2"></i>Your Current Password (Required)
+                        </label>
+                        <input type="password" class="form-control form-control-enhanced" id="adminCurrentPassword" name="admin_password" placeholder="Enter your password to authorize changes" required>
+                        <small class="text-muted">Required to verify your identity</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-refresh" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn-create" onclick="saveUserChanges()">
+                    <i class="bi bi-check-circle"></i>Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Password Verification Modal -->
+<div class="modal fade modal-enhanced" id="passwordVerifyModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-shield-lock"></i>Verify Identity
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">Enter your current password to authorize this action.</p>
+                <form id="verifyPasswordForm">
+                    <input type="hidden" id="verifyActionType" name="action_type">
+                    <input type="hidden" id="verifyTargetUserId" name="target_user_id">
+                    <input type="hidden" id="verifyTargetUsername" name="target_username">
+                    <div class="mb-3">
+                        <label class="form-label-enhanced">Your Current Password</label>
+                        <input type="password" class="form-control form-control-enhanced" id="verifyAdminPassword" name="admin_password" placeholder="Enter your password" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-refresh" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn-create" id="verifyPasswordBtn">
+                    <i class="bi bi-shield-check"></i>Verify & Proceed
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Load users on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadUsers();
+});
+
+// Show message function
+function showMessage(message, type = 'success') {
+    const container = document.getElementById('message-container');
+    const alertClass = type === 'success' ? 'alert-success' : type === 'error' ? 'alert-danger' : 'alert-info';
+    
+    container.innerHTML = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        container.innerHTML = '';
+    }, 5000);
+}
+
+// Create user form submission
+document.getElementById('createUserForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    // Debug: Log form data
+    console.log('🔍 Creating user with data:');
+    for (let [key, value] of formData.entries()) {
+        console.log(`  ${key}: "${value}"`);
+    }
+    
+    // Debug: Check if all fields have values
+    const username = formData.get('username');
+    const email = formData.get('email');
+    const password = formData.get('password');
+    const role = formData.get('role');
+    
+    console.log('🔍 Field validation:');
+    console.log(`  username: "${username}" (${username ? '✅' : '❌'})`);
+    console.log(`  email: "${email}" (${email ? '✅' : '❌'})`);
+    console.log(`  password: "${password ? '***' : ''}" (${password ? '✅' : '❌'})`);
+    console.log(`  role: "${role}" (${role ? '✅' : '❌'})`);
+    
+    fetch('/api/security/users', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('🔍 Server response:', data);
+        if (data.success) {
+            showMessage('User created successfully!', 'success');
+            this.reset();
+            loadUsers();
+        } else {
+            showMessage('Error: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error creating user:', error);
+        showMessage('Error creating user', 'error');
+    });
+});
+
+function loadUsers() {
+    fetch('/api/security/users')
+        .then(response => response.json())
+        .then(users => {
+            const tbody = document.getElementById('users-table');
+            tbody.innerHTML = '';
+            
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="user-info-cell">
+                            <div class="user-avatar">
+                                <i class="bi bi-person"></i>
+                            </div>
+                            <div class="user-details">
+                                <div class="username">${user.username}</div>
+                                <div class="email">${user.email}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="role-badge role-${user.role}">${user.role.toUpperCase()}</span></td>
+                    <td><span class="status-badge ${user.is_active ? 'status-active' : 'status-inactive'}">${user.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                    <td>${user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}</td>
+                    <td>
+                        <button class="action-btn action-btn-edit" onclick="editUser(${user.user_id}, '${user.username}', '${user.email}', '${user.role}', ${user.is_active})" title="Edit User">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="action-btn action-btn-password" onclick="resetPassword(${user.user_id}, '${user.username}')" title="Reset Password">
+                            <i class="bi bi-key"></i>
+                        </button>
+                        <button class="action-btn action-btn-delete" onclick="deleteUser(${user.user_id}, '${user.username}')" title="Delete User">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Update user count
+            document.getElementById('user-count').textContent = users.length + ' users';
+        })
+        .catch(error => {
+            console.error('Error loading users:', error);
+            showMessage('Error loading users', 'error');
+        });
+}
+
+function getRoleColor(role) {
+    switch(role) {
+        case 'admin': return 'danger';
+        case 'researcher': return 'success';
+        case 'analyst': return 'info';
+        case 'viewer': return 'secondary';
+        default: return 'secondary';
+    }
+}
+
+function editUser(userId, username, email, role, isActive) {
+    // Populate edit form
+    document.getElementById('editUserId').value = userId;
+    document.getElementById('editUsername').value = username;
+    document.getElementById('editEmail').value = email;
+    document.getElementById('editRole').value = role;
+    document.getElementById('editStatus').value = isActive;
+    document.getElementById('editPassword').value = '';
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+    modal.show();
+}
+
+function saveUserChanges() {
+    const userId = document.getElementById('editUserId').value;
+    const adminPassword = document.getElementById('adminCurrentPassword').value;
+    
+    if (!adminPassword) {
+        showMessage('Your current password is required to authorize changes', 'error');
+        document.getElementById('adminCurrentPassword').focus();
+        return;
+    }
+    
+    const formData = new FormData(document.getElementById('editUserForm'));
+    formData.append('admin_password', adminPassword);
+    
+    fetch(`/api/security/users/${userId}`, {
+        method: 'PUT',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('User updated successfully!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+            document.getElementById('adminCurrentPassword').value = '';
+            loadUsers();
+        } else {
+            showMessage('Error: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating user:', error);
+        showMessage('Error updating user', 'error');
+    });
+}
+
+// Store pending reset password action
+let pendingResetPassword = null;
+
+function resetPassword(userId, username) {
+    // Show verification modal first
+    document.getElementById('verifyActionType').value = 'reset_password';
+    document.getElementById('verifyTargetUserId').value = userId;
+    document.getElementById('verifyTargetUsername').value = username;
+    document.getElementById('verifyAdminPassword').value = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('passwordVerifyModal'));
+    modal.show();
+    
+    // Store the pending action
+    pendingResetPassword = { userId, username };
+}
+
+// Handle password verification button click
+document.getElementById('verifyPasswordBtn').addEventListener('click', function() {
+    const adminPassword = document.getElementById('verifyAdminPassword').value;
+    const actionType = document.getElementById('verifyActionType').value;
+    
+    if (!adminPassword) {
+        showMessage('Please enter your current password', 'error');
+        return;
+    }
+    
+    if (actionType === 'reset_password' && pendingResetPassword) {
+        // Hide verification modal
+        bootstrap.Modal.getInstance(document.getElementById('passwordVerifyModal')).hide();
+        
+        // Show password prompt
+        setTimeout(() => {
+            const newPassword = prompt(`Enter new password for ${pendingResetPassword.username}:`);
+            if (newPassword) {
+                performPasswordReset(pendingResetPassword.userId, newPassword, adminPassword);
+            }
+            pendingResetPassword = null;
+        }, 300);
+    }
+});
+
+function performPasswordReset(userId, newPassword, adminPassword) {
+    fetch(`/api/security/users/${userId}/reset-password`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+            password: newPassword,
+            admin_password: adminPassword
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('Password reset successfully!', 'success');
+        } else {
+            showMessage('Error: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error resetting password:', error);
+        showMessage('Error resetting password', 'error');
+    });
+}
+
+function deleteUser(userId, username) {
+    if (confirm(`Are you sure you want to delete user ${username}? This action cannot be undone.`)) {
+        fetch(`/api/security/users/${userId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage('User deleted successfully!', 'success');
+                loadUsers();
+            } else {
+                showMessage('Error: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting user:', error);
+            showMessage('Error deleting user', 'error');
+        });
+    }
+}
+
+function refreshUsers() {
+    loadUsers();
+    showMessage('Users refreshed', 'info');
+}
+</script>
+{% endblock %}

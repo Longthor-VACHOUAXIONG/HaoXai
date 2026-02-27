@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block title %}Database Connection{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: calc(100vh - 200px);">
+    <div class="col-md-8 col-lg-6">
+        <div class="glass-card" style="border-radius: 24px;">
+            <!-- Header -->
+            <div class="text-center mb-4">
+                <div class="brand-logo mx-auto mb-3" style="width: 64px; height: 64px; border-radius: 16px;">
+                    <i class="bi bi-database" style="font-size: 32px;"></i>
+                </div>
+                <h3 class="fw-bold mb-1">Connect Database</h3>
+                <p class="text-muted mb-0">Choose your database type</p>
+            </div>
+
+            <!-- Connection Tabs -->
+            <ul class="nav nav-pills nav-fill mb-4" id="connectionTabs" role="tablist"
+                style="background: rgba(15, 23, 42, 0.5); border-radius: 12px; padding: 4px;">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="sqlite-tab" data-bs-toggle="tab" data-bs-target="#sqlite"
+                        type="button" style="border-radius: 8px; color: var(--text-secondary);">
+                        <i class="bi bi-database me-2"></i> SQLite
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="mysql-tab" data-bs-toggle="tab" data-bs-target="#mysql" type="button"
+                        style="border-radius: 8px; color: var(--text-secondary);">
+                        <i class="bi bi-server me-2"></i> MySQL
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="connectionTabContent">
+                <!-- SQLite Tab -->
+                <div class="tab-pane fade show active" id="sqlite" role="tabpanel">
+                    <form id="sqlite-form">
+                        <div class="mb-4">
+                            <label class="form-label text-muted small text-uppercase fw-semibold">Database File
+                                Path</label>
+                            <div class="input-group">
+                                <span class="input-group-text"
+                                    style="background: rgba(99, 102, 241, 0.1); border-color: rgba(148, 163, 184, 0.2);">
+                                    <i class="bi bi-folder text-primary"></i>
+                                </span>
+                                <input type="text" class="form-control" id="sqlite-path"
+                                    placeholder="C:\path\to\database.db or click Browse" required
+                                    style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                                <button type="button" class="btn btn-glass" onclick="browseDatabase()">
+                                    <i class="bi bi-folder2-open me-1"></i> Browse
+                                </button>
+                            </div>
+                            <div class="form-text mt-2" style="color: #94a3b8;">
+                                <i class="bi bi-info-circle me-1"></i> Click Browse to select your SQLite database file,
+                                or type the path manually
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check form-switch custom-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="sqlite-remember">
+                                <label class="form-check-label text-muted small" for="sqlite-remember">
+                                    Remember this connection (Auto-connect next time)
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-gradient btn-lg">
+                                <i class="bi bi-plug me-2"></i> Connect to Database
+                            </button>
+                            <button type="button" class="btn btn-glass" onclick="createNewDatabase()">
+                                <i class="bi bi-plus-circle me-2"></i> Create New Database
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- MySQL Tab -->
+                <div class="tab-pane fade" id="mysql" role="tabpanel">
+                    <form id="mysql-form">
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label text-muted small text-uppercase fw-semibold">Host</label>
+                                <input type="text" class="form-control" id="mysql-host" placeholder="localhost" required
+                                    style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label text-muted small text-uppercase fw-semibold">Port</label>
+                                <input type="number" class="form-control" id="mysql-port" value="3306" required
+                                    style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-muted small text-uppercase fw-semibold">Username</label>
+                            <div class="input-group">
+                                <span class="input-group-text"
+                                    style="background: rgba(99, 102, 241, 0.1); border-color: rgba(148, 163, 184, 0.2);">
+                                    <i class="bi bi-person text-primary"></i>
+                                </span>
+                                <input type="text" class="form-control" id="mysql-user" required
+                                    style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-muted small text-uppercase fw-semibold">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text"
+                                    style="background: rgba(99, 102, 241, 0.1); border-color: rgba(148, 163, 184, 0.2);">
+                                    <i class="bi bi-lock text-primary"></i>
+                                </span>
+                                <input type="password" class="form-control" id="mysql-password" required
+                                    style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-muted small text-uppercase fw-semibold">Database Name</label>
+                            <input type="text" class="form-control" id="mysql-database" required
+                                style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check form-switch custom-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="mysql-remember">
+                                <label class="form-check-label text-muted small" for="mysql-remember">
+                                    Remember connection details
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-gradient btn-lg w-100">
+                            <i class="bi bi-plug me-2"></i> Connect to MySQL
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create New Database Modal -->
+<div class="modal fade" id="createDbModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card" style="border-radius: 20px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-database-add text-primary me-2"></i>Create New Database
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1);"></button>
+            </div>
+            <div class="modal-body">
+                <form id="create-db-form">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small text-uppercase fw-semibold">Database Name</label>
+                        <input type="text" class="form-control" id="new-db-name" placeholder="my_database.db" required
+                            style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                        <div class="form-text text-muted mt-2">
+                            <i class="bi bi-info-circle me-1"></i> Database will be created in the uploads folder
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-gradient" onclick="submitCreateDatabase()">
+                    <i class="bi bi-check-circle me-2"></i>Create & Connect
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+    .nav-pills .nav-link.active {
+        background: var(--gradient-primary) !important;
+        color: white !important;
+        box-shadow: var(--shadow-glow);
+    }
+
+    .nav-pills .nav-link:not(.active):hover {
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary-light);
+    }
+
+    .custom-switch .form-check-input {
+        background-color: rgba(15, 23, 42, 0.5);
+        border-color: rgba(148, 163, 184, 0.2);
+    }
+
+    .custom-switch .form-check-input:checked {
+        background-color: var(--primary);
+        border-color: var(--primary);
+    }
+</style>
+<script>
+    // SQLite form submission
+    document.getElementById('sqlite-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const dbPath = document.getElementById('sqlite-path').value;
+        const remember = document.getElementById('sqlite-remember').checked;
+        showLoading('Connecting to SQLite database...');
+
+        fetch('/auth/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                connection_type: 'sqlite',
+                db_path: dbPath,
+                remember: remember
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    setTimeout(() => window.location.href = data.redirect, 1000);
+                } else {
+                    showToast(data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showToast('Connection failed: ' + error.message, 'danger');
+            });
+    });
+
+    // MySQL form submission
+    document.getElementById('mysql-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const formData = {
+            connection_type: 'mysql',
+            host: document.getElementById('mysql-host').value,
+            port: document.getElementById('mysql-port').value,
+            user: document.getElementById('mysql-user').value,
+            password: document.getElementById('mysql-password').value,
+            database: document.getElementById('mysql-database').value,
+            remember: document.getElementById('mysql-remember').checked
+        };
+        showLoading('Connecting to MySQL database...');
+
+        fetch('/auth/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    setTimeout(() => window.location.href = data.redirect, 1000);
+                } else {
+                    showToast(data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showToast('Connection failed: ' + error.message, 'danger');
+            });
+    });
+
+    function createNewDatabase() {
+        const modal = new bootstrap.Modal(document.getElementById('createDbModal'));
+        modal.show();
+    }
+
+    async function browseDatabase() {
+        try {
+            const response = await fetch('/file_manager/browse_file');
+            const data = await response.json();
+            if (data.file) {
+                document.getElementById('sqlite-path').value = data.file;
+            } else if (data.error) {
+                showToast(data.error, 'warning');
+            }
+        } catch (error) {
+            // Fallback: show a prompt for manual entry
+            showToast('File browser not available. Please type the path manually.', 'info');
+        }
+    }
+
+    function submitCreateDatabase() {
+        const dbName = document.getElementById('new-db-name').value;
+        if (!dbName) {
+            showToast('Please enter a database name', 'warning');
+            return;
+        }
+        showLoading('Creating database...');
+
+        fetch('/database/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ db_name: dbName })
+        })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    document.getElementById('sqlite-path').value = data.db_path;
+                    bootstrap.Modal.getInstance(document.getElementById('createDbModal')).hide();
+                } else {
+                    showToast(data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showToast('Failed to create database: ' + error.message, 'danger');
+            });
+    }
+</script>
+{% endblock %}

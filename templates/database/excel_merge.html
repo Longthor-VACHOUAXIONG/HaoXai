@@ -1,0 +1,940 @@
+{% extends "base.html" %}
+
+{% block title %}Excel Merge{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="page-title"><i class="bi bi-files me-3"></i>Excel Merge</h1>
+            <p class="page-subtitle">Merge two Excel files by matching columns</p>
+        </div>
+    </div>
+</div>
+
+<!-- Step 1: Upload Files -->
+<div class="glass-card mb-4">
+    <div class="section-title mb-4">
+        <span class="badge bg-primary me-2">1</span>Upload Excel Files
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-md-6">
+            <label class="form-label text-muted small text-uppercase fw-semibold">First File</label>
+            <div class="input-group">
+                <span class="input-group-text" style="background: rgba(99, 102, 241, 0.1); border-color: rgba(148, 163, 184, 0.2);">
+                    <i class="bi bi-file-earmark-excel text-primary"></i>
+                </span>
+                <input type="file" class="form-control" id="file1" accept=".xlsx,.xls"
+                       style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+            </div>
+            <div class="form-text text-muted mt-2">
+                <i class="bi bi-info-circle me-1"></i> Primary data file
+            </div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label text-muted small text-uppercase fw-semibold">Second File</label>
+            <div class="input-group">
+                <span class="input-group-text" style="background: rgba(99, 102, 241, 0.1); border-color: rgba(148, 163, 184, 0.2);">
+                    <i class="bi bi-file-earmark-excel text-primary"></i>
+                </span>
+                <input type="file" class="form-control" id="file2" accept=".xlsx,.xls"
+                       style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+            </div>
+            <div class="form-text text-muted mt-2">
+                <i class="bi bi-info-circle me-1"></i> Data to merge
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <button class="btn btn-gradient" onclick="uploadFiles()" id="upload-btn" disabled>
+            <i class="bi bi-upload me-2"></i>Analyze Files
+        </button>
+    </div>
+</div>
+
+<!-- Step 2: Column Selection -->
+<div class="glass-card mb-4" id="column-section" style="display: none;">
+    <div class="section-title mb-4">
+        <span class="badge bg-info me-2">2</span>Select Matching Columns
+    </div>
+    
+    <!-- File Info -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background: rgba(99, 102, 241, 0.1);">
+                <i class="bi bi-file-earmark-excel fs-2 text-primary"></i>
+                <div>
+                    <div class="text-muted small">File 1</div>
+                    <div class="fw-bold" id="file1-name">-</div>
+                    <div class="text-muted small" id="file1-column-count">- columns</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background: rgba(6, 182, 212, 0.1);">
+                <i class="bi bi-file-earmark-excel fs-2" style="color: var(--secondary);"></i>
+                <div>
+                    <div class="text-muted small">File 2</div>
+                    <div class="fw-bold" id="file2-name">-</div>
+                    <div class="text-muted small" id="file2-column-count">- columns</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Common Columns -->
+    <div class="glass-card mb-4" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3);">
+        <div class="section-title mb-3" style="font-size: 14px;">
+            <i class="bi bi-link text-warning me-2"></i>Common Columns (Auto-detected)
+        </div>
+        <div id="common-columns" class="d-flex flex-wrap gap-2">
+            <!-- Populated dynamically -->
+        </div>
+    </div>
+    
+    <!-- Column Matching -->
+    <div class="glass-card mb-4">
+        <div class="section-title mb-3" style="font-size: 14px;">
+            <i class="bi bi-columns-gap text-primary me-2"></i>Column Matching
+        </div>
+        
+        <!-- Selected Matches Display -->
+        <div class="mb-3">
+            <label class="form-label text-muted small">Selected Matches</label>
+            <div id="selected-matches" class="border rounded p-2" style="min-height: 60px; background: rgba(15, 23, 42, 0.3);">
+                <div class="text-muted text-center">No matches selected yet</div>
+            </div>
+        </div>
+        
+        <div class="row align-items-center">
+            <div class="col-md-5">
+                <label class="form-label text-muted small">File 1 Column</label>
+                <div id="file1-columns" class="border rounded p-2" style="max-height: 200px; overflow-y: auto; background: rgba(15, 23, 42, 0.3);">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+            <div class="col-md-2 text-center">
+                <div class="d-flex flex-column align-items-center">
+                    <i class="bi bi-arrow-left-right fs-3 text-muted mb-2"></i>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="addCurrentMatch()" id="add-match-btn" disabled>
+                        <i class="bi bi-plus-lg"></i> Add Match
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label text-muted small">File 2 Column</label>
+                <div id="file2-columns" class="border rounded p-2" style="max-height: 200px; overflow-y: auto; background: rgba(15, 23, 42, 0.3);">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: #3b82f6;">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>How to match columns:</strong><br>
+                1. Select one column from File 1<br>
+                2. Select one column from File 2<br>
+                3. Click "Add Match" to create the pairing<br>
+                4. Repeat for multiple column matches
+            </div>
+        </div>
+    </div>
+    
+    <!-- Output Column Selection -->
+    <div class="glass-card mb-4">
+        <div class="section-title mb-3" style="font-size: 14px;">
+            <i class="bi bi-check2-square text-success me-2"></i>Select Output Columns
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label text-muted small mb-0">File 1 Columns</label>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllFile1Columns()">Select All</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllFile1Columns()">Deselect All</button>
+                    </div>
+                </div>
+                <div id="file1-output-columns" class="border rounded p-2" style="max-height: 250px; overflow-y: auto; background: rgba(15, 23, 42, 0.3);">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label text-muted small mb-0">File 2 Columns</label>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllFile2Columns()">Select All</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllFile2Columns()">Deselect All</button>
+                    </div>
+                </div>
+                <div id="file2-output-columns" class="border rounded p-2" style="max-height: 250px; overflow-y: auto; background: rgba(15, 23, 42, 0.3);">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+        <div class="mt-3">
+            <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: #3b82f6;">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Tip:</strong> Select only the columns you need in the final output. Matching columns are automatically included.
+            </div>
+        </div>
+    </div>
+    
+    <!-- Merge Settings -->
+    <div class="row g-4">
+        <div class="col-md-6">
+            <label class="form-label text-muted small text-uppercase fw-semibold">Merge Type</label>
+            <select class="form-select" id="merge-type"
+                    style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                <option value="inner">Inner Join (matching records only)</option>
+                <option value="outer">Outer Join (all records)</option>
+                <option value="left">Left Join (all from File 1)</option>
+                <option value="right">Right Join (all from File 2)</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label text-muted small text-uppercase fw-semibold">Output Filename</label>
+            <input type="text" class="form-control" id="output-filename" value="merged_output.xlsx"
+                   style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+        </div>
+    </div>
+    
+    <!-- Deduplication Settings -->
+    <div class="glass-card mb-4">
+        <div class="section-title mb-3" style="font-size: 14px;">
+            <i class="bi bi-funnel text-warning me-2"></i>Handle Duplicates
+        </div>
+        
+        <!-- Deduplication Method Selection -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <label class="form-label text-muted small">File 1 Deduplication</label>
+                <select class="form-select" id="dedup-file1"
+                        style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                    <option value="none">Keep All Rows</option>
+                    <option value="first">Keep First Row</option>
+                    <option value="last">Keep Last Row</option>
+                    <option value="unique">Keep Unique Rows Only</option>
+                </select>
+                <div class="form-text text-muted mt-1">
+                    <i class="bi bi-info-circle me-1"></i>Remove duplicates in File 1
+                </div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label text-muted small">File 2 Deduplication</label>
+                <select class="form-select" id="dedup-file2"
+                        style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                    <option value="none">Keep All Rows</option>
+                    <option value="first">Keep First Row</option>
+                    <option value="last">Keep Last Row</option>
+                    <option value="unique">Keep Unique Rows Only</option>
+                </select>
+                <div class="form-text text-muted mt-1">
+                    <i class="bi bi-info-circle me-1"></i>Remove duplicates in File 2
+                </div>
+            </div>
+        </div>
+        
+        <!-- Duplicate Column Selection -->
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label text-muted small mb-0">File 1 Duplicate Check Columns</label>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllDedupColumns('file1')">Select All</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllDedupColumns('file1')">Deselect All</button>
+                    </div>
+                </div>
+                <div id="file1-dedup-columns" class="border rounded p-2" style="max-height: 200px; overflow-y: auto; background: rgba(15, 23, 42, 0.3);">
+                    <!-- Populated dynamically -->
+                </div>
+                <div class="form-text text-muted mt-1">
+                    <i class="bi bi-info-circle me-1"></i>Select columns to check for duplicates. If none selected, will use match columns.
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label text-muted small mb-0">File 2 Duplicate Check Columns</label>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllDedupColumns('file2')">Select All</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllDedupColumns('file2')">Deselect All</button>
+                    </div>
+                </div>
+                <div id="file2-dedup-columns" class="border rounded p-2" style="max-height: 200px; overflow-y: auto; background: rgba(15, 23, 42, 0.3);">
+                    <!-- Populated dynamically -->
+                </div>
+                <div class="form-text text-muted mt-1">
+                    <i class="bi bi-info-circle me-1"></i>Select columns to check for duplicates. If none selected, will use match columns.
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            <div class="alert alert-warning" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #f59e0b;">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>Duplicate Detection:</strong> Select specific columns to identify duplicates. If no columns are selected, the system will use the match columns for duplicate detection.
+            </div>
+        </div>
+    </div>
+    
+    <!-- Post-Merge Deduplication Settings -->
+    <div class="glass-card mb-4">
+        <div class="section-title mb-3" style="font-size: 14px;">
+            <i class="bi bi-check-circle text-success me-2"></i>Post-Merge Duplicate Removal
+        </div>
+        
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <label class="form-label text-muted small">Remove Duplicates from Merged Result</label>
+                <select class="form-select" id="post-merge-dedup"
+                        style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                    <option value="none">Keep All Rows (No Removal)</option>
+                    <option value="first">Keep First Row</option>
+                    <option value="last">Keep Last Row</option>
+                    <option value="unique">Keep Unique Rows Only</option>
+                </select>
+                <div class="form-text text-muted mt-1">
+                    <i class="bi bi-info-circle me-1"></i>Remove duplicates from the final merged file
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label text-muted small mb-0">Post-Merge Duplicate Check Columns</label>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllPostMergeDedupColumns()">Select All</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllPostMergeDedupColumns()">Deselect All</button>
+                    </div>
+                </div>
+                <div id="post-merge-dedup-columns" class="border rounded p-2" style="max-height: 200px; overflow-y: auto; background: rgba(15, 23, 42, 0.3);">
+                    <!-- Populated dynamically -->
+                </div>
+                <div class="form-text text-muted mt-1">
+                    <i class="bi bi-info-circle me-1"></i>Select columns to check for duplicates in the merged result.
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: #3b82f6;">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Post-Merge Deduplication:</strong> This removes duplicates from the final merged file. Use this when you want the output file to have unique records based on specific columns.
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <button class="btn btn-gradient btn-lg" onclick="executeMerge()">
+            <i class="bi bi-union me-2"></i>Merge Files
+        </button>
+    </div>
+</div>
+
+<!-- Results -->
+<div class="glass-card" id="results-section" style="display: none; border-left: 4px solid var(--success);">
+    <div class="section-title mb-4">
+        <i class="bi bi-check-circle-fill text-success me-2"></i>Merge Complete
+    </div>
+    <div id="results-content"></div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let fileData = null;
+    let selectedMatches = new Map();
+
+    // Enable upload button when both files are selected
+    document.getElementById('file1').addEventListener('change', checkFilesReady);
+    document.getElementById('file2').addEventListener('change', checkFilesReady);
+
+    function checkFilesReady() {
+        const file1 = document.getElementById('file1').files[0];
+        const file2 = document.getElementById('file2').files[0];
+        document.getElementById('upload-btn').disabled = !(file1 && file2);
+    }
+
+    function uploadFiles() {
+        const file1 = document.getElementById('file1').files[0];
+        const file2 = document.getElementById('file2').files[0];
+        
+        if (!file1 || !file2) {
+            showToast('Please select both files', 'warning');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file1', file1);
+        formData.append('file2', file2);
+
+        showLoading('Analyzing files...');
+
+        fetch('/excel_merge/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                fileData = data;
+                displayFileAnalysis(data);
+                document.getElementById('column-section').style.display = 'block';
+                document.getElementById('results-section').style.display = 'none';
+                showToast('Files analyzed successfully!', 'success');
+            } else {
+                showToast(data.message || 'Failed to analyze files', 'danger');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showToast('Error uploading files: ' + error.message, 'danger');
+        });
+    }
+
+    function displayFileAnalysis(data) {
+        // Display file information
+        document.getElementById('file1-name').textContent = data.file1.name;
+        document.getElementById('file1-column-count').textContent = data.file1.columns.length + ' columns';
+        document.getElementById('file2-name').textContent = data.file2.name;
+        document.getElementById('file2-column-count').textContent = data.file2.columns.length + ' columns';
+
+        // Display common columns
+        const commonColumnsDiv = document.getElementById('common-columns');
+        if (data.common_columns.length > 0) {
+            commonColumnsDiv.innerHTML = data.common_columns.map(col => 
+                `<span class="badge bg-warning text-dark me-2 mb-2" onclick="autoMatchColumn('${col}', '${col}')" style="cursor: pointer;">
+                    <i class="bi bi-link me-1"></i>${col}
+                </span>`
+            ).join('');
+        } else {
+            commonColumnsDiv.innerHTML = '<span class="text-muted">No common columns found</span>';
+        }
+
+        // Display all columns
+        displayColumnSelectors(data);
+    }
+
+    function displayColumnSelectors(data) {
+        // File 1 columns (for matching)
+        const file1ColumnsDiv = document.getElementById('file1-columns');
+        file1ColumnsDiv.innerHTML = data.file1.columns.map(col => 
+            `<div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="file1-column" value="${col}" id="file1-col-${col}" onchange="selectColumn('file1', '${col}')">
+                <label class="form-check-label" for="file1-col-${col}">
+                    ${col}
+                </label>
+            </div>`
+        ).join('');
+
+        // File 2 columns (for matching)
+        const file2ColumnsDiv = document.getElementById('file2-columns');
+        file2ColumnsDiv.innerHTML = data.file2.columns.map(col => 
+            `<div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="file2-column" value="${col}" id="file2-col-${col}" onchange="selectColumn('file2', '${col}')">
+                <label class="form-check-label" for="file2-col-${col}">
+                    ${col}
+                </label>
+            </div>`
+        ).join('');
+
+        // File 1 columns (for output selection)
+        const file1OutputColumnsDiv = document.getElementById('file1-output-columns');
+        file1OutputColumnsDiv.innerHTML = data.file1.columns.map(col => 
+            `<div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" value="${col}" id="file1-output-${col}" checked>
+                <label class="form-check-label" for="file1-output-${col}">
+                    ${col} <small class="text-muted">(${data.file1.dtypes[col]})</small>
+                </label>
+            </div>`
+        ).join('');
+
+        // File 2 columns (for output selection)
+        const file2OutputColumnsDiv = document.getElementById('file2-output-columns');
+        file2OutputColumnsDiv.innerHTML = data.file2.columns.map(col => 
+            `<div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" value="${col}" id="file2-output-${col}" checked>
+                <label class="form-check-label" for="file2-output-${col}">
+                    ${col} <small class="text-muted">(${data.file2.dtypes[col]})</small>
+                </label>
+            </div>`
+        ).join('');
+
+        // File 1 columns (for deduplication selection)
+        const file1DedupColumnsDiv = document.getElementById('file1-dedup-columns');
+        file1DedupColumnsDiv.innerHTML = data.file1.columns.map(col => 
+            `<div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" value="${col}" id="file1-dedup-${col}">
+                <label class="form-check-label" for="file1-dedup-${col}">
+                    ${col} <small class="text-muted">(${data.file1.dtypes[col]})</small>
+                </label>
+            </div>`
+        ).join('');
+
+        // File 2 columns (for deduplication selection)
+        const file2DedupColumnsDiv = document.getElementById('file2-dedup-columns');
+        file2DedupColumnsDiv.innerHTML = data.file2.columns.map(col => 
+            `<div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" value="${col}" id="file2-dedup-${col}">
+                <label class="form-check-label" for="file2-dedup-${col}">
+                    ${col} <small class="text-muted">(${data.file2.dtypes[col]})</small>
+                </label>
+            </div>`
+        ).join('');
+
+        // Post-merge deduplication columns (combine both files' columns)
+        const postMergeDedupColumnsDiv = document.getElementById('post-merge-dedup-columns');
+        const allMergedColumns = [...data.file1.columns, ...data.file2.columns];
+        const uniqueColumns = [...new Set(allMergedColumns)]; // Remove duplicates
+        
+        postMergeDedupColumnsDiv.innerHTML = uniqueColumns.map(col => {
+            const file1HasCol = data.file1.columns.includes(col);
+            const file2HasCol = data.file2.columns.includes(col);
+            const source = file1HasCol && file2HasCol ? 'both' : (file1HasCol ? 'file1' : 'file2');
+            const dtype = file1HasCol ? data.file1.dtypes[col] : data.file2.dtypes[col];
+            
+            return `<div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" value="${col}" id="post-merge-dedup-${col}">
+                <label class="form-check-label" for="post-merge-dedup-${col}">
+                    ${col} <small class="text-muted">(${dtype}) <span class="badge bg-secondary">${source}</span></small>
+                </label>
+            </div>`;
+        }).join('');
+    }
+
+    // Output column selection functions
+    function selectAllFile1Columns() {
+        document.querySelectorAll('#file1-output-columns input[type="checkbox"]').forEach(cb => cb.checked = true);
+    }
+
+    function deselectAllFile1Columns() {
+        document.querySelectorAll('#file1-output-columns input[type="checkbox"]').forEach(cb => cb.checked = false);
+    }
+
+    function selectAllFile2Columns() {
+        document.querySelectorAll('#file2-output-columns input[type="checkbox"]').forEach(cb => cb.checked = true);
+    }
+
+    function deselectAllFile2Columns() {
+        document.querySelectorAll('#file2-output-columns input[type="checkbox"]').forEach(cb => cb.checked = false);
+    }
+
+    function getSelectedOutputColumns() {
+        const file1Columns = Array.from(document.querySelectorAll('#file1-output-columns input[type="checkbox"]:checked'))
+            .map(cb => cb.value);
+        const file2Columns = Array.from(document.querySelectorAll('#file2-output-columns input[type="checkbox"]:checked'))
+            .map(cb => cb.value);
+        return { file1Columns, file2Columns };
+    }
+
+    // Deduplication column selection functions
+    function selectAllDedupColumns(file) {
+        const selector = file === 'file1' ? '#file1-dedup-columns' : '#file2-dedup-columns';
+        document.querySelectorAll(`${selector} input[type="checkbox"]`).forEach(cb => cb.checked = true);
+    }
+
+    function deselectAllDedupColumns(file) {
+        const selector = file === 'file1' ? '#file1-dedup-columns' : '#file2-dedup-columns';
+        document.querySelectorAll(`${selector} input[type="checkbox"]`).forEach(cb => cb.checked = false);
+    }
+
+    function getSelectedDedupColumns() {
+        const file1Columns = Array.from(document.querySelectorAll('#file1-dedup-columns input[type="checkbox"]:checked'))
+            .map(cb => cb.value);
+        const file2Columns = Array.from(document.querySelectorAll('#file2-dedup-columns input[type="checkbox"]:checked'))
+            .map(cb => cb.value);
+        return { file1DedupColumns: file1Columns, file2DedupColumns: file2Columns };
+    }
+
+    // Post-merge deduplication functions
+    function selectAllPostMergeDedupColumns() {
+        document.querySelectorAll('#post-merge-dedup-columns input[type="checkbox"]').forEach(cb => cb.checked = true);
+    }
+
+    function deselectAllPostMergeDedupColumns() {
+        document.querySelectorAll('#post-merge-dedup-columns input[type="checkbox"]').forEach(cb => cb.checked = false);
+    }
+
+    function getSelectedPostMergeDedupColumns() {
+        return Array.from(document.querySelectorAll('#post-merge-dedup-columns input[type="checkbox"]:checked'))
+            .map(cb => cb.value);
+    }
+
+    let selectedFile1Column = null;
+    let selectedFile2Column = null;
+
+    function selectColumn(file, column) {
+        if (file === 'file1') {
+            selectedFile1Column = column;
+            // Update visual selection
+            document.querySelectorAll('#file1-columns .form-check-input').forEach(cb => {
+                cb.classList.remove('bg-primary', 'border-primary');
+            });
+            document.getElementById(`file1-col-${column}`).classList.add('bg-primary', 'border-primary');
+        } else {
+            selectedFile2Column = column;
+            // Update visual selection
+            document.querySelectorAll('#file2-columns .form-check-input').forEach(cb => {
+                cb.classList.remove('bg-primary', 'border-primary');
+            });
+            document.getElementById(`file2-col-${column}`).classList.add('bg-primary', 'border-primary');
+        }
+
+        // Enable/disable add match button
+        const addMatchBtn = document.getElementById('add-match-btn');
+        addMatchBtn.disabled = !(selectedFile1Column && selectedFile2Column);
+    }
+
+    function addCurrentMatch() {
+        if (!selectedFile1Column || !selectedFile2Column) {
+            showToast('Please select one column from each file', 'warning');
+            return;
+        }
+
+        const matchKey = `${selectedFile1Column} ↔ ${selectedFile2Column}`;
+        
+        // Check if match already exists
+        if (selectedMatches.has(matchKey)) {
+            showToast('This match already exists', 'warning');
+            return;
+        }
+
+        selectedMatches.set(matchKey, {
+            file1_col: selectedFile1Column,
+            file2_col: selectedFile2Column
+        });
+        
+        updateSelectedMatches();
+        
+        // Clear selections
+        clearColumnSelections();
+    }
+
+    function clearColumnSelections() {
+        // Clear radio button selections
+        document.querySelectorAll('#file1-columns .form-check-input').forEach(cb => {
+            cb.checked = false;
+            cb.classList.remove('bg-primary', 'border-primary');
+        });
+        document.querySelectorAll('#file2-columns .form-check-input').forEach(cb => {
+            cb.checked = false;
+            cb.classList.remove('bg-primary', 'border-primary');
+        });
+        
+        selectedFile1Column = null;
+        selectedFile2Column = null;
+        
+        // Disable add match button
+        document.getElementById('add-match-btn').disabled = true;
+    }
+
+    function removeMatch(matchKey) {
+        selectedMatches.delete(matchKey);
+        updateSelectedMatches();
+    }
+
+    function updateSelectedMatches() {
+        const container = document.getElementById('selected-matches');
+        
+        if (selectedMatches.size === 0) {
+            container.innerHTML = '<div class="text-muted text-center">No matches selected yet</div>';
+            return;
+        }
+
+        const matchesHtml = Array.from(selectedMatches.entries()).map(([key, match]) => `
+            <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3);">
+                <div>
+                    <span class="badge bg-primary me-2">${match.file1_col}</span>
+                    <i class="bi bi-arrow-left-right text-muted mx-2"></i>
+                    <span class="badge bg-info">${match.file2_col}</span>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeMatch('${key}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `).join('');
+
+        container.innerHTML = matchesHtml;
+    }
+
+    function autoMatchColumn(file1Col, file2Col) {
+        const matchKey = `${file1Col} ↔ ${file2Col}`;
+        selectedMatches.set(matchKey, {
+            file1_col: file1Col,
+            file2_col: file2Col
+        });
+        updateSelectedMatches();
+    }
+
+    function executeMerge() {
+        if (!fileData) {
+            showToast('Please upload files first', 'warning');
+            return;
+        }
+
+        if (selectedMatches.size === 0) {
+            showToast('Please select at least one column match', 'warning');
+            return;
+        }
+
+        // Get selected output columns
+        const { file1Columns, file2Columns } = getSelectedOutputColumns();
+        
+        if (file1Columns.length === 0 && file2Columns.length === 0) {
+            showToast('Please select at least one output column', 'warning');
+            return;
+        }
+
+        // Get selected deduplication columns
+        const { file1DedupColumns, file2DedupColumns } = getSelectedDedupColumns();
+        
+        // Get selected post-merge deduplication columns
+        const postMergeDedupColumns = getSelectedPostMergeDedupColumns();
+
+        const mergeData = {
+            file1_path: fileData.file1.path,
+            file2_path: fileData.file2.path,
+            file1_engine: fileData.file1.engine,
+            file2_engine: fileData.file2.engine,
+            merge_type: document.getElementById('merge-type').value,
+            match_columns: Array.from(selectedMatches.values()),
+            selected_columns_file1: file1Columns,
+            selected_columns_file2: file2Columns,
+            dedup_file1: document.getElementById('dedup-file1').value,
+            dedup_file2: document.getElementById('dedup-file2').value,
+            dedup_columns_file1: file1DedupColumns,
+            dedup_columns_file2: file2DedupColumns,
+            post_merge_dedup: document.getElementById('post-merge-dedup').value,
+            post_merge_dedup_columns: postMergeDedupColumns,
+            output_filename: document.getElementById('output-filename').value
+        };
+
+        showLoading('Merging files...');
+
+        fetch('/excel_merge/execute_merge', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(mergeData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                displayResults(data);
+                document.getElementById('results-section').style.display = 'block';
+                showToast('Files merged successfully!', 'success');
+            } else {
+                showToast(data.message || 'Merge failed', 'danger');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showToast('Error during merge: ' + error.message, 'danger');
+        });
+    }
+
+    function displayResults(data) {
+        const resultsContent = document.getElementById('results-content');
+        
+        // Check if files were split
+        const isSplitFiles = data.split_files && data.split_files.length > 0;
+        
+        // Create preview table HTML
+        let previewTableHtml = '';
+        if (data.preview && data.preview.length > 0) {
+            const columns = Object.keys(data.preview[0]);
+            const previewRows = data.preview.slice(0, 10); // Show first 10 rows
+            
+            previewTableHtml = `
+                <div class="mb-4">
+                    <h6 class="text-success mb-3"><i class="bi bi-table me-2"></i>Data Preview (First 10 rows)</h6>
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-dark table-striped table-hover">
+                            <thead class="sticky-top" style="background: rgba(15, 23, 42, 0.95);">
+                                <tr>
+                                    ${columns.map(col => `<th>${col}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${previewRows.map(row => 
+                                    `<tr>
+                                        ${columns.map(col => `<td>${row[col] || ''}</td>`).join('')}
+                                    </tr>`
+                                ).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    ${data.preview.length > 10 ? `<p class="text-muted small mt-2">Showing 10 of ${data.stats.merged_rows} total rows</p>` : ''}
+                </div>
+            `;
+        }
+
+        // Create merge statistics
+        const statsHtml = `
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="text-center p-3 rounded" style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3);">
+                        <div class="fs-4 fw-bold text-primary">${data.stats.total_rows_file1}</div>
+                        <div class="text-muted small">File 1 Rows</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 rounded" style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3);">
+                        <div class="fs-4 fw-bold" style="color: var(--secondary);">${data.stats.total_rows_file2}</div>
+                        <div class="text-muted small">File 2 Rows</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 rounded" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);">
+                        <div class="fs-4 fw-bold text-success">${data.stats.merged_rows}</div>
+                        <div class="text-muted small">Merged Rows</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 rounded" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3);">
+                        <div class="fs-4 fw-bold text-warning">${data.stats.output_columns.length}</div>
+                        <div class="text-muted small">Output Columns</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Create split files information if applicable
+        let splitFilesHtml = '';
+        if (isSplitFiles) {
+            splitFilesHtml = `
+                <div class="alert alert-warning mb-4" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #f59e0b;">
+                    <h6 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>Large Dataset Detected</h6>
+                    <p class="mb-2">${data.message}</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Original Size:</strong> ${data.stats.original_rows.toLocaleString()} rows<br>
+                            <strong>Files Created:</strong> ${data.stats.total_files_created}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Max Rows per File:</strong> ${data.stats.max_rows_per_file.toLocaleString()}<br>
+                            <strong>Download Format:</strong> ZIP package containing all split files
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h6 class="text-warning mb-3"><i class="bi bi-files me-2"></i>Split Files Details</h6>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped">
+                            <thead>
+                                <tr>
+                                    <th>File Name</th>
+                                    <th>Rows</th>
+                                    <th>Row Range</th>
+                                    <th>Download</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.split_files.map(file => `
+                                    <tr>
+                                        <td>${file.filename}</td>
+                                        <td>${file.rows.toLocaleString()}</td>
+                                        <td>${file.start_row.toLocaleString()} - ${file.end_row.toLocaleString()}</td>
+                                        <td>
+                                            <a href="/excel_merge/download/${file.filename}" class="btn btn-sm btn-outline-primary" download>
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Create merge details
+        const mergeDetailsHtml = `
+            <div class="alert mb-4" style="background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.3); color: #6366f1;">
+                <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Merge Details</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Merge Type:</strong> ${data.stats.merge_type.charAt(0).toUpperCase() + data.stats.merge_type.slice(1)} Join<br>
+                        <strong>Match Columns:</strong> ${data.stats.match_columns.map(m => 
+                            typeof m === 'object' ? `${m.file1_col} ↔ ${m.file2_col}` : m
+                        ).join(', ')}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Output Filename:</strong> ${data.output_filename}<br>
+                        <strong>Output Columns:</strong> ${data.stats.output_columns.length} columns
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Create download buttons
+        let downloadButtonsHtml = '';
+        if (isSplitFiles) {
+            const baseFilename = data.output_filename.replace('.xlsx', '');
+            downloadButtonsHtml = `
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="/excel_merge/download_split/${baseFilename}" class="btn btn-gradient btn-lg" download>
+                        <i class="bi bi-file-zip me-2"></i>Download All Files (ZIP)
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary btn-lg" onclick="resetMerge()">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Start New Merge
+                    </button>
+                </div>
+            `;
+        } else {
+            downloadButtonsHtml = `
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="/excel_merge/download/${data.output_filename}" class="btn btn-gradient btn-lg" download>
+                        <i class="bi bi-download me-2"></i>Download Merged File
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary btn-lg" onclick="resetMerge()">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Start New Merge
+                    </button>
+                </div>
+            `;
+        }
+
+        resultsContent.innerHTML = `
+            <div class="alert mb-4" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.3); color: #10b981;">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong>Success!</strong> Files merged successfully${isSplitFiles ? ' (split into multiple files)' : ''}.
+            </div>
+            
+            ${statsHtml}
+            ${mergeDetailsHtml}
+            ${splitFilesHtml}
+            ${previewTableHtml}
+            
+            ${downloadButtonsHtml}
+        `;
+    }
+
+    function resetMerge() {
+        // Reset all form data
+        fileData = null;
+        selectedMatches.clear();
+        selectedFile1Column = null;
+        selectedFile2Column = null;
+        
+        // Reset file inputs
+        document.getElementById('file1').value = '';
+        document.getElementById('file2').value = '';
+        document.getElementById('upload-btn').disabled = true;
+        
+        // Hide sections
+        document.getElementById('column-section').style.display = 'none';
+        document.getElementById('results-section').style.display = 'none';
+        
+        // Reset merge settings
+        document.getElementById('merge-type').value = 'inner';
+        document.getElementById('output-filename').value = 'merged_output.xlsx';
+        
+        showToast('Ready for a new merge operation', 'info');
+    }
+</script>
+{% endblock %}

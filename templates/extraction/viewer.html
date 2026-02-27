@@ -1,0 +1,556 @@
+{% extends "base.html" %}
+
+{% block title %}Plate Viewer - ViroDB{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --vpro-accent: #6366f1;
+        --vpro-success: #10b981;
+        --vpro-warning: #f59e0b;
+        --vpro-danger: #ef4444;
+        --vpro-glass: rgba(15, 23, 42, 0.7);
+        --vpro-border: rgba(255, 255, 255, 0.08);
+    }
+
+    .vpro-dashboard {
+        display: flex;
+        gap: 2rem;
+        height: calc(100vh - 120px);
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+
+    .vpro-sidebar {
+        flex: 0 0 360px;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        height: 100%;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+
+    .vpro-canvas {
+        flex: 1;
+        height: 100%;
+        overflow-y: auto;
+        padding: 0 0.5rem;
+    }
+
+    .vpro-card {
+        background: var(--vpro-glass);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--vpro-border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .vpro-card-title {
+        font-size: 0.8rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .vpro-card-title i {
+        color: var(--vpro-accent);
+    }
+
+    /* Tactile Buttons */
+    .btn-vpro {
+        padding: 0.75rem 1.25rem;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        letter-spacing: 0.03em;
+        transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        cursor: pointer;
+    }
+
+    .btn-vpro-primary {
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        color: #fff;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25);
+    }
+
+    .btn-vpro-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        color: #fff;
+    }
+
+    .btn-vpro-primary:active {
+        transform: scale(0.95);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-vpro-secondary {
+        background: rgba(255, 255, 255, 0.04);
+        color: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .btn-vpro-secondary:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        transform: translateY(-1px);
+    }
+
+    .btn-vpro-secondary:active {
+        transform: scale(0.96);
+    }
+
+    /* Mode Segmented Control */
+    .mode-switcher {
+        display: flex;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        padding: 4px;
+        gap: 4px;
+    }
+
+    .mode-btn {
+        flex: 1;
+        padding: 0.6rem 0.75rem;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.5);
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        background: none;
+    }
+
+    .mode-btn.active {
+        background: var(--vpro-accent);
+        color: #fff;
+        box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
+    }
+
+    .mode-btn:not(.active):hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Upload Zone */
+    .vpro-upload {
+        border: 2px dashed rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 2rem 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .vpro-upload:hover {
+        border-color: var(--vpro-accent);
+        background: rgba(99, 102, 241, 0.05);
+    }
+
+    .vpro-upload i {
+        font-size: 2rem;
+        color: var(--vpro-accent);
+        display: block;
+        margin-bottom: 0.75rem;
+    }
+
+    /* Stats Row */
+    .stat-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: rgba(99, 102, 241, 0.08);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .stat-chip i {
+        color: var(--vpro-accent);
+        font-size: 0.9rem;
+    }
+
+    /* Premium Table */
+    .data-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .data-table thead th {
+        background: rgba(15, 23, 42, 0.9);
+        color: rgba(255, 255, 255, 0.5);
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        padding: 1rem 1.25rem;
+        border-bottom: 2px solid rgba(99, 102, 241, 0.2);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .data-table tbody tr {
+        transition: background 0.15s;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .data-table tbody tr:hover {
+        background: rgba(99, 102, 241, 0.06);
+    }
+
+    .data-table td {
+        padding: 0.85rem 1.25rem;
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 0.9rem;
+    }
+
+    .sample-id {
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--vpro-accent);
+        font-weight: 600;
+    }
+
+    .plate-badge {
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        color: #fbbf24;
+        padding: 0.2rem 0.6rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .vpro-input {
+        background: rgba(0, 0, 0, 0.3) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #fff !important;
+        padding: 0.6rem 1rem !important;
+        border-radius: 8px !important;
+        font-size: 0.85rem !important;
+    }
+
+    .vpro-input:focus {
+        border-color: var(--vpro-accent) !important;
+        box-shadow: 0 0 10px rgba(99, 102, 241, 0.15) !important;
+    }
+
+    .table-wrap {
+        max-height: calc(100vh - 220px);
+        overflow-y: auto;
+        border-radius: 12px;
+        border: 1px solid var(--vpro-border);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: rgba(255, 255, 255, 0.15);
+    }
+
+    .empty-state i {
+        font-size: 5rem;
+        margin-bottom: 1.5rem;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="vpro-dashboard">
+    <!-- Sidebar -->
+    <aside class="vpro-sidebar">
+        <div class="vpro-card">
+            <h1 class="h5 text-white fw-800 mb-1">Plate Viewer</h1>
+            <p class="text-muted small mb-3">Inspect & export generated plates</p>
+            <div class="d-grid gap-2">
+                <a href="/extraction" class="btn btn-vpro btn-vpro-secondary w-100">
+                    <i class="bi bi-arrow-left"></i>Back to Builder
+                </a>
+            </div>
+        </div>
+
+        <!-- Mode Switcher -->
+        <div class="vpro-card">
+            <div class="vpro-card-title"><i class="bi bi-toggles2"></i>View Mode</div>
+            <div class="mode-switcher">
+                <button class="mode-btn active" data-mode="system" onclick="switchMode('system')">
+                    <i class="bi bi-hdd-stack me-1"></i>System
+                </button>
+                <button class="mode-btn" data-mode="upload" onclick="switchMode('upload')">
+                    <i class="bi bi-cloud-arrow-up me-1"></i>Upload
+                </button>
+            </div>
+        </div>
+
+        <!-- System Controls -->
+        <div class="vpro-card" id="systemControls">
+            <div class="vpro-card-title"><i class="bi bi-funnel"></i>Filters</div>
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-bold">TABLE TYPE</label>
+                <select id="plateType" class="form-select vpro-input" onchange="loadData()">
+                    <option value="extraction">Extraction Tables</option>
+                    <option value="pcr">PCR Tables</option>
+                    <option value="cdna">cDNA Tables</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-bold">SEARCH</label>
+                <input type="text" id="searchBox" class="form-control vpro-input" placeholder="Sample ID or Plate..."
+                    oninput="filterTable()">
+            </div>
+            <div class="d-grid gap-2">
+                <button class="btn btn-vpro btn-vpro-secondary" onclick="loadData()">
+                    <i class="bi bi-arrow-clockwise"></i>Refresh
+                </button>
+                <button class="btn btn-vpro btn-vpro-primary" onclick="exportToExcel()">
+                    <i class="bi bi-download"></i>Export Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- Upload Controls -->
+        <div class="vpro-card" id="uploadControls" style="display: none;">
+            <div class="vpro-card-title"><i class="bi bi-cloud-arrow-up"></i>Upload File</div>
+            <div class="vpro-upload mb-3" onclick="document.getElementById('fileInput').click()">
+                <i class="bi bi-file-earmark-spreadsheet"></i>
+                <div class="text-white small fw-bold">Drop Excel Here</div>
+                <div class="text-muted" style="font-size:0.7rem;">or click to browse</div>
+                <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none;" onchange="uploadFile()">
+            </div>
+            <div class="mb-3">
+                <input type="text" id="searchBoxUpload" class="form-control vpro-input" placeholder="Filter samples..."
+                    oninput="filterTable()">
+            </div>
+            <button class="btn btn-vpro btn-vpro-primary w-100" onclick="exportUploadedData()">
+                <i class="bi bi-file-earmark-excel"></i>Save Final Excel
+            </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="vpro-card" id="statsCard">
+            <div class="vpro-card-title"><i class="bi bi-bar-chart"></i>Statistics</div>
+            <div class="d-flex flex-wrap gap-2">
+                <div class="stat-chip"><i class="bi bi-collection"></i>Total: <strong id="totalCount"
+                        class="text-white">0</strong></div>
+                <div class="stat-chip"><i class="bi bi-info-circle"></i>Source: <strong id="sourceDisplay"
+                        class="text-white">-</strong></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Canvas -->
+    <main class="vpro-canvas">
+        <!-- Loading -->
+        <div id="loadingSpinner" class="text-center py-5" style="display: none;">
+            <div class="spinner-border text-primary mb-3" role="status"></div>
+            <h6 class="text-white">Loading plate data...</h6>
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-wrap">
+            <table class="data-table" id="dataTable">
+                <thead>
+                    <tr>
+                        <th width="60">#</th>
+                        <th>Sample ID</th>
+                        <th>Plate Reference</th>
+                        <th width="80" class="text-end">Copy</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="4">
+                            <div class="empty-state">
+                                <i class="bi bi-inbox"></i>
+                                <h5 class="text-white">No Data Loaded</h5>
+                                <p class="text-muted">Select a table type and click Refresh to begin</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let allData = [];
+    let currentMode = 'system';
+
+    function switchMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === mode);
+        });
+        document.getElementById('systemControls').style.display = mode === 'system' ? 'block' : 'none';
+        document.getElementById('uploadControls').style.display = mode === 'upload' ? 'block' : 'none';
+
+        if (mode === 'system') {
+            loadData();
+        } else {
+            allData = [];
+            renderTable([]);
+            document.getElementById('totalCount').textContent = '0';
+            document.getElementById('sourceDisplay').textContent = 'Awaiting upload...';
+        }
+    }
+
+    async function loadData() {
+        const plateType = document.getElementById('plateType').value;
+        const spinner = document.getElementById('loadingSpinner');
+        const tableBody = document.getElementById('tableBody');
+
+        spinner.style.display = 'block';
+        tableBody.style.opacity = '0.3';
+
+        try {
+            const response = await fetch(`/extraction/api/plate-data/${plateType}`);
+            const result = await response.json();
+
+            if (result.success) {
+                allData = result.data;
+                document.getElementById('totalCount').textContent = result.total_samples;
+                document.getElementById('sourceDisplay').textContent = result.plate_type.toUpperCase();
+                renderTable(allData);
+            } else {
+                showEmptyTable(result.error || "Failed to load data");
+            }
+        } catch (error) {
+            showEmptyTable("Network error: " + error.message);
+        } finally {
+            spinner.style.display = 'none';
+            tableBody.style.opacity = '1';
+        }
+    }
+
+    async function uploadFile() {
+        const fileInput = document.getElementById('fileInput');
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        const spinner = document.getElementById('loadingSpinner');
+        spinner.style.display = 'block';
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('/extraction/api/upload-table', { method: 'POST', body: formData });
+            const result = await response.json();
+
+            if (result.success) {
+                allData = result.data;
+                document.getElementById('totalCount').textContent = result.total_samples;
+                document.getElementById('sourceDisplay').textContent = file.name;
+                renderTable(allData);
+            } else {
+                showEmptyTable(result.error);
+            }
+        } catch (error) {
+            showEmptyTable("Upload failed: " + error.message);
+        } finally {
+            spinner.style.display = 'none';
+            fileInput.value = '';
+        }
+    }
+
+    function renderTable(data) {
+        const tableBody = document.getElementById('tableBody');
+        if (data.length === 0) { showEmptyTable("No samples found"); return; }
+
+        tableBody.innerHTML = data.map((item, idx) => `
+            <tr>
+                <td><span class="text-muted small">${idx + 1}</span></td>
+                <td class="sample-id">${item.sample_id}</td>
+                <td><span class="plate-badge">${item.plate_no}</span></td>
+                <td class="text-end">
+                    <button class="btn btn-vpro btn-vpro-secondary p-1 px-2" style="font-size:0.75rem;" onclick="navigator.clipboard.writeText('${item.sample_id}');this.innerHTML='<i class=\\'bi bi-check2\\'></i>';setTimeout(()=>this.innerHTML='<i class=\\'bi bi-clipboard\\'></i>',1000)">
+                        <i class="bi bi-clipboard"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function showEmptyTable(message) {
+        document.getElementById('tableBody').innerHTML = `
+            <tr><td colspan="4">
+                <div class="empty-state">
+                    <i class="bi bi-search"></i>
+                    <p class="text-muted">${message}</p>
+                </div>
+            </td></tr>`;
+    }
+
+    function filterTable() {
+        const searchBox = currentMode === 'system' ? 'searchBox' : 'searchBoxUpload';
+        const searchTerm = document.getElementById(searchBox).value.toLowerCase();
+        const filtered = allData.filter(item =>
+            item.sample_id.toLowerCase().includes(searchTerm) ||
+            item.plate_no.toLowerCase().includes(searchTerm)
+        );
+        renderTable(filtered);
+    }
+
+    function exportToExcel() {
+        const plateType = document.getElementById('plateType').value;
+        window.location.href = `/extraction/api/export-plate-data/${plateType}`;
+    }
+
+    async function exportUploadedData() {
+        if (allData.length === 0) {
+            if (typeof showToast === 'function') showToast('Upload a file first', 'warning');
+            else alert('Please upload a file first.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/extraction/api/export-uploaded-data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data: allData })
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Processed_Extraction_Table.xlsx';
+                a.click();
+                URL.revokeObjectURL(url);
+            } else {
+                const error = await response.json();
+                alert('Export failed: ' + (error.error || 'Check server logs'));
+            }
+        } catch (error) {
+            alert('Network error: ' + error.message);
+        }
+    }
+
+    // Auto-load on page load
+    document.addEventListener('DOMContentLoaded', loadData);
+</script>
+{% endblock %}

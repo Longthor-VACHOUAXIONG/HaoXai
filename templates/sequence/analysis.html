@@ -1,0 +1,2988 @@
+{% extends "base.html" %}
+
+{% block title %}Sequence Analysis{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h1><i class="bi bi-dna"></i> Sequence Analysis</h1>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs mb-3" id="analysisTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload-pane"
+                type="button" role="tab" aria-controls="upload-pane" aria-selected="true">
+                <i class="bi bi-upload"></i> Upload Sequences
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="analysis-tab" data-bs-toggle="tab" data-bs-target="#analysis-pane"
+                type="button" role="tab" aria-controls="analysis-pane" aria-selected="false">
+                <i class="bi bi-graph-up"></i> Sequence Analysis
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="consensus-tab" data-bs-toggle="tab" data-bs-target="#consensus-pane"
+                type="button" role="tab" aria-controls="consensus-pane" aria-selected="false">
+                <i class="bi bi-check-circle"></i> Consensus
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="blast-tab" data-bs-toggle="tab" data-bs-target="#blast-pane" type="button"
+                role="tab" aria-controls="blast-pane" aria-selected="false">
+                <i class="bi bi-search"></i> BLAST Results
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="analysisTabContent">
+
+        <!-- Upload Tab -->
+        <div class="tab-pane fade show active" id="upload-pane" role="tabpanel" aria-labelledby="upload-tab">
+
+            <!-- Upload Section -->
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-upload"></i> Upload AB1 Files</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="sequence-upload-form">
+                                <div class="mb-3">
+                                    <label for="ab1-files" class="form-label">Select AB1 Files (Multiple)</label>
+                                    <input type="file" class="form-control" id="ab1-files" name="files[]"
+                                        accept=".ab1,.abi,.scf" multiple required>
+                                    <div class="form-text">
+                                        Select multiple AB1 files - they will be assembled into a single consensus
+                                        sequence
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="reference-file" class="form-label">Reference Sequence (Optional)</label>
+                                    <input type="file" class="form-control" id="reference-file" name="reference"
+                                        accept=".fasta,.fa,.fas">
+                                    <div class="form-text">
+                                        Optional: Upload a reference FASTA file to guide the assembly
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="virus-type" class="form-label">Virus Type</label>
+                                    <select class="form-select" id="virus-type" name="virus_type"
+                                        onchange="toggleMainCustomVirusType()">
+                                        <option value="Hanta">Hantavirus</option>
+                                        <option value="Corona">Coronavirus</option>
+                                        <option value="Paramyxo">Paramyxovirus</option>
+                                        <option value="Flavi">Flavivirus</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                    <div class="form-text">
+                                        Virus type determines default trimming patterns for consensus sequences
+                                    </div>
+                                </div>
+
+                                <div class="mb-3" id="mainCustomVirusTypeDiv" style="display: none;">
+                                    <label for="mainCustomVirusTypeInput" class="form-label">Custom Virus Type *</label>
+                                    <input type="text" class="form-control" id="mainCustomVirusTypeInput"
+                                        name="custom_virus_type" placeholder="Enter custom virus type">
+                                    <small class="form-text text-muted">
+                                        Please specify the virus type when selecting "Other"
+                                    </small>
+                                </div>
+
+                                <!-- Primer Trimming Settings -->
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enable-primer-trimming"
+                                            checked>
+                                        <label class="form-check-label" for="enable-primer-trimming">
+                                            Enable Primer/Pattern Trimming
+                                        </label>
+                                    </div>
+                                    <div class="form-text mb-2">
+                                        Trim consensus sequences using conserved start/end patterns
+                                    </div>
+
+                                    <div id="primer-settings" style="display: none;">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                            data-bs-toggle="collapse" data-bs-target="#custom-primer-inputs">
+                                            <i class="bi bi-scissors"></i> Custom Primer Sequences
+                                        </button>
+                                        <div class="collapse mt-2" id="custom-primer-inputs">
+                                            <div class="card card-body">
+                                                <p class="small text-muted mb-2">
+                                                    Leave blank to use default patterns for selected virus type. Enter
+                                                    custom sequences to override defaults.
+                                                </p>
+                                                <div class="alert alert-info alert-sm mb-2" role="alert">
+                                                    <strong>💡 Supports IUPAC ambiguity codes:</strong><br>
+                                                    <small>
+                                                        R=A/G, Y=C/T, M=A/C, K=G/T, S=G/C, W=A/T, H=A/C/T, B=C/G/T,
+                                                        V=A/C/G, D=A/G/T, N=Any<br>
+                                                        <strong>Example:</strong> TGGTCACC or TGGNCACC or TGGRCASY
+                                                    </small>
+                                                </div>
+                                                <div class="row g-2">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label small">Start Pattern/Forward
+                                                            Primer:</label>
+                                                        <input type="text" class="form-control form-control-sm"
+                                                            id="trim-start-pattern"
+                                                            placeholder="e.g., GGAATAAT or GGANTAAT">
+                                                        <div class="form-text small">
+                                                            Pattern at beginning of sequence
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label small">End Pattern/Reverse
+                                                            Primer:</label>
+                                                        <input type="text" class="form-control form-control-sm"
+                                                            id="trim-end-pattern"
+                                                            placeholder="e.g., ATGACCT or ATGRCCT">
+                                                        <div class="form-text small">
+                                                            Pattern at end of sequence
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-2">
+                                                    <small class="text-muted">
+                                                        <strong>Current defaults:</strong>
+                                                        <span id="current-patterns">Hanta: TGGTCACC...CATCATTC</span>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                        data-bs-toggle="collapse" data-bs-target="#fr-pattern-settings">
+                                        <i class="bi bi-gear"></i> Configure F/R Naming Pattern
+                                    </button>
+                                    <div class="collapse mt-2" id="fr-pattern-settings">
+                                        <div class="card card-body">
+                                            <label class="form-label small">Forward/Reverse Pattern Examples:</label>
+                                            <div class="mb-2">
+                                                <input type="radio" class="form-check-input" name="fr-pattern"
+                                                    value="auto" id="pattern-auto" checked>
+                                                <label class="form-check-label small" for="pattern-auto">
+                                                    <strong>Auto-detect</strong> (Recommended) - Automatically detects
+                                                    pattern from filenames
+                                                </label>
+                                            </div>
+                                            <div class="mb-2">
+                                                <input type="radio" class="form-check-input" name="fr-pattern"
+                                                    value="standard" id="pattern-standard">
+                                                <label class="form-check-label small" for="pattern-standard">
+                                                    Standard: sample-F.ab1 / sample-R.ab1
+                                                </label>
+                                            </div>
+                                            <div class="mb-2">
+                                                <input type="radio" class="form-check-input" name="fr-pattern"
+                                                    value="fhanta" id="pattern-fhanta">
+                                                <label class="form-check-label small" for="pattern-fhanta">
+                                                    With virus: sample-FHanta.ab1 / sample-RHanta.ab1
+                                                </label>
+                                            </div>
+                                            <div class="mb-2">
+                                                <input type="radio" class="form-check-input" name="fr-pattern"
+                                                    value="custom" id="pattern-custom">
+                                                <label class="form-check-label small" for="pattern-custom">Custom
+                                                    Pattern:</label>
+                                            </div>
+                                            <div class="row g-2 ms-3" id="custom-pattern-inputs" style="display: none;">
+                                                <div class="col-md-6">
+                                                    <label class="form-label small">Forward Pattern:</label>
+                                                    <input type="text" class="form-control form-control-sm"
+                                                        id="forward-pattern" placeholder="e.g., _F, -F, Forward"
+                                                        value="-F">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small">Reverse Pattern:</label>
+                                                    <input type="text" class="form-control form-control-sm"
+                                                        id="reverse-pattern" placeholder="e.g., _R, -R, Reverse"
+                                                        value="-R">
+                                                </div>
+                                                <div class="col-12">
+                                                    <label class="form-label small">Suffix to Remove (regex):</label>
+                                                    <input type="text" class="form-control form-control-sm"
+                                                        id="suffix-pattern" placeholder="e.g., _[A-Z]\d+.*"
+                                                        value="_[A-Z]\d+.*$">
+                                                    <small class="text-muted">Pattern to remove technical suffixes like
+                                                        _E01_13_RapidSeq50...</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="bi bi-upload"></i> Upload & Process
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card bg-info bg-opacity-10">
+                        <div class="card-header bg-info">
+                            <h5 class="mb-0"><i class="bi bi-info-circle"></i> About</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6>Supported Files:</h6>
+                            <ul>
+                                <li>AB1/ABI chromatogram files</li>
+                                <li>SCF format files</li>
+                                <li>Multiple file upload (no limit)</li>
+                                <li>Optional reference FASTA</li>
+                            </ul>
+
+                            <h6 class="mt-3">Processing:</h6>
+                            <ul>
+                                <li>All files assembled into single consensus</li>
+                                <li>Quality score-based assembly</li>
+                                <li>Automatic trimming</li>
+                                <li>FASTA export</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- End Upload Tab -->
+
+        <!-- Sequence Analysis Tab -->
+        <div class="tab-pane fade" id="analysis-pane" role="tabpanel" aria-labelledby="analysis-tab">
+
+            <!-- Empty state message -->
+            <div class="row" id="analysis-empty-state">
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <h5><i class="bi bi-info-circle"></i> No sequences uploaded yet</h5>
+                        <p class="mb-0">Go to the <strong>Upload Sequences</strong> tab to upload AB1 files for
+                            analysis.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quality Analysis Summary -->
+            <div class="row mb-3" id="quality-summary" style="display: none;">
+                <div class="col-12">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary bg-opacity-25">
+                            <h5 class="mb-0"><i class="bi bi-clipboard-data"></i> Advanced Quality Analysis</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Summary Cards Row -->
+                            <div class="row mb-3" id="quality-cards"></div>
+
+                            <!-- Detailed Analysis Alert -->
+                            <div id="analysis-alerts"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="row" id="results-section" style="display: none;">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-list-check"></i> Uploaded Sequences</h5>
+                            <div>
+                                <button class="btn btn-success btn-sm" onclick="generateConsensus()">
+                                    <i class="bi bi-gear"></i> Generate Consensus
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-dark table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Sample</th>
+                                            <th>Group</th>
+                                            <th>Direction</th>
+                                            <th>Length</th>
+                                            <th>Quality Score</th>
+                                            <th>Issues</th>
+                                            <th>Overall Grade</th>
+                                            <th>Action Required</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sequences-table"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- End Sequence Analysis Tab -->
+
+        <!-- Consensus Tab -->
+        <div class="tab-pane fade" id="consensus-pane" role="tabpanel" aria-labelledby="consensus-tab">
+
+            <!-- Empty state message -->
+            <div class="row" id="consensus-empty-state">
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <h5><i class="bi bi-info-circle"></i> No consensus sequences generated</h5>
+                        <p class="mb-0">Upload sequences, then click <strong>"Generate Consensus"</strong> button in the
+                            Sequence Analysis tab.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Consensus Results -->
+            <div class="row mt-3" id="consensus-section" style="display: none;">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-success d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-check-circle"></i> Consensus Sequences</h5>
+                            <div class="d-flex align-items-center">
+                                <div class="form-check form-check-inline me-3">
+                                    <input class="form-check-input" type="checkbox" id="saveBlastToDb">
+                                    <label class="form-check-label text-white" for="saveBlastToDb">
+                                        Save to Database
+                                    </label>
+                                </div>
+
+                                <!-- BLAST Controls -->
+                                <div class="input-group input-group-sm me-2" style="width: auto;">
+                                    <span
+                                        class="input-group-text bg-secondary text-white border-secondary">Filter</span>
+                                    <select class="form-select bg-dark text-white border-secondary" id="blast-filter">
+                                        <option value="viruses" selected>Viruses Only</option>
+                                        <option value="all">All Organisms</option>
+                                    </select>
+                                </div>
+
+                                <div class="input-group input-group-sm me-2" style="width: auto;">
+                                    <span
+                                        class="input-group-text bg-secondary text-white border-secondary">Program</span>
+                                    <select class="form-select bg-dark text-white border-secondary" id="blast-program">
+                                        <option value="auto" selected>Auto (Size-based)</option>
+                                        <option value="blastn">blastn (Exact)</option>
+                                        <option value="megablast">megablast (Fast)</option>
+                                        <option value="blastx">blastx (Translated vs Protein)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <button class="btn btn-primary btn-sm me-1" onclick="exportFasta()" id="export-btn"
+                                        style="display: none;">
+                                        <i class="bi bi-download"></i> Export FASTA
+                                    </button>
+                                    <button class="btn btn-primary btn-sm" onclick="runBLAST()" id="blast-btn-run">
+                                        <i class="bi bi-search"></i> Run BLAST
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="consensus-content"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- End Consensus Tab -->
+
+        <!-- BLAST Results Tab -->
+        <div class="tab-pane fade" id="blast-pane" role="tabpanel" aria-labelledby="blast-tab">
+
+            <!-- Empty state message -->
+            <div class="row" id="blast-empty-state">
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <h5><i class="bi bi-info-circle"></i> No BLAST results available</h5>
+                        <p class="mb-0">Generate consensus sequences first, then use the <strong>BLAST</strong> buttons
+                            in the Consensus tab.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BLAST Results -->
+            <div class="row mt-3" id="blast-section" style="display: none;">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-info d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-search"></i> BLAST Results</h5>
+                            <div>
+                                <button class="btn btn-success btn-sm me-2" onclick="saveToDatabase()" id="save-db-btn">
+                                    <i class="bi bi-database"></i> Save to Database
+                                </button>
+                                <button class="btn btn-light btn-sm" onclick="exportBLASTResults()"
+                                    id="export-blast-btn">
+                                    <i class="bi bi-download"></i> Export to Excel
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="blast-content"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- End BLAST Results Tab -->
+
+    </div><!-- End Tab Content -->
+
+</div><!-- End container-fluid -->
+
+<!-- Chromatogram Viewer Modal -->
+<div class="modal fade" id="chromatogramModal" tabindex="-1" aria-labelledby="chromatogramModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title" id="chromatogramModalLabel">
+                    <i class="bi bi-graph-up"></i> Chromatogram Viewer
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="chromatogram-loading" class="text-center" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading chromatogram...</p>
+                </div>
+
+                <!-- Controls -->
+                <div id="chromatogram-controls" class="mb-3" style="display: none; position: relative; z-index: 10;">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="btn-toolbar" role="toolbar">
+                                <div class="btn-group me-2" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="zoomIn()"
+                                        title="Zoom In">
+                                        <i class="bi bi-zoom-in"></i> Zoom In
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="zoomOut()"
+                                        title="Zoom Out">
+                                        <i class="bi bi-zoom-out"></i> Zoom Out
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="resetZoom()"
+                                        title="Reset">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Reset
+                                    </button>
+                                </div>
+                                <div class="btn-group me-2" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                        onclick="scrollLeftChromatogram()" title="Scroll Left">
+                                        <i class="bi bi-arrow-left"></i> Left
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                        onclick="scrollRightChromatogram()" title="Scroll Right">
+                                        <i class="bi bi-arrow-right"></i> Right
+                                    </button>
+                                </div>
+                                <div class="d-flex align-items-center me-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                        onclick="adjustForwardOffset(-10)" title="Shift forward left (fast)">
+                                        <i class="bi bi-chevron-double-left"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                        onclick="adjustForwardOffset(-1)" title="Shift forward left">
+                                        <i class="bi bi-arrow-left"></i>
+                                    </button>
+                                    <input type="range" id="forward-offset-slider" min="-100" max="100" value="0"
+                                        style="width: 150px; margin: 0 8px;"
+                                        oninput="setForwardOffsetFromSlider(this.value)"
+                                        title="Drag to adjust forward offset">
+                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                        onclick="adjustForwardOffset(1)" title="Shift forward right">
+                                        <i class="bi bi-arrow-right"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                        onclick="adjustForwardOffset(10)" title="Shift forward right (fast)">
+                                        <i class="bi bi-chevron-double-right"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-1"
+                                        onclick="resetForwardOffset()" title="Reset forward offset">
+                                        <span id="forward-offset">0</span>
+                                    </button>
+                                </div>
+                                <div class="btn-group me-2" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-info" onclick="jumpToPosition()"
+                                        title="Jump to Position">
+                                        <i class="bi bi-skip-forward"></i> Jump to...
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="showForwardTrace" checked
+                                            onchange="drawChromatogram()">
+                                        <label class="form-check-label" for="showForwardTrace">
+                                            <i class="bi bi-arrow-right"></i> Show Forward
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="showReverseTrace"
+                                            onchange="drawChromatogram()">
+                                        <label class="form-check-label" for="showReverseTrace">
+                                            <i class="bi bi-arrow-left"></i> Show Reverse
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <small class="text-muted">
+                                Position: <span id="current-position">0</span> / <span id="total-length">0</span>
+                                | Zoom: <span id="zoom-level">100</span>%
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chromatogram Canvas with scrollbar -->
+                <div id="chromatogram-content"
+                    style="overflow-x: auto; overflow-y: hidden; position: relative; z-index: 1; border: 1px solid #666;">
+                    <canvas id="chromatogram-canvas"
+                        style="background: #ffffff; cursor: crosshair; display: block;"></canvas>
+                </div>
+
+                <!-- Position scrollbar -->
+                <div class="mt-2">
+                    <input type="range" class="form-range" id="position-scrollbar" min="0" max="100" value="0"
+                        style="width: 100%;" onchange="scrollToPosition(this.value)"
+                        oninput="scrollToPosition(this.value)">
+                </div>
+
+                <!-- Sequence Info -->
+                <div id="sequence-info" class="mt-3" style="display: none;">
+                    <div class="alert alert-info">
+                        <strong>Chromatogram Guide:</strong>
+                        <ul class="mb-0">
+                            <li><strong>User Seq:</strong> Original sequence with ambiguity codes (orange)</li>
+                            <li><strong>Consensus:</strong> Auto-corrected sequence based on peak analysis</li>
+                            <li><strong>Quality Bars:</strong> Green (≥Q30) = Excellent, Yellow (Q20-Q30) = Good, Red (
+                                <Q20)=Poor< /li>
+                            <li><strong>Missing Peaks (Magenta ▼):</strong> Good peaks detected but no base called -
+                                possible sequencing errors</li>
+                            <li>Use zoom and scroll controls to navigate. View-only mode - consensus auto-corrects on
+                                save.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="position: relative; z-index: 10;">
+                <button type="button" class="btn btn-success" onclick="saveSequenceEdits()">
+                    <i class="bi bi-save"></i> Save Edits
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- SheetJS library with styling support for Excel export -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+
+<script>
+    let uploadedSequences = [];
+    let consensusSequences = [];
+
+    // Primer trimming patterns for each virus type
+    const virusPrimerPatterns = {
+        'Hanta': { start: 'TGGTCACC', end: 'CATCATTC' },
+        'Corona': { start: 'AAGTGTGA', end: 'ATGATTCT' },
+        'Paramyxo': { start: 'GGAATAAT', end: 'ATGACCT' },
+        'Flavi': { start: 'AGAAGTTG', end: 'CTCTCCAT' },
+        'Other': { start: '', end: '' }
+    };
+
+    // Primer Trimming Toggle
+    document.getElementById('enable-primer-trimming').addEventListener('change', function () {
+        const primerSettings = document.getElementById('primer-settings');
+        primerSettings.style.display = this.checked ? 'block' : 'none';
+    });
+
+    // Update primer pattern display when virus type changes
+    document.getElementById('virus-type').addEventListener('change', function () {
+        const virusType = this.value;
+        const patterns = virusPrimerPatterns[virusType];
+        const currentPatterns = document.getElementById('current-patterns');
+
+        if (patterns && patterns.start && patterns.end) {
+            currentPatterns.textContent = `${virusType}: ${patterns.start}...${patterns.end}`;
+        } else {
+            currentPatterns.textContent = `${virusType}: No default patterns (trimming disabled)`;
+        }
+    });
+
+    // Upload form submission
+    // F/R Pattern Configuration Toggle
+    document.querySelectorAll('input[name="fr-pattern"]').forEach(radio => {
+        radio.addEventListener('change', function () {
+            const customInputs = document.getElementById('custom-pattern-inputs');
+            if (this.value === 'custom') {
+                customInputs.style.display = 'block';
+            } else {
+                customInputs.style.display = 'none';
+            }
+        });
+    });
+
+    document.getElementById('sequence-upload-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const fileCount = document.getElementById('ab1-files').files.length;
+
+        if (fileCount === 0) {
+            showToast('Please select at least one AB1 file', 'warning');
+            return;
+        }
+
+        // Add F/R pattern configuration to form data
+        const patternType = document.querySelector('input[name="fr-pattern"]:checked').value;
+        formData.append('fr_pattern_type', patternType);
+
+        if (patternType === 'custom') {
+            const forwardPattern = document.getElementById('forward-pattern').value;
+            const reversePattern = document.getElementById('reverse-pattern').value;
+            const suffixPattern = document.getElementById('suffix-pattern').value;
+
+            if (!forwardPattern || !reversePattern) {
+                showToast('Please specify both forward and reverse patterns for custom mode', 'warning');
+                return;
+            }
+
+            formData.append('forward_pattern', forwardPattern);
+            formData.append('reverse_pattern', reversePattern);
+            formData.append('suffix_pattern', suffixPattern);
+        }
+
+        // Add primer trimming configuration
+        const enableTrimming = document.getElementById('enable-primer-trimming').checked;
+        formData.append('enable_trimming', enableTrimming);
+
+        if (enableTrimming) {
+            const customStartPattern = document.getElementById('trim-start-pattern').value;
+            const customEndPattern = document.getElementById('trim-end-pattern').value;
+
+            if (customStartPattern) formData.append('trim_start_pattern', customStartPattern);
+            if (customEndPattern) formData.append('trim_end_pattern', customEndPattern);
+        }
+
+        showLoading(`Uploading and processing ${fileCount} sequence file(s)...`);
+        updateStatus('Processing AB1 files...', 'hourglass-split');
+
+        fetch('/sequence/upload', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+
+                if (data.success) {
+                    uploadedSequences = data.sequences;
+
+                    // Analyze quality of all sequences
+                    analyzeQuality(data.sequences);
+
+                    displaySequences(data.sequences);
+                    showToast(data.message + (data.method ? ` (using ${data.method})` : ''), 'success');
+                    updateStatus('Sequences uploaded successfully', 'check-circle');
+
+                    // Auto-generate consensus
+                    if (data.consensus) {
+                        displayConsensus(data.consensus);
+                        document.getElementById('export-btn').style.display = 'inline-block';
+                    }
+
+                    // Switch to analysis tab
+                    setTimeout(() => {
+                        const analysisTab = new bootstrap.Tab(document.getElementById('analysis-tab'));
+                        analysisTab.show();
+                    }, 300);
+                } else {
+                    showToast(data.message, 'danger');
+                    updateStatus('Upload failed', 'x-circle');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showToast('Upload failed: ' + error.message, 'danger');
+                updateStatus('Upload failed', 'x-circle');
+            });
+    });
+
+    // Quality Analysis Functions - COMPLETE REBUILD
+    function analyzeQuality(sequences) {
+        console.log('Starting advanced quality analysis...');
+
+        let stats = {
+            excellent: 0,
+            good: 0,
+            acceptable: 0,
+            poor: 0,
+            needsWork: 0,
+            swapped: 0,
+            lowQuality: 0,
+            highAmbiguity: 0,
+            totalIssues: 0,
+            needResequencing: [],
+            needEditing: []
+        };
+
+        // Group sequences by group name to count pairs as 1
+        const groupedSequences = {};
+        sequences.forEach(seq => {
+            const groupName = seq.group || seq.filename;
+            if (!groupedSequences[groupName]) {
+                groupedSequences[groupName] = [];
+            }
+            groupedSequences[groupName].push(seq);
+        });
+
+        // Analyze each file individually (for display) but count groups for stats
+        sequences.forEach(seq => {
+            const analysis = performAdvancedAnalysis(seq);
+            seq.advancedAnalysis = analysis;
+        });
+
+        // Count stats by groups (pairs count as 1)
+        Object.values(groupedSequences).forEach(group => {
+            const gradeRank = { 'Excellent': 5, 'Good': 4, 'Acceptable': 3, 'Poor': 2, 'Needs Work': 1 };
+
+            // Check if it's a pair (2 files) or single (1 file)
+            const isPair = group.length === 2;
+
+            // Get worst and best quality from the group
+            const worstAnalysis = group.reduce((worst, seq) => {
+                const currentRank = gradeRank[seq.advancedAnalysis?.overallGrade] || 0;
+                const worstRank = gradeRank[worst?.advancedAnalysis?.overallGrade] || 0;
+                return currentRank < worstRank ? seq : worst;
+            }, group[0]);
+
+            const bestAnalysis = group.reduce((best, seq) => {
+                const currentRank = gradeRank[seq.advancedAnalysis?.overallGrade] || 0;
+                const bestRank = gradeRank[best?.advancedAnalysis?.overallGrade] || 0;
+                return currentRank > bestRank ? seq : best;
+            }, group[0]);
+
+            const worstGrade = worstAnalysis.advancedAnalysis.overallGrade;
+            const bestGrade = bestAnalysis.advancedAnalysis.overallGrade;
+            const analysis = worstAnalysis.advancedAnalysis;
+
+            // Special logic: If it's a pair and one passes (Acceptable or better) and one needs work, count as "Needs Review" not "Needs Work"
+            let finalGrade = worstGrade;
+            let shouldExport = false;
+
+            if (isPair && worstGrade === 'Needs Work') {
+                const bestRank = gradeRank[bestGrade] || 0;
+                if (bestRank >= 3) { // Acceptable or better (3+)
+                    // One passes, one fails -> count as Needs Review instead
+                    finalGrade = 'Poor'; // Poor maps to Needs Review category
+                    shouldExport = false; // Don't export to Excel
+                } else {
+                    // Both fail -> keep as Needs Work
+                    shouldExport = true;
+                }
+            } else if (worstGrade === 'Needs Work') {
+                // Single file that needs work -> export
+                shouldExport = true;
+            }
+
+            // Update statistics by group using finalGrade
+            switch (finalGrade) {
+                case 'Excellent': stats.excellent++; break;
+                case 'Good': stats.good++; break;
+                case 'Acceptable': stats.acceptable++; break;
+                case 'Poor': stats.poor++; break;
+                case 'Needs Work': stats.needsWork++; break;
+            }
+
+            if (worstAnalysis.likely_swapped) stats.swapped++;
+            if (analysis.avgQuality < 20) stats.lowQuality++;
+            if (analysis.ambiguityPercent > 5) stats.highAmbiguity++;
+
+            stats.totalIssues += analysis.issueCount;
+
+            // Only add to re-sequencing list if shouldExport is true
+            if (shouldExport && analysis.actionRequired === 'RE-SEQUENCE RECOMMENDED') {
+                stats.needResequencing.push(worstAnalysis.group || worstAnalysis.filename);
+            } else if (analysis.actionRequired === 'MANUAL EDITING NEEDED') {
+                stats.needEditing.push(worstAnalysis.group || worstAnalysis.filename);
+            }
+        });
+
+        displayQualitySummary(sequences, stats);
+    }
+
+    function performAdvancedAnalysis(seq) {
+        const avgQual = seq.avg_quality || 0;
+        const length = seq.length || 0;
+        const sequence = seq.sequence || '';
+        const quality = seq.quality || [];
+
+        // 1. Ambiguity Analysis
+        const ambiguityPattern = /[RYMKSWBDHVN]/g;
+        const ambiguities = (sequence.match(ambiguityPattern) || []).length;
+        const ambiguityPercent = length > 0 ? (ambiguities / length * 100) : 0;
+
+        // 2. Quality Score Analysis
+        const q20Bases = quality.filter(q => q >= 20).length;
+        const q30Bases = quality.filter(q => q >= 30).length;
+        const lowQualBases = quality.filter(q => q < 20).length;
+        const q20Percent = quality.length > 0 ? (q20Bases / quality.length * 100) : 0;
+        const q30Percent = quality.length > 0 ? (q30Bases / quality.length * 100) : 0;
+
+        // 3. Length Analysis
+        const lengthOK = length >= 100; // Minimum acceptable length
+        const lengthIssue = length < 100 ? 'Too short' : null;
+
+        // 4. Detect low quality regions
+        const lowQualRegions = detectLowQualityRegions(quality);
+
+        // 5. Estimate missing base calls (gaps in base_positions)
+        let missingBaseCalls = 0;
+        if (seq.base_positions && seq.base_positions.length > 1) {
+            for (let i = 1; i < seq.base_positions.length; i++) {
+                const gap = seq.base_positions[i] - seq.base_positions[i - 1];
+                const avgGap = seq.base_positions[seq.base_positions.length - 1] / seq.base_positions.length;
+                // If gap is much larger than average, likely missing calls
+                if (gap > avgGap * 2.5) {
+                    missingBaseCalls++;
+                }
+            }
+        }
+
+        // 6. Calculate overall grade
+        let overallGrade, gradeColor, gradeScore;
+        const issues = [];
+
+        // Scoring system (0-100) - MORE LENIENT
+        let score = 100;
+
+        // Quality penalties - ADJUSTED
+        if (avgQual < 15) { score -= 30; issues.push('Very low quality scores'); }
+        else if (avgQual < 25) { score -= 15; issues.push('Low quality scores'); }
+        else if (avgQual < 35) { score -= 5; }
+
+        // Ambiguity penalties - RELAXED
+        if (ambiguityPercent > 20) { score -= 25; issues.push('Excessive ambiguous bases'); }
+        else if (ambiguityPercent > 10) { score -= 12; issues.push('High ambiguous bases'); }
+        else if (ambiguityPercent > 5) { score -= 5; issues.push('Some ambiguous bases'); }
+
+        // Low quality base penalties - MORE FORGIVING
+        const lowQualPercent = quality.length > 0 ? (lowQualBases / quality.length * 100) : 0;
+        if (lowQualPercent > 50) { score -= 20; issues.push('Many low quality bases'); }
+        else if (lowQualPercent > 30) { score -= 10; }
+
+        // Length penalties - MINIMUM ONLY
+        if (length < 50) { score -= 30; issues.push('Too short (<50bp)'); }
+        else if (length < 100) { score -= 10; issues.push('Short sequence'); }
+
+        // Low quality region penalties - REDUCED
+        if (lowQualRegions.length > 5) { score -= 10; issues.push(`${lowQualRegions.length} low quality regions`); }
+        else if (lowQualRegions.length > 3) { score -= 5; }
+
+        // Missing base call penalties - REDUCED
+        if (missingBaseCalls > 10) { score -= 15; issues.push(`${missingBaseCalls} potential missing bases`); }
+        else if (missingBaseCalls > 5) { score -= 8; issues.push(`${missingBaseCalls} possible missing bases`); }
+
+        // F/R swap penalty - CRITICAL
+        if (seq.likely_swapped) { score -= 40; issues.push('F/R labels swapped!'); }
+
+        // Direction mismatch penalty - MINOR
+        if (seq.direction_mismatch && !seq.likely_swapped) { score -= 5; issues.push('Direction label mismatch'); }
+
+        // BONUS for good metrics
+        if (avgQual >= 40 && ambiguityPercent < 2 && lowQualPercent < 10) {
+            score = Math.min(100, score + 5);
+        }
+
+        // Ensure minimum score of 0
+        score = Math.max(0, score);
+
+        // Determine grade from score - ADJUSTED THRESHOLDS
+        if (score >= 85) { overallGrade = 'Excellent'; gradeColor = 'success'; }
+        else if (score >= 70) { overallGrade = 'Good'; gradeColor = 'info'; }
+        else if (score >= 50) { overallGrade = 'Acceptable'; gradeColor = 'warning'; }
+        else if (score >= 30) { overallGrade = 'Poor'; gradeColor = 'warning'; }
+        else { overallGrade = 'Needs Work'; gradeColor = 'danger'; }
+
+        gradeScore = score;
+
+        // Determine action required - MORE PRACTICAL
+        let actionRequired, actionColor, actionIcon;
+        if (score < 30) {
+            actionRequired = 'RE-SEQUENCE RECOMMENDED';
+            actionColor = 'danger';
+            actionIcon = 'arrow-repeat';
+        } else if (score < 50) {
+            actionRequired = 'MANUAL EDITING NEEDED';
+            actionColor = 'warning';
+            actionIcon = 'pencil-square';
+        } else if (score < 70) {
+            actionRequired = 'REVIEW & VERIFY';
+            actionColor = 'warning';
+            actionIcon = 'eye';
+        } else if (score < 85) {
+            actionRequired = 'READY TO USE';
+            actionColor = 'info';
+            actionIcon = 'check-circle';
+        } else {
+            actionRequired = 'EXCELLENT QUALITY';
+            actionColor = 'success';
+            actionIcon = 'check-circle-fill';
+        }
+
+        return {
+            ambiguities,
+            ambiguityPercent: ambiguityPercent.toFixed(1),
+            avgQuality: avgQual.toFixed(1),
+            q20Percent: q20Percent.toFixed(1),
+            q30Percent: q30Percent.toFixed(1),
+            lowQualBases,
+            lowQualPercent: lowQualPercent.toFixed(1),
+            lowQualRegions: lowQualRegions.length,
+            lengthOK,
+            issues,
+            issueCount: issues.length,
+            overallGrade,
+            gradeColor,
+            gradeScore: gradeScore.toFixed(0),
+            actionRequired,
+            actionColor,
+            actionIcon
+        };
+    }
+
+    function detectLowQualityRegions(quality, threshold = 20, minLength = 10) {
+        const regions = [];
+        let inRegion = false;
+        let regionStart = 0;
+        let regionLength = 0;
+
+        quality.forEach((q, i) => {
+            if (q < threshold) {
+                if (!inRegion) {
+                    inRegion = true;
+                    regionStart = i;
+                    regionLength = 1;
+                } else {
+                    regionLength++;
+                }
+            } else {
+                if (inRegion && regionLength >= minLength) {
+                    regions.push({ start: regionStart, length: regionLength });
+                }
+                inRegion = false;
+                regionLength = 0;
+            }
+        });
+
+        if (inRegion && regionLength >= minLength) {
+            regions.push({ start: regionStart, length: regionLength });
+        }
+
+        return regions;
+    }
+
+    function displayQualitySummary(sequences, stats) {
+        // Display summary cards
+        const qualityCards = document.getElementById('quality-cards');
+
+        // Count unique groups (pairs count as 1)
+        const uniqueGroups = [...new Set(sequences.map(s => s.group))];
+        const totalSeqs = uniqueGroups.length;
+
+        const passRate = totalSeqs > 0 ? ((stats.excellent + stats.good + stats.acceptable) / totalSeqs * 100).toFixed(0) : 0;
+
+        qualityCards.innerHTML = `
+            <div class="col-md-2">
+                <div class="card border-dark h-100" style="background-color: #e9ecef; cursor: pointer;" onclick="filterSequences('all')">
+                    <div class="card-body text-center">
+                        <h2 class="mb-1" style="color: #212529;"><i class="bi bi-collection"></i> ${totalSeqs}</h2>
+                        <h6 class="mb-0" style="color: #212529;">Total Samples</h6>
+                        <small style="color: #6c757d;">Click to show all</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-success h-100" style="background-color: #d4edda; cursor: pointer;" onclick="filterSequences('Excellent')">
+                    <div class="card-body text-center">
+                        <h2 class="mb-1" style="color: #155724;"><i class="bi bi-check-circle-fill"></i> ${stats.excellent}</h2>
+                        <h6 class="mb-0" style="color: #155724;">Excellent</h6>
+                        <small style="color: #155724;">Score ≥85</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-primary h-100" style="background-color: #cfe2ff; cursor: pointer;" onclick="filterSequences('Good')">
+                    <div class="card-body text-center">
+                        <h2 class="mb-1" style="color: #084298;"><i class="bi bi-check-circle"></i> ${stats.good}</h2>
+                        <h6 class="mb-0" style="color: #084298;">Good</h6>
+                        <small style="color: #084298;">Score 70-84</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-warning h-100" style="background-color: #fff3cd; cursor: pointer;" onclick="filterSequences('review')">
+                    <div class="card-body text-center">
+                        <h2 class="mb-1" style="color: #856404;"><i class="bi bi-exclamation-circle"></i> ${stats.acceptable + stats.poor}</h2>
+                        <h6 class="mb-0" style="color: #856404;">Needs Review</h6>
+                        <small style="color: #856404;">Score 30-69</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-danger h-100" style="background-color: #f8d7da; cursor: pointer;" onclick="filterSequences('Needs Work')">
+                    <div class="card-body text-center">
+                        <h2 class="mb-1" style="color: #842029;"><i class="bi bi-x-circle-fill"></i> ${stats.needsWork}</h2>
+                        <h6 class="mb-0" style="color: #842029;">Needs Work</h6>
+                        <small style="color: #842029;">Score <30</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-info h-100" style="background-color: #cff4fc; cursor: pointer;" onclick="filterSequences('pass')">
+                    <div class="card-body text-center">
+                        <h2 class="mb-1" style="color: #055160;"><i class="bi bi-clipboard-check"></i> ${passRate}%</h2>
+                        <h6 class="mb-0" style="color: #055160;">Pass Rate</h6>
+                        <small style="color: #055160;">${stats.excellent + stats.good + stats.acceptable}/${totalSeqs} usable</small>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Display alerts for critical issues
+        const alertsDiv = document.getElementById('analysis-alerts');
+        let alerts = '';
+
+        if (stats.needResequencing.length > 0) {
+            alerts += `
+                <div class="alert alert-danger">
+                    <h6 class="alert-heading"><i class="bi bi-exclamation-triangle-fill"></i> ${stats.needResequencing.length} Sample(s) Need Work</h6>
+                    <p class="mb-0">Critical quality issues detected in: <strong>${stats.needResequencing.join(', ')}</strong></p>
+                    <button class="btn btn-sm btn-outline-light mt-2" onclick="exportResequencingList()">
+                        <i class="bi bi-file-earmark-excel"></i> Export Needs Work
+                    </button>
+                </div>
+            `;
+        }
+
+        if (stats.needEditing.length > 0) {
+            alerts += `
+                <div class="alert alert-warning">
+                    <h6 class="alert-heading"><i class="bi bi-pencil-square"></i> ${stats.needEditing.length} Sample(s) May Need Manual Editing</h6>
+                    <p class="mb-0">Moderate quality - review and edit before use: <strong>${stats.needEditing.join(', ')}</strong></p>
+                </div>
+            `;
+        }
+
+        if (stats.lowQuality > 0 && stats.needResequencing.length === 0) {
+            alerts += `
+                <div class="alert alert-info">
+                    <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Quality Note</h6>
+                    <p class="mb-0">${stats.lowQuality} sample(s) have average quality below Q20. Consider trimming low-quality regions.</p>
+                </div>
+            `;
+        }
+
+        if (stats.highAmbiguity > 0) {
+            alerts += `
+                <div class="alert alert-info">
+                    <h6 class="alert-heading"><i class="bi bi-question-circle"></i> Ambiguity Note</h6>
+                    <p class="mb-0">${stats.highAmbiguity} sample(s) have >5% ambiguous bases. Check chromatograms for mixed signals.</p>
+                </div>
+            `;
+        }
+
+        if (stats.excellent === totalSeqs && totalSeqs > 0) {
+            alerts += `
+                <div class="alert alert-success">
+                    <h6 class="alert-heading"><i class="bi bi-trophy-fill"></i> Perfect Batch!</h6>
+                    <p class="mb-0">All ${totalSeqs} samples passed with excellent quality. Ready for analysis.</p>
+                </div>
+            `;
+        }
+
+        alertsDiv.innerHTML = alerts || '<div class="alert alert-info mb-0"><i class="bi bi-info-circle"></i> No critical issues detected.</div>';
+
+        document.getElementById('quality-summary').style.display = 'block';
+        document.getElementById('analysis-empty-state').style.display = 'none';
+
+        // Quality analysis is now on the same tab as sequence analysis, no need to switch
+    }
+
+    // Display uploaded sequences
+    function displaySequences(sequences) {
+        const tbody = document.getElementById('sequences-table');
+        tbody.innerHTML = '';
+
+        sequences.forEach(seq => {
+            const qa = seq.advancedAnalysis || {};
+            const row = tbody.insertRow();
+
+            // Row styling based on grade
+            if (qa.overallGrade === 'Fail') {
+                row.style.backgroundColor = '#f8d7da';
+            } else if (seq.likely_swapped) {
+                row.style.backgroundColor = '#fff3cd';
+            } else if (qa.overallGrade === 'Poor') {
+                row.style.backgroundColor = '#fff3cd';
+            }
+
+            // Build issues list
+            const issuesList = qa.issues && qa.issues.length > 0
+                ? qa.issues.map(issue => `<span class="badge me-1 mb-1" style="background-color: #dc3545; color: white;">${issue}</span>`).join('')
+                : '<span class="badge" style="background-color: #198754; color: white;">No issues</span>';
+
+            // Direction display
+            const dirIcon = seq.detected_direction === 'Forward' ? 'arrow-right' :
+                seq.detected_direction === 'Reverse' ? 'arrow-left' : 'question-circle';
+            const dirColor = seq.direction_mismatch ? '#ffc107' : '#0dcaf0';
+
+            row.innerHTML = `
+                <td>
+                    <a href="#" class="text-decoration-none" style="color: #0d6efd;" onclick="viewChromatogram('${seq.filename}'); return false;">
+                        <i class="bi bi-file-earmark-bar-graph"></i> <strong>${seq.filename}</strong>
+                    </a>
+                    ${!seq.likely_swapped && seq.swap_warning && seq.swap_warning.includes('Correct') ?
+                    `<br><small style="color: #198754;"><i class="bi bi-check-circle"></i> Validated F/R pair (${(seq.complementarity_score * 100).toFixed(0)}% match)</small>` : ''}
+                </td>
+                <td><span class="badge fs-6" style="background-color: #6c757d; color: white;">${seq.group || 'N/A'}</span></td>
+                <td>
+                    <span class="badge" style="background-color: ${dirColor}; color: white;">
+                        <i class="bi bi-${dirIcon}"></i> ${seq.detected_direction}
+                    </span>
+                </td>
+                <td><strong>${seq.length}</strong> bp</td>
+                <td>
+                    <div class="mb-1">
+                        <strong style="color: #ff9800; font-size: 1.1em;">Avg: Q${qa.avgQuality || seq.avg_quality.toFixed(1)}</strong>
+                    </div>
+                    <small style="color: #6c757d;">
+                        Q20: ${qa.q20Percent || 0}% | Q30: ${qa.q30Percent || 0}%
+                    </small>
+                    <br>
+                    <small style="color: ${qa.ambiguityPercent > 5 ? '#dc3545' : qa.ambiguityPercent > 2 ? '#ffc107' : '#6c757d'};">
+                        <strong>Ambiguous: ${qa.ambiguityPercent || 0}%</strong> (${qa.ambiguities || 0} bases)
+                    </small>
+                </td>
+                <td>
+                    <div class="d-flex flex-wrap gap-1">
+                        ${issuesList}
+                    </div>
+                    ${qa.lowQualRegions > 0 ? `<br><small style="color: #ffc107;"><i class="bi bi-exclamation-circle"></i> ${qa.lowQualRegions} low quality regions</small>` : ''}
+                </td>
+                <td class="text-center">
+                    <h5 class="mb-1">
+                        <span class="badge fs-6" style="background-color: ${qa.gradeColor === 'success' ? '#198754' : qa.gradeColor === 'info' ? '#0dcaf0' : qa.gradeColor === 'warning' ? '#ffc107' : qa.gradeColor === 'danger' ? '#dc3545' : '#6c757d'}; color: ${qa.gradeColor === 'warning' ? '#000' : '#fff'};">${qa.overallGrade || 'N/A'}</span>
+                    </h5>
+                    <small style="color: #6c757d;">Score: <strong>${qa.gradeScore || 0}/100</strong></small>
+                </td>
+                <td class="text-center">
+                    <span class="badge fs-6" style="background-color: ${qa.actionColor === 'success' ? '#198754' : qa.actionColor === 'warning' ? '#ffc107' : qa.actionColor === 'danger' ? '#dc3545' : '#6c757d'}; color: ${qa.actionColor === 'warning' ? '#000' : '#fff'};">
+                        <i class="bi bi-${qa.actionIcon || 'info-circle'}"></i> ${qa.actionRequired || 'N/A'}
+                    </span>
+                </td>
+            `;
+        });
+
+        document.getElementById('results-section').style.display = 'block';
+        document.getElementById('analysis-empty-state').style.display = 'none';
+    }
+
+    // Filter sequences by quality grade
+    function filterSequences(filter) {
+        if (!uploadedSequences || uploadedSequences.length === 0) return;
+
+        let filtered = uploadedSequences;
+
+        if (filter === 'all') {
+            // Show all sequences
+            filtered = uploadedSequences;
+        } else if (filter === 'Excellent') {
+            filtered = uploadedSequences.filter(s => s.advancedAnalysis?.overallGrade === 'Excellent');
+        } else if (filter === 'Good') {
+            filtered = uploadedSequences.filter(s => s.advancedAnalysis?.overallGrade === 'Good');
+        } else if (filter === 'review') {
+            // Needs Review = Acceptable + Poor
+            filtered = uploadedSequences.filter(s =>
+                s.advancedAnalysis?.overallGrade === 'Acceptable' ||
+                s.advancedAnalysis?.overallGrade === 'Poor'
+            );
+        } else if (filter === 'Needs Work') {
+            filtered = uploadedSequences.filter(s => s.advancedAnalysis?.overallGrade === 'Needs Work');
+        } else if (filter === 'pass') {
+            // Pass = Excellent + Good + Acceptable
+            filtered = uploadedSequences.filter(s =>
+                s.advancedAnalysis?.overallGrade === 'Excellent' ||
+                s.advancedAnalysis?.overallGrade === 'Good' ||
+                s.advancedAnalysis?.overallGrade === 'Acceptable'
+            );
+        }
+
+        displaySequences(filtered);
+
+        // Scroll to uploaded sequences section
+        const uploadedSection = document.getElementById('results-section');
+        if (uploadedSection) {
+            setTimeout(() => {
+                uploadedSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+
+        // Show filter status
+        const filterText = filter === 'all' ? 'All Sequences' :
+            filter === 'review' ? 'Needs Review' :
+                filter === 'pass' ? 'Passed (Usable)' : filter;
+        showToast(`Showing: ${filterText} (${filtered.length} files)`, 'info');
+    }
+
+    // Generate consensus
+    function generateConsensus() {
+        if (uploadedSequences.length === 0) {
+            showToast('No sequences uploaded', 'warning');
+            return;
+        }
+
+        const virusType = document.getElementById('virus-type').value;
+
+        // Build quality map by filename
+        const qualityMap = {};
+        uploadedSequences.forEach(seq => {
+            qualityMap[seq.filename] = seq.advancedAnalysis?.overallGrade || 'Unknown';
+        });
+
+        console.log('Quality Map being sent:', qualityMap);
+        console.log('Sample entries:', Object.entries(qualityMap).slice(0, 5));
+
+        // Get primer trimming settings
+        const enableTrimming = document.getElementById('enable-primer-trimming').checked;
+        const customStartPattern = document.getElementById('trim-start-pattern').value;
+        const customEndPattern = document.getElementById('trim-end-pattern').value;
+
+        const requestData = {
+            virus_type: virusType,
+            quality_map: qualityMap,
+            enable_trimming: enableTrimming
+        };
+
+        if (enableTrimming && customStartPattern) {
+            requestData.trim_start_pattern = customStartPattern;
+        }
+        if (enableTrimming && customEndPattern) {
+            requestData.trim_end_pattern = customEndPattern;
+        }
+
+        showLoading('Generating consensus sequences...');
+        updateStatus('Processing consensus...', 'hourglass-split');
+
+        fetch('/sequence/consensus', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+
+                if (data.success) {
+                    consensusSequences = data.results;
+                    displayConsensus(data.results);
+                    showToast(data.message, 'success');
+                    updateStatus('Consensus generated', 'check-circle');
+                    document.getElementById('export-btn').style.display = 'inline-block';
+                } else {
+                    showToast(data.message, 'danger');
+                    updateStatus('Consensus generation failed', 'x-circle');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showToast('Error: ' + error.message, 'danger');
+                updateStatus('Consensus generation failed', 'x-circle');
+            });
+    }
+
+    // Display consensus results
+    function displayConsensus(results) {
+        let html = '<div class="table-responsive"><table class="table table-dark table-hover">';
+        html += '<thead><tr><th>Group</th><th>Files</th><th>Original Length</th><th>Trimmed Length</th><th>Sequence</th></tr></thead>';
+        html += '<tbody>';
+
+        results.forEach(result => {
+            const seqPreview = result.consensus.substring(0, 50) + '...';
+            html += `
+                <tr>
+                    <td><strong>${result.group || result.filename}</strong></td>
+                    <td>${result.file_count || 1} file(s)</td>
+                    <td>${result.original_length} bp</td>
+                    <td>${result.trimmed_length} bp</td>
+                    <td><code>${seqPreview}</code></td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table></div>';
+
+        document.getElementById('consensus-content').innerHTML = html;
+        document.getElementById('consensus-section').style.display = 'block';
+        document.getElementById('consensus-empty-state').style.display = 'none';
+
+        // Switch to consensus tab
+        setTimeout(() => {
+            const consensusTab = new bootstrap.Tab(document.getElementById('consensus-tab'));
+            consensusTab.show();
+        }, 300);
+    }
+
+    // Export to FASTA
+    function exportFasta() {
+        if (consensusSequences.length === 0) {
+            showToast('No consensus sequences to export', 'warning');
+            return;
+        }
+
+        showLoading('Generating FASTA file...');
+
+        fetch('/sequence/export-fasta', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                sequences: consensusSequences
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    // Trigger download
+                    window.open(data.download_url, '_blank');
+                } else {
+                    showToast(data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showToast('Export failed: ' + error.message, 'danger');
+            });
+    }
+
+    // Global variable to store BLAST abort controller
+    let blastAbortController = null;
+    let blastRunning = false;  // Flag to prevent double-clicks
+    let blastProgressInterval = null;  // Progress polling interval
+
+    // Run BLAST on all consensus sequences
+    function runBLAST() {
+        if (consensusSequences.length === 0) {
+            showToast('No consensus sequences to BLAST', 'warning');
+            return;
+        }
+
+        // Prevent double-click
+        if (blastRunning) {
+            showToast('BLAST is already running...', 'info');
+            return;
+        }
+        blastRunning = true;
+
+        // Get parameters from new controls
+        const filter = document.getElementById('blast-filter').value;
+        const program = document.getElementById('blast-program').value;
+        const saveToDb = document.getElementById('saveBlastToDb').checked;
+
+        const modeText = filter === 'viruses' ? 'Viruses Only' : 'All Organisms';
+        const total = consensusSequences.length;
+
+        // Create abort controller for cancellation
+        blastAbortController = new AbortController();
+
+        showLoadingWithCancel(`Running BLAST (${modeText}) on ${total} sequences... Click Cancel to stop`, cancelBLAST, total);
+        updateStatus(`Running BLAST (${modeText})...`, 'hourglass-split');
+
+        // Start polling for progress
+        startBlastProgressPolling(total);
+
+        fetch('/sequence/blast-consensus', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                mode: filter,
+                program: program,
+                save_to_database: saveToDb
+            }),
+            signal: blastAbortController.signal
+        })
+            .then(response => response.json())
+            .then(data => {
+                stopBlastProgressPolling();
+                blastRunning = false;  // Reset flag
+                hideLoading();
+                blastAbortController = null;
+
+                if (data.success) {
+                    displayBLASTResults(data.results);
+                    showToast(data.message, 'success');
+                    updateStatus('BLAST completed', 'check-circle');
+                } else {
+                    showToast(data.message, 'danger');
+                    updateStatus('BLAST failed', 'x-circle');
+                }
+            })
+            .catch(error => {
+                stopBlastProgressPolling();
+                blastRunning = false;  // Reset flag
+                hideLoading();
+                blastAbortController = null;
+
+                if (error.name === 'AbortError') {
+                    showToast('BLAST cancelled by user', 'info');
+                    updateStatus('BLAST cancelled', 'x-circle');
+                } else {
+                    showToast('BLAST failed: ' + error.message, 'danger');
+                    updateStatus('BLAST failed', 'x-circle');
+                }
+            });
+    }
+
+    // Poll for BLAST progress updates
+    function startBlastProgressPolling(total) {
+        blastProgressInterval = setInterval(() => {
+            fetch('/sequence/blast-progress')
+                .then(response => response.json())
+                .then(progress => {
+                    if (progress && progress.total > 0) {
+                        const completed = progress.completed || 0;
+                        const status = progress.status || 'running';
+                        const percent = Math.round((completed / progress.total) * 100);
+                        
+                        // Update the loading message
+                        const messageEl = document.getElementById('blast-progress-message');
+                        if (messageEl) {
+                            const statusText = status === 'cancelled' ? ' (Cancelled)' : '';
+                            messageEl.innerHTML = `
+                                <div class="text-center">
+                                    <div class="mb-2">
+                                        <span class="badge bg-info fs-6">${completed}/${progress.total} completed</span>
+                                    </div>
+                                    <div class="progress" style="width: 200px; margin: 0 auto;">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                             role="progressbar" 
+                                             style="width: ${percent}%" 
+                                             aria-valuenow="${percent}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            ${percent}%
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 small text-muted">${statusText}</div>
+                                </div>
+                            `;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.log('Progress check failed:', error);
+                });
+        }, 1000);  // Poll every second
+    }
+
+    // Stop polling for progress
+    function stopBlastProgressPolling() {
+        if (blastProgressInterval) {
+            clearInterval(blastProgressInterval);
+            blastProgressInterval = null;
+        }
+    }
+
+    // Cancel BLAST operation
+    function cancelBLAST() {
+        if (blastAbortController) {
+            blastAbortController.abort();
+        }
+
+        // Also notify server to cancel
+        fetch('/sequence/blast-cancel', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('BLAST cancelled on server');
+            }
+        })
+    }
+
+    // Show loading with cancel button
+    function showLoadingWithCancel(message, cancelCallback, totalSequences = 0) {
+        const overlay = document.createElement('div');
+        overlay.className = 'loading-overlay';
+        overlay.id = 'loading-overlay';
+        overlay.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div id="blast-progress-message" class="mt-3">
+                    <div class="text-center">
+                        <p>${message}</p>
+                        <div class="mb-2">
+                            <span class="badge bg-info fs-6">0/${totalSequences} completed</span>
+                        </div>
+                        <div class="progress" style="width: 200px; margin: 0 auto;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" 
+                                 style="width: 0%" 
+                                 aria-valuenow="0" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                0%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-danger mt-3" id="cancel-blast-btn">
+                    <i class="bi bi-x-circle"></i> Cancel BLAST
+                </button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        // Add cancel button handler
+        document.getElementById('cancel-blast-btn').addEventListener('click', function() {
+            if (cancelCallback) cancelCallback();
+        });
+    }
+
+    // Display BLAST results
+    function displayBLASTResults(results) {
+        // Store results globally for export
+        lastBLASTResults = results;
+
+    let html = '<div class="accordion" id="blastAccordion">';
+
+    results.forEach((result, index) => {
+        const hasError = result.error;
+        const hits = result.hits || [];
+
+        html += `
+            <div class="accordion-item bg-dark">
+                <h2 class="accordion-header" id="heading${index}">
+                    <button class="accordion-button ${index === 0 ? '' : 'collapsed'} bg-dark text-white" type="button" 
+                            data-bs-toggle="collapse" data-bs-target="#collapse${index}" 
+                            aria-expanded="${index === 0 ? 'true' : 'false'}" aria-controls="collapse${index}">
+                        <strong>${result.name}</strong> 
+                        ${hasError ? '<span class="badge bg-danger ms-2">Error</span>' :
+                `<span class="badge bg-success ms-2">${hits.length} hits</span>`}
+                    </button>
+                </h2>
+                <div id="collapse${index}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" 
+                     aria-labelledby="heading${index}" data-bs-parent="#blastAccordion">
+                    <div class="accordion-body bg-dark text-white">
+        `;
+
+        if (hasError) {
+            html += `<div class="alert alert-danger">${result.error}</div>`;
+        } else if (result.message) {
+            html += `
+                <div class="alert alert-warning">
+                    ${result.message}
+                    ${result.url ? `<br><a href="${result.url}" target="_blank" class="btn btn-sm btn-primary mt-2">View Results on NCBI</a>` : ''}
+                </div>
+            `;
+        } else if (hits.length === 0) {
+            html += `
+                <div class="alert alert-info">
+                    No BLAST hits found
+                    ${result.url ? `<br><a href="${result.url}" target="_blank" class="btn btn-sm btn-primary mt-2">View on NCBI</a>` : ''}
+                </div>
+            `;
+        } else {
+            html += `
+                <p><strong>Sequence Length:</strong> ${result.sequence_length} bp</p>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover table-sm">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Description</th>
+                                <th>Accession</th>
+                                <th>Query Coverage</th>
+                                <th>Identity</th>
+                                <th>E-value</th>
+                                <th>Bit Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            hits.forEach((hit, hitIndex) => {
+                const identityPercent = hit.identity_percent || ((hit.identity / hit.align_len) * 100).toFixed(2);
+                html += `
+                    <tr>
+                        <td>${hitIndex + 1}</td>
+                        <td><small>${hit.title.substring(0, 100)}${hit.title.length > 100 ? '...' : ''}</small></td>
+                        <td><code>${hit.accession}</code></td>
+                        <td>${hit.query_coverage}%</td>
+                        <td>${identityPercent}%</td>
+                        <td>${typeof hit.evalue === 'number' ? hit.evalue.toExponential(2) : hit.evalue}</td>
+                        <td>${typeof hit.bit_score === 'number' ? hit.bit_score.toFixed(1) : hit.bit_score}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        html += `
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+
+    document.getElementById('blast-content').innerHTML = html;
+    document.getElementById('blast-section').style.display = 'block';
+    document.getElementById('blast-empty-state').style.display = 'none';
+
+    // Switch to BLAST results tab
+    setTimeout(() => {
+        const blastTab = new bootstrap.Tab(document.getElementById('blast-tab'));
+        blastTab.show();
+    }, 300);
+}
+
+    function exportBLASTResults() {
+        if (!lastBLASTResults || lastBLASTResults.length === 0) {
+            globalAlert('No BLAST results to export', 'warning', 'No Results');
+            return;
+        }
+
+        const wb = XLSX.utils.book_new();
+        const wsData = [];
+
+        // Header row
+        wsData.push([
+            'Sequence Name',
+            'Sequence Length',
+            'Hit Rank',
+            'Description',
+            'Accession',
+            'Query Coverage (%)',
+            'Identity (%)',
+            'E-value',
+            'Bit Score'
+        ]);
+
+        // Data rows
+        lastBLASTResults.forEach(result => {
+            const seqName = result.name;
+            const seqLength = result.sequence_length;
+
+            if (result.hits && result.hits.length > 0) {
+                result.hits.forEach((hit, hitIndex) => {
+                    const identityPercent = hit.identity_percent || ((hit.identity / hit.align_len) * 100).toFixed(2);
+                    wsData.push([
+                        seqName,
+                        seqLength,
+                        hitIndex + 1,
+                        hit.title,
+                        hit.accession,
+                        parseFloat(hit.query_coverage),
+                        parseFloat(identityPercent),
+                        typeof hit.evalue === 'number' ? hit.evalue : parseFloat(hit.evalue),
+                        typeof hit.bit_score === 'number' ? hit.bit_score : parseFloat(hit.bit_score)
+                    ]);
+                });
+            } else {
+                // No hits found for this sequence
+                wsData.push([seqName, seqLength, '-', result.error || result.message || 'No hits found', '-', '-', '-', '-', '-']);
+            }
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+        // Set column widths
+        ws['!cols'] = [
+            { wch: 25 },  // Sequence Name
+            { wch: 15 },  // Sequence Length
+            { wch: 10 },  // Hit Rank
+            { wch: 60 },  // Description
+            { wch: 15 },  // Accession
+            { wch: 18 },  // Query Coverage
+            { wch: 12 },  // Identity
+            { wch: 12 },  // E-value
+            { wch: 12 }   // Bit Score
+        ];
+
+        XLSX.utils.book_append_sheet(wb, ws, 'BLAST Results');
+
+        const timestamp = new Date().toISOString().split('T')[0];
+        XLSX.writeFile(wb, `blast_results_${timestamp}.xlsx`);
+    }
+
+    // Save to Database
+    function saveToDatabase() {
+        if (!uploadedSequences || uploadedSequences.length === 0) {
+            showToast('No sequences to save', 'warning');
+            return;
+        }
+
+        // Check database connection first
+        fetch('/auth/status')
+            .then(response => response.json())
+            .then(status => {
+                if (!status.connected) {
+                    globalConfirm(
+                        'Not connected to database. Would you like to go to the connection page?',
+                        'Database Connection Required',
+                        () => {
+                            window.location.href = '/auth/connect';
+                        }
+                    );
+                    return;
+                }
+
+                // Continue with save dialog
+                proceedWithSave();
+            })
+            .catch(error => {
+                showToast('Failed to check database connection', 'danger');
+            });
+    }
+
+    function proceedWithSave() {
+        // Show a single comprehensive save modal instead of sequential modals
+        showSaveOptionsModal();
+    }
+
+    function showSaveOptionsModal() {
+        // Create save options modal
+        const modalHtml = `
+            <div class="modal fade" id="saveOptionsModal" tabindex="-1" aria-labelledby="saveOptionsModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title" id="saveOptionsModalLabel">
+                                <i class="bi bi-database me-2"></i>Save to Database Options
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="projectNameInput" class="form-label">Project Name *</label>
+                                <input type="text" class="form-control" id="projectNameInput" value="Default Project" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Select what to save:</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="saveSequencesCheck" checked>
+                                    <label class="form-check-label" for="saveSequencesCheck">
+                                        <i class="bi bi-dna me-1"></i>Uploaded Sequences (${uploadedSequences ? uploadedSequences.length : 0})
+                                    </label>
+                                </div>
+                                ${consensusSequences && consensusSequences.length > 0 ? `
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="saveConsensusCheck" checked>
+                                    <label class="form-check-label" for="saveConsensusCheck">
+                                        <i class="bi bi-check-circle me-1"></i>Consensus Sequences (${consensusSequences.length})
+                                    </label>
+                                </div>
+                                ` : ''}
+                                ${lastBLASTResults && lastBLASTResults.length > 0 ? `
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="saveBlastCheck" checked>
+                                    <label class="form-check-label" for="saveBlastCheck">
+                                        <i class="bi bi-search me-1"></i>BLAST Results (${lastBLASTResults.length})
+                                    </label>
+                                </div>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="virusTypeSelect" class="form-label">Virus Type</label>
+                                <select class="form-select" id="virusTypeSelect" onchange="toggleCustomVirusType()">
+                                    <option value="Hantavirus">Hantavirus</option>
+                                    <option value="Coronavirus">Coronavirus</option>
+                                    <option value="Flavivirus">Flavivirus</option>
+                                    <option value="Paramyxovirus">Paramyxovirus</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3" id="customVirusTypeDiv" style="display: none;">
+                                <label for="customVirusTypeInput" class="form-label">Custom Virus Type *</label>
+                                <input type="text" class="form-control" id="customVirusTypeInput" placeholder="Enter custom virus type">
+                                <small class="form-text text-muted">
+                                    Please specify the virus type when selecting "Other"
+                                </small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="bi bi-x-circle me-1"></i>Cancel
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="executeSave()">
+                                <i class="bi bi-database me-1"></i>Save to Database
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Remove existing modal if present
+        const existingModal = document.getElementById('saveOptionsModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Add modal to page
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('saveOptionsModal'));
+        modal.show();
+
+        // Handle modal cleanup
+        document.getElementById('saveOptionsModal').addEventListener('hidden.bs.modal', function () {
+            this.remove();
+        });
+    }
+
+    function executeSave() {
+        const projectName = document.getElementById('projectNameInput').value.trim();
+        if (!projectName) {
+            showToast('Project name is required', 'warning');
+            return;
+        }
+
+        // Get virus type
+        const virusTypeSelect = document.getElementById('virusTypeSelect').value;
+        let virusType = virusTypeSelect;
+
+        // If "Other" is selected, get custom input
+        if (virusTypeSelect === 'Other') {
+            const customVirusType = document.getElementById('customVirusTypeInput').value.trim();
+            if (!customVirusType) {
+                showToast('Please specify the custom virus type', 'warning');
+                return;
+            }
+            virusType = customVirusType;
+        }
+
+        const saveSequences = document.getElementById('saveSequencesCheck').checked;
+        const saveConsensus = document.getElementById('saveConsensusCheck') ?
+            document.getElementById('saveConsensusCheck').checked : false;
+        const saveBlast = document.getElementById('saveBlastCheck') ?
+            document.getElementById('saveBlastCheck').checked : false;
+
+        if (!saveSequences && !saveConsensus && !saveBlast) {
+            showToast('Please select at least one item to save', 'warning');
+            return;
+        }
+
+        // Hide the options modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('saveOptionsModal'));
+        modal.hide();
+
+        // Execute save with real-time progress
+        executeRealtimeSave({
+            save_sequences: saveSequences,
+            save_consensus: saveConsensus,
+            save_blast: saveBlast,
+            project_name: projectName,
+            virus_type: virusType
+        });
+    }
+
+    function toggleCustomVirusType() {
+        const virusTypeSelect = document.getElementById('virusTypeSelect');
+        const customVirusTypeDiv = document.getElementById('customVirusTypeDiv');
+        const customVirusTypeInput = document.getElementById('customVirusTypeInput');
+
+        if (virusTypeSelect.value === 'Other') {
+            customVirusTypeDiv.style.display = 'block';
+            customVirusTypeInput.required = true;
+            customVirusTypeInput.focus();
+        } else {
+            customVirusTypeDiv.style.display = 'none';
+            customVirusTypeInput.required = false;
+            customVirusTypeInput.value = '';
+        }
+    }
+
+    function toggleMainCustomVirusType() {
+        const virusTypeSelect = document.getElementById('virus-type');
+        const customVirusTypeDiv = document.getElementById('mainCustomVirusTypeDiv');
+        const customVirusTypeInput = document.getElementById('mainCustomVirusTypeInput');
+
+        if (virusTypeSelect.value === 'Other') {
+            customVirusTypeDiv.style.display = 'block';
+            customVirusTypeInput.required = true;
+            customVirusTypeInput.focus();
+        } else {
+            customVirusTypeDiv.style.display = 'none';
+            customVirusTypeInput.required = false;
+            customVirusTypeInput.value = '';
+        }
+    }
+
+    function executeRealtimeSave(options) {
+        // Get database info first
+        fetch('/auth/status')
+            .then(response => response.json())
+            .then(dbStatus => {
+                // Prepare request data
+                const requestData = {
+                    ...options,
+                    blast_mode: lastBLASTResults && lastBLASTResults.length > 0 ?
+                        (lastBLASTResults[0].mode || 'viruses') : 'viruses',
+                    db_connected: dbStatus.connected,
+                    db_type: dbStatus.db_type,
+                    db_name: dbStatus.db_name
+                };
+
+                // Include db_path for SQLite if available
+                if (dbStatus.db_path) {
+                    requestData.db_path = dbStatus.db_path;
+                }
+
+                // Send save request
+                return fetch('/sequence/save-to-database', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success', 5000);
+
+                    // Clear saved data from UI if successful
+                    if (data.saved_count > 0) {
+                        // Optionally reset some UI elements
+                        console.log('Save operation completed successfully');
+                    }
+                } else {
+                    showToast(data.message, 'danger', 8000);
+                }
+            })
+            .catch(error => {
+                console.error('Save error:', error);
+                showToast('Failed to save to database: ' + error.message, 'danger', 8000);
+            });
+    }
+
+    // Export re-sequencing list to Excel
+    function exportResequencingList() {
+        if (!uploadedSequences || uploadedSequences.length === 0) {
+            showToast('No sequences available', 'warning');
+            return;
+        }
+
+        // Get sequences that need re-sequencing
+        const needReseq = uploadedSequences.filter(seq =>
+            seq.advancedAnalysis && seq.advancedAnalysis.actionRequired === 'RE-SEQUENCE RECOMMENDED'
+        );
+
+        if (needReseq.length === 0) {
+            showToast('No sequences need re-sequencing', 'info');
+            return;
+        }
+
+        // Extract consensus names (group names) from filenames
+        const consensusNames = needReseq.map(seq => {
+            // Get the group name which is the consensus name
+            return seq.group || seq.filename.replace(/\.(ab1|abi|scf)$/i, '');
+        });
+
+        // Remove duplicates (same consensus name from F/R pairs)
+        const uniqueConsensusNames = [...new Set(consensusNames)];
+
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+
+        // Create worksheet data with styled cells
+        const wsData = [];
+
+        // Header row with styling
+        wsData.push([
+            {
+                v: 'No', t: 's', s: {
+                    fill: { fgColor: { rgb: '4472C4' } },
+                    font: { bold: true, color: { rgb: 'FFFFFF' } },
+                    alignment: { horizontal: 'center', vertical: 'center' },
+                    border: {
+                        top: { style: 'thin', color: { rgb: '000000' } },
+                        bottom: { style: 'thin', color: { rgb: '000000' } },
+                        left: { style: 'thin', color: { rgb: '000000' } },
+                        right: { style: 'thin', color: { rgb: '000000' } }
+                    }
+                }
+            },
+            {
+                v: 'Sample name', t: 's', s: {
+                    fill: { fgColor: { rgb: '4472C4' } },
+                    font: { bold: true, color: { rgb: 'FFFFFF' } },
+                    alignment: { horizontal: 'center', vertical: 'center' },
+                    border: {
+                        top: { style: 'thin', color: { rgb: '000000' } },
+                        bottom: { style: 'thin', color: { rgb: '000000' } },
+                        left: { style: 'thin', color: { rgb: '000000' } },
+                        right: { style: 'thin', color: { rgb: '000000' } }
+                    }
+                }
+            }
+        ]);
+
+        // Data rows with styling
+        uniqueConsensusNames.forEach((name, index) => {
+            wsData.push([
+                {
+                    v: index + 1, t: 'n', s: {
+                        alignment: { horizontal: 'center', vertical: 'center' },
+                        border: {
+                            top: { style: 'thin', color: { rgb: '000000' } },
+                            bottom: { style: 'thin', color: { rgb: '000000' } },
+                            left: { style: 'thin', color: { rgb: '000000' } },
+                            right: { style: 'thin', color: { rgb: '000000' } }
+                        }
+                    }
+                },
+                {
+                    v: name, t: 's', s: {
+                        border: {
+                            top: { style: 'thin', color: { rgb: '000000' } },
+                            bottom: { style: 'thin', color: { rgb: '000000' } },
+                            left: { style: 'thin', color: { rgb: '000000' } },
+                            right: { style: 'thin', color: { rgb: '000000' } }
+                        }
+                    }
+                }
+            ]);
+        });
+
+        // Create worksheet from styled data
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+        // Set column widths
+        ws['!cols'] = [
+            { wch: 8 },  // No column
+            { wch: 35 }  // Sample name column
+        ];
+
+        // Add worksheet to workbook
+        XLSX.utils.book_append_sheet(wb, ws, 'Needs Work');
+
+        // Generate Excel file and trigger download
+        const filename = 'needs_work_' + new Date().toISOString().split('T')[0] + '.xlsx';
+        XLSX.writeFile(wb, filename);
+
+        showToast(`Exported ${uniqueConsensusNames.length} sample(s) that need work`, 'success');
+    }
+
+    // View chromatogram for a specific file
+    let chromatogramData = null;
+    let currentPosition = 0;
+    let forwardOffset = 0;  // Independent scroll offset for forward trace
+    let zoomLevel = 1.0;
+    let basesPerView = 50;
+    let editedForwardSequence = '';
+    let editedReverseSequence = '';
+    let showForward = true;
+    let showReverse = true;
+    let mouseX = -1;
+    let mouseY = -1;
+
+    function viewChromatogram(filename) {
+        const modal = new bootstrap.Modal(document.getElementById('chromatogramModal'));
+
+        document.getElementById('chromatogram-loading').style.display = 'block';
+        document.getElementById('chromatogram-controls').style.display = 'none';
+        document.getElementById('sequence-info').style.display = 'none';
+        modal.show();
+
+        fetch('/sequence/view-chromatogram/' + encodeURIComponent(filename))
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('chromatogram-loading').style.display = 'none';
+
+                if (data.success) {
+                    // Update title to show both filenames if paired
+                    let titleHTML = '<i class="bi bi-graph-up"></i> Chromatogram: ';
+                    if (data.reverse_filename) {
+                        titleHTML += '<span class="text-primary">' + data.forward_filename + '</span> + <span class="text-danger">' + data.reverse_filename + '</span>';
+                    } else {
+                        titleHTML += filename;
+                    }
+                    document.getElementById('chromatogramModalLabel').innerHTML = titleHTML;
+
+                    chromatogramData = data;
+
+                    // Store original forward data
+                    editedForwardSequence = data.forward.sequence;
+
+                    // If we have a reverse pair, keep both in original form
+                    if (data.reverse) {
+                        editedReverseSequence = data.reverse.sequence;
+                        // Store original reverse data (not converted yet)
+                        chromatogramData.reverse_original = data.reverse;
+
+                        // Calculate alignment between forward and reverse complement
+                        const reverseRC = computeReverseComplement(data.reverse);
+                        const alignment = findSequenceAlignment(data.forward, reverseRC);
+                        chromatogramData.alignment = alignment;
+                        console.log('Sequence alignment:', alignment);
+
+                        // Show alignment quality
+                        if (alignment.length > 0) {
+                            const quality = (alignment.similarity * 100).toFixed(1);
+                            console.log('Alignment quality: ' + quality + '% (' + alignment.matches + '/' + alignment.length + ' bases match)');
+                            console.log('Trace offset: ' + alignment.traceOffset + ' points for fine alignment');
+                        }
+                    }
+
+                    currentPosition = 0;
+                    zoomLevel = 1.0;
+                    basesPerView = 50;
+
+                    document.getElementById('total-length').textContent = data.forward.sequence.length;
+                    document.getElementById('showForwardTrace').checked = true;
+                    document.getElementById('showForwardTrace').disabled = false;
+                    document.getElementById('showReverseTrace').checked = data.reverse ? true : false;
+                    document.getElementById('showReverseTrace').disabled = !data.reverse;
+                    document.getElementById('chromatogram-controls').style.display = 'block';
+                    document.getElementById('sequence-info').style.display = 'block';
+
+                    // Initialize scrollbar
+                    updateScrollbar();
+
+                    setupCanvasClickHandler();
+                    drawChromatogram();
+                } else {
+                    globalAlert('Error: ' + data.message, 'danger', 'Error');
+                }
+            })
+            .catch(error => {
+                document.getElementById('chromatogram-loading').style.display = 'none';
+                globalAlert('Error loading chromatogram: ' + error.message, 'danger', 'Error');
+            });
+    }
+
+    function setupCanvasClickHandler() {
+        // Removed manual editing - consensus auto-corrects the sequence
+        console.log('Canvas in view-only mode - consensus auto-corrects bases');
+
+        const canvas = document.getElementById('chromatogram-canvas');
+
+        // Track mouse movement for crosshair
+        canvas.addEventListener('mousemove', function (e) {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+            drawChromatogram();
+        });
+
+        // Clear crosshair when mouse leaves
+        canvas.addEventListener('mouseleave', function () {
+            mouseX = -1;
+            mouseY = -1;
+            drawChromatogram();
+        });
+    }
+
+    function handleBaseClick(x, y) {
+        if (!chromatogramData) return;
+
+        console.log('Click at x:', x, 'y:', y);
+
+        const canvas = document.getElementById('chromatogram-canvas');
+        const margin = 100;
+        const topMargin = 50;
+        const forwardTraceHeight = showReverse ? 250 : 280;
+        const reverseTraceHeight = 250;
+        const gapBetweenTraces = 80;
+
+        const forwardData = chromatogramData.forward;
+        const forwardBasePositions = forwardData.base_positions;
+
+        const pointsPerBase = forwardData.trace_data.A.length / forwardData.sequence.length;
+        const startTrace = Math.floor(currentPosition * pointsPerBase);
+        const endPosition = Math.min(currentPosition + Math.floor(basesPerView / zoomLevel),
+            editedForwardSequence.length);
+        const endTrace = Math.floor(endPosition * pointsPerBase);
+        const tracePoints = endTrace - startTrace;
+        const xScale = tracePoints > 0 ? (canvas.width - 2 * margin) / tracePoints : 1;
+
+        // Calculate the Y positions for User Seq and Consensus (same as drawing code)
+        const userSeqY = topMargin + forwardTraceHeight + (showReverse ? reverseTraceHeight + gapBetweenTraces : 0) + 30;
+        const consensusY = userSeqY + 20;
+
+        console.log('userSeqY:', userSeqY, 'consensusY:', consensusY);
+
+        // Check if click is in the User Seq or Consensus area
+        if (y < userSeqY - 20 || y > consensusY + 20) {
+            console.log('Click outside User Seq/Consensus area');
+            return; // Not clicking on the base rows
+        }
+
+        let clickedBaseIndex = -1;
+        let minDistance = Infinity;
+
+        // Find the closest base to the click position
+        for (let i = 0; i < forwardData.sequence.length; i++) {
+            if (forwardBasePositions && i < forwardBasePositions.length) {
+                const traceIndex = forwardBasePositions[i];
+                if (traceIndex >= startTrace && traceIndex < endTrace) {
+                    const relativeTraceIndex = traceIndex - startTrace;
+                    const baseX = margin + relativeTraceIndex * xScale;
+
+                    const distance = Math.abs(x - baseX);
+                    if (distance < minDistance && distance < 25) { // Within 25 pixels
+                        minDistance = distance;
+                        clickedBaseIndex = i;
+                    }
+                }
+            }
+        }
+
+        console.log('Clicked base index:', clickedBaseIndex, 'distance:', minDistance);
+
+        if (clickedBaseIndex >= 0 && clickedBaseIndex < editedForwardSequence.length) {
+            const currentBase = editedForwardSequence[clickedBaseIndex];
+            console.log('Editing base', clickedBaseIndex, ':', currentBase);
+
+            const newBase = prompt('Edit base at position ' + (clickedBaseIndex + 1) + ' (A, T, G, or C):', currentBase);
+
+            if (newBase && /^[ATGC]$/i.test(newBase)) {
+                editedForwardSequence = editedForwardSequence.substring(0, clickedBaseIndex) +
+                    newBase.toUpperCase() +
+                    editedForwardSequence.substring(clickedBaseIndex + 1);
+                drawChromatogram();
+            }
+        } else {
+            console.log('No base found at click position');
+        }
+    }
+
+    function detectMissingBaseCalls(forwardData, startTrace, endTrace, basePositions) {
+        const missingPeaks = [];
+
+        // Calculate dynamic threshold based on actual peak heights
+        let allPeaks = [];
+        for (const base of ['A', 'C', 'G', 'T']) {
+            allPeaks.push(...forwardData.trace_data[base].slice(startTrace, endTrace));
+        }
+        const maxPeak = Math.max(...allPeaks);
+        const peakThreshold = maxPeak * 0.3; // Only peaks at least 30% of max height
+        const minDistanceBetweenBases = 8; // Minimum trace points between base calls
+
+        // Get all called base positions in trace coordinates
+        const calledPositions = basePositions.filter(pos => pos >= startTrace && pos < endTrace);
+
+        // Scan through trace looking for significant peaks not near any called base
+        for (let tracePos = startTrace; tracePos < endTrace; tracePos++) {
+            // Check if this position is far enough from any called base
+            const nearestBase = calledPositions.reduce((nearest, pos) => {
+                const dist = Math.abs(pos - tracePos);
+                return dist < Math.abs(nearest - tracePos) ? pos : nearest;
+            }, calledPositions[0] || Infinity);
+
+            const distanceToNearestBase = Math.abs(nearestBase - tracePos);
+
+            if (distanceToNearestBase > minDistanceBetweenBases) {
+                // Check if there's a significant peak at this position
+                let maxPeakValue = 0;
+                let peakBase = null;
+                let secondHighest = 0;
+
+                const peakValues = {};
+                for (const base of ['A', 'C', 'G', 'T']) {
+                    const peakValue = forwardData.trace_data[base][tracePos] || 0;
+                    peakValues[base] = peakValue;
+
+                    if (peakValue > maxPeakValue) {
+                        secondHighest = maxPeakValue;
+                        maxPeakValue = peakValue;
+                        peakBase = base;
+                    } else if (peakValue > secondHighest) {
+                        secondHighest = peakValue;
+                    }
+                }
+
+                // Only count as missing if:
+                // 1. Peak is above threshold (30% of max)
+                // 2. Peak is clearly dominant (at least 2x higher than second highest)
+                // 3. It's a local maximum
+                if (maxPeakValue > peakThreshold && peakBase && maxPeakValue > secondHighest * 2) {
+                    // Check if it's a local maximum (peak)
+                    const prevPeak = forwardData.trace_data[peakBase][tracePos - 2] || 0;
+                    const nextPeak = forwardData.trace_data[peakBase][tracePos + 2] || 0;
+
+                    if (maxPeakValue > prevPeak * 1.5 && maxPeakValue > nextPeak * 1.5) {
+                        // Check if we already added a nearby missing peak
+                        const tooClose = missingPeaks.some(mp => Math.abs(mp.position - tracePos) < minDistanceBetweenBases);
+
+                        if (!tooClose) {
+                            missingPeaks.push({
+                                position: tracePos,
+                                base: peakBase,
+                                height: maxPeakValue,
+                                confidence: maxPeakValue / maxPeak // Relative to maximum peak
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        // Only return high-confidence missing peaks (>40% of max peak height)
+        return missingPeaks.filter(mp => mp.confidence > 0.4);
+    }
+
+    function drawChromatogram() {
+        if (!chromatogramData) return;
+
+        const canvas = document.getElementById('chromatogram-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Check which traces to show
+        const showForwardTrace = document.getElementById('showForwardTrace').checked;
+        const showReverseTrace = document.getElementById('showReverseTrace').checked && chromatogramData.reverse;
+
+        // Set canvas size based on what we're showing
+        canvas.width = Math.min(window.innerWidth - 100, 1800);
+
+        const traceHeight = 180;
+        const gapBetweenTraces = 60;
+        const margin = 100;
+        const topMargin = 40;
+
+        let totalHeight = topMargin + 20;
+        if (showForwardTrace) totalHeight += traceHeight + 40;
+        if (showReverseTrace) totalHeight += traceHeight + gapBetweenTraces;
+
+        canvas.height = Math.max(totalHeight, 400);
+
+        // Clear canvas with WHITE background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Calculate visible range based on FORWARD sequence
+        const forwardData = chromatogramData.forward;
+        const endPosition = Math.min(currentPosition + Math.floor(basesPerView / zoomLevel),
+            forwardData.sequence.length);
+
+        document.getElementById('current-position').textContent = currentPosition;
+        document.getElementById('zoom-level').textContent = Math.round(zoomLevel * 100);
+
+        const colors = {
+            A: '#00aa00',
+            C: '#0000ff',
+            G: '#000000',
+            T: '#ff0000',
+            N: '#888888',  // Any base
+            R: '#008800',  // A or G (puRine) - dark green
+            Y: '#CC0088',  // C or T (pYrimidine) - purple
+            M: '#00CC88',  // A or C (aMino) - teal
+            K: '#CC8800',  // G or T (Keto) - orange
+            S: '#0088CC',  // G or C (Strong) - light blue
+            W: '#CC0000',  // A or T (Weak) - dark red
+            H: '#00AA88',  // A or C or T (not G) - cyan
+            B: '#8800AA',  // C or G or T (not A) - violet
+            V: '#88AA00',  // A or C or G (not T) - olive
+            D: '#AA8800'   // A or G or T (not C) - brown
+        };
+
+        // Calculate trace window for forward
+        const pointsPerBase = forwardData.trace_data.A.length / forwardData.sequence.length;
+        const startTrace = Math.floor(currentPosition * pointsPerBase);
+        const endTrace = Math.floor(endPosition * pointsPerBase);
+        const tracePoints = endTrace - startTrace;
+        const xScale = tracePoints > 0 ? (canvas.width - 2 * margin) / tracePoints : 1;
+
+        let currentY = topMargin;
+
+        // === DRAW FORWARD TRACE ===
+        if (showForwardTrace && tracePoints > 0) {
+            drawTrace(ctx, forwardData, startTrace, endTrace, currentY, traceHeight, margin, xScale, colors, 'Forward', forwardOffset);
+            currentY += traceHeight + gapBetweenTraces;
+        }
+
+        // === DRAW REVERSE TRACE (show full reverse, let user see natural alignment) ===
+        if (showReverseTrace && chromatogramData.reverse && tracePoints > 0) {
+            // Get original reverse data and convert to reverse complement for display
+            const reverseOriginal = chromatogramData.reverse_original || chromatogramData.reverse;
+            const reverseRC = computeReverseComplement(reverseOriginal);
+
+            // Apply alignment offset to show matching sequence regions
+            const alignment = chromatogramData.alignment || { offset: 0, similarity: 0, scale: 1.0 };
+            const revCurrentPosition = Math.max(0, currentPosition - alignment.offset);
+            const revEndPosition = Math.min(reverseRC.sequence.length, endPosition - alignment.offset);
+
+            if (revCurrentPosition < reverseRC.sequence.length && revEndPosition > 0) {
+                const revPointsPerBase = reverseRC.trace_data.A.length / reverseRC.sequence.length;
+                let revStartTrace = Math.floor(revCurrentPosition * revPointsPerBase);
+                let revEndTrace = Math.floor(revEndPosition * revPointsPerBase);
+
+                // Apply fine trace-level offset for precise peak alignment
+                const traceOffset = alignment.traceOffset || 0;
+                revStartTrace += traceOffset;
+                revEndTrace += traceOffset;
+
+                // Apply scaling to match forward trace density
+                const scale = alignment.scale || 1.0;
+                const centerTrace = (revStartTrace + revEndTrace) / 2;
+                const halfWidth = (revEndTrace - revStartTrace) / 2;
+                revStartTrace = Math.floor(centerTrace - halfWidth / scale);
+                revEndTrace = Math.floor(centerTrace + halfWidth / scale);
+
+                // Ensure we don't go out of bounds
+                revStartTrace = Math.max(0, revStartTrace);
+                revEndTrace = Math.min(reverseRC.trace_data.A.length, revEndTrace);
+
+                // Add alignment quality to label
+                const qualityPct = (alignment.similarity * 100).toFixed(1);
+                const scaleInfo = scale !== 1.0 ? ' (' + scale.toFixed(2) + 'x)' : '';
+                const label = 'Reverse (RC) - ' + qualityPct + '% match' + scaleInfo;
+                drawTrace(ctx, reverseRC, revStartTrace, revEndTrace, currentY, traceHeight, margin, xScale, colors, label, 0);
+            }
+        }
+
+        // Draw mouse crosshair line
+        if (mouseX >= 0 && mouseY >= 0) {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(mouseX, 0);
+            ctx.lineTo(mouseX, canvas.height);
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+
+    function drawTrace(ctx, data, startTrace, endTrace, yStart, height, margin, xScale, colors, label, visualOffset) {
+        const tracePoints = endTrace - startTrace;
+        const canvas = document.getElementById('chromatogram-canvas');
+
+        // Draw label
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(label, 10, yStart + 15);
+
+        // Draw color legend
+        ctx.textAlign = 'left';
+        const legendX = canvas.width - 200;
+        const legendY = yStart + 15;
+
+        const legendColors = [
+            { color: '#00aa00', base: 'A', x: 0 },
+            { color: '#0000ff', base: 'C', x: 50 },
+            { color: '#000000', base: 'G', x: 100 },
+            { color: '#ff0000', base: 'T', x: 150 }
+        ];
+
+        legendColors.forEach(item => {
+            ctx.fillStyle = item.color;
+            ctx.fillRect(legendX + item.x, legendY - 8, 12, 12);
+            ctx.fillStyle = '#000';
+            ctx.fillText(item.base, legendX + item.x + 18, legendY);
+        });
+
+        // Draw traces FIRST (in background)
+        let maxValue = 0;
+        for (const base of ['A', 'C', 'G', 'T']) {
+            const trace = data.trace_data[base].slice(startTrace, endTrace);
+            maxValue = Math.max(maxValue, ...trace);
+        }
+
+        const yScale = (height - 40) / (maxValue * 1.1); // Leave space for bases at bottom
+
+        // Only draw the main 4 trace channels (A, C, G, T)
+        const mainBases = { A: colors.A, C: colors.C, G: colors.G, T: colors.T };
+        for (const [base, color] of Object.entries(mainBases)) {
+            const trace = data.trace_data[base].slice(startTrace, endTrace);
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+
+            for (let i = 0; i < trace.length; i++) {
+                const x = margin + i * xScale + (visualOffset || 0);
+                const y = yStart + 20 + (height - 40) - (trace[i] * yScale);
+
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+
+        // Draw baseline
+        const baselineY = yStart + height - 20;
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(margin, baselineY);
+        ctx.lineTo(canvas.width - margin, baselineY);
+        ctx.stroke();
+
+        // Draw position numbers and bases AT the baseline
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 16px monospace';
+
+        for (let i = 0; i < data.sequence.length; i++) {
+            if (data.base_positions && i < data.base_positions.length) {
+                const traceIndex = data.base_positions[i];
+                if (traceIndex >= startTrace && traceIndex < endTrace) {
+                    const relativeTraceIndex = traceIndex - startTrace;
+                    const x = margin + relativeTraceIndex * xScale + (visualOffset || 0);
+
+                    // Position number every 10 bases - small and above baseline
+                    if ((i + 1) % 10 === 0) {
+                        ctx.fillStyle = '#888';
+                        ctx.font = '9px Arial';
+                        ctx.fillText(i + 1, x, baselineY - 5);
+                        ctx.font = 'bold 16px monospace';
+                    }
+
+                    // Get original base call
+                    const base = data.sequence[i];
+
+                    // Always calculate the highest peak and get its Y position
+                    const peakInfo = calculateBaseFromPeaksWithPosition(data, traceIndex, yStart, height, yScale);
+                    const highestBase = peakInfo.base;
+                    const peakY = peakInfo.peakY;
+
+                    // Check if current base matches highest peak
+                    const isCorrect = base === highestBase;
+
+                    if (!isCorrect) {
+                        // Draw original base in its color (incorrect)
+                        ctx.fillStyle = colors[base] || '#888888';
+                        ctx.fillText(base, x, baselineY + 13);
+
+                        // Draw suggested correction at the top of the highest peak
+                        ctx.font = 'bold 12px Arial';
+                        ctx.fillStyle = colors[highestBase];
+                        ctx.fillText('→' + highestBase, x, peakY - 5);
+                        ctx.font = 'bold 16px monospace';
+                    } else {
+                        // Draw correct base normally
+                        ctx.fillStyle = colors[base] || '#000000';
+                        ctx.fillText(base, x, baselineY + 13);
+                    }
+                }
+            }
+        }
+    }
+
+    function calculateBaseFromPeaksWithPosition(data, traceIndex, yStart, height, yScale) {
+        // Get peak heights for all 4 bases at this position
+        const window = 2; // Check ±2 positions around the base position
+        const peaks = { A: 0, C: 0, G: 0, T: 0 };
+
+        for (let offset = -window; offset <= window; offset++) {
+            const idx = traceIndex + offset;
+            if (idx >= 0 && idx < data.trace_data.A.length) {
+                peaks.A = Math.max(peaks.A, data.trace_data.A[idx]);
+                peaks.C = Math.max(peaks.C, data.trace_data.C[idx]);
+                peaks.G = Math.max(peaks.G, data.trace_data.G[idx]);
+                peaks.T = Math.max(peaks.T, data.trace_data.T[idx]);
+            }
+        }
+
+        // Find the base with highest peak
+        let maxPeak = 0;
+        let highestBase = 'N';
+        for (const [base, height] of Object.entries(peaks)) {
+            if (height > maxPeak) {
+                maxPeak = height;
+                highestBase = base;
+            }
+        }
+
+        // Calculate Y position of the peak
+        const peakY = yStart + 20 + (height - 40) - (maxPeak * yScale);
+
+        return { base: highestBase, peakY: peakY };
+    }
+
+    function calculateBaseFromPeaks(data, traceIndex) {
+        // Get peak heights for all 4 bases at this position
+        const window = 2; // Check ±2 positions around the base position
+        const peaks = { A: 0, C: 0, G: 0, T: 0 };
+
+        for (let offset = -window; offset <= window; offset++) {
+            const idx = traceIndex + offset;
+            if (idx >= 0 && idx < data.trace_data.A.length) {
+                peaks.A = Math.max(peaks.A, data.trace_data.A[idx]);
+                peaks.C = Math.max(peaks.C, data.trace_data.C[idx]);
+                peaks.G = Math.max(peaks.G, data.trace_data.G[idx]);
+                peaks.T = Math.max(peaks.T, data.trace_data.T[idx]);
+            }
+        }
+
+        // Find the base with highest peak
+        let maxPeak = 0;
+        let highestBase = 'N';
+        for (const [base, height] of Object.entries(peaks)) {
+            if (height > maxPeak) {
+                maxPeak = height;
+                highestBase = base;
+            }
+        }
+
+        return highestBase;
+    }
+
+    function zoomIn() {
+        zoomLevel = Math.min(zoomLevel * 1.5, 10);
+        drawChromatogram();
+    }
+
+    function zoomOut() {
+        zoomLevel = Math.max(zoomLevel / 1.5, 0.1);
+        drawChromatogram();
+    }
+
+    function resetZoom() {
+        zoomLevel = 1.0;
+        currentPosition = 0;
+        updateScrollbar();
+        drawChromatogram();
+    }
+
+    function scrollLeftChromatogram() {
+        if (!chromatogramData) return;
+        currentPosition = Math.max(0, currentPosition - 10);
+        updateScrollbar();
+        drawChromatogram();
+    }
+
+    function scrollRightChromatogram() {
+        if (!chromatogramData) return;
+        const maxPos = Math.max(0, editedForwardSequence.length - Math.floor(basesPerView / zoomLevel));
+        currentPosition = Math.min(currentPosition + 10, maxPos);
+        updateScrollbar();
+        drawChromatogram();
+    }
+
+    function adjustForwardOffset(delta) {
+        forwardOffset += delta;
+        document.getElementById('forward-offset').textContent = forwardOffset;
+        document.getElementById('forward-offset-slider').value = forwardOffset;
+        drawChromatogram();
+    }
+
+    function setForwardOffsetFromSlider(value) {
+        forwardOffset = parseInt(value);
+        document.getElementById('forward-offset').textContent = forwardOffset;
+        drawChromatogram();
+    }
+
+    function resetForwardOffset() {
+        forwardOffset = 0;
+        document.getElementById('forward-offset').textContent = forwardOffset;
+        document.getElementById('forward-offset-slider').value = forwardOffset;
+        drawChromatogram();
+    }
+
+    function computeReverseComplement(forwardData) {
+        // Compute reverse complement of the forward sequence
+        const complement = {
+            'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C', 'N': 'N',
+            'R': 'Y', 'Y': 'R', 'M': 'K', 'K': 'M', 'S': 'S', 'W': 'W',
+            'H': 'D', 'B': 'V', 'V': 'B', 'D': 'H'
+        };
+
+        const revSeq = forwardData.sequence.split('').reverse().map(b => complement[b] || b).join('');
+        const revQual = [...forwardData.quality].reverse();
+
+        // Reverse the trace data AND swap complementary bases
+        const revTraceData = {
+            'A': [...forwardData.trace_data['T']].reverse(),
+            'T': [...forwardData.trace_data['A']].reverse(),
+            'C': [...forwardData.trace_data['G']].reverse(),
+            'G': [...forwardData.trace_data['C']].reverse()
+        };
+
+        // Recalculate base positions for reversed trace
+        const traceLength = forwardData.trace_data.A.length;
+        const revBasePos = [...forwardData.base_positions].reverse().map(p => traceLength - 1 - p);
+
+        return {
+            sequence: revSeq,
+            quality: revQual,
+            trace_data: revTraceData,
+            base_positions: revBasePos
+        };
+    }
+
+    function findSequenceAlignment(forwardData, reverseRCData) {
+        // Align using trace data cross-correlation for precise alignment
+        // This finds the best offset at the trace level, not just base level
+
+        const fwdSeq = forwardData.sequence;
+        const revSeq = reverseRCData.sequence;
+
+        let bestMatch = { offset: 0, traceOffset: 0, matches: 0, length: 0, similarity: 0 };
+        const minOverlap = 30;
+
+        // First, find approximate base-level alignment
+        const maxOffset = Math.max(fwdSeq.length, revSeq.length);
+
+        for (let offset = -maxOffset; offset <= maxOffset; offset++) {
+            let matches = 0;
+            let compareLength = 0;
+
+            for (let i = 0; i < fwdSeq.length; i++) {
+                const j = i - offset;
+                if (j >= 0 && j < revSeq.length) {
+                    compareLength++;
+                    if (fwdSeq[i] === revSeq[j]) {
+                        matches++;
+                    }
+                }
+            }
+
+            if (compareLength >= minOverlap && matches > bestMatch.matches) {
+                bestMatch = {
+                    offset: offset,
+                    traceOffset: 0,
+                    matches: matches,
+                    length: compareLength,
+                    similarity: matches / compareLength
+                };
+            }
+        }
+
+        // Now fine-tune using trace-level alignment in the overlap region
+        if (bestMatch.length > 0) {
+            const fwdPointsPerBase = forwardData.trace_data.A.length / fwdSeq.length;
+            const revPointsPerBase = reverseRCData.trace_data.A.length / revSeq.length;
+
+            // Find overlap region in base coordinates
+            const overlapStart = Math.max(0, -bestMatch.offset);
+            const overlapEnd = Math.min(fwdSeq.length, revSeq.length - bestMatch.offset);
+
+            if (overlapEnd > overlapStart + 20) {
+                // Sample middle section for trace alignment (avoid noisy ends)
+                const sampleStart = overlapStart + Math.floor((overlapEnd - overlapStart) * 0.4);
+                const sampleEnd = overlapStart + Math.floor((overlapEnd - overlapStart) * 0.6);
+
+                // Convert to trace coordinates
+                const fwdTraceStart = Math.floor(sampleStart * fwdPointsPerBase);
+                const fwdTraceEnd = Math.floor(sampleEnd * fwdPointsPerBase);
+
+                const revBaseStart = sampleStart - bestMatch.offset;
+                const revTraceStart = Math.floor(revBaseStart * revPointsPerBase);
+                const revTraceEnd = Math.floor((sampleEnd - bestMatch.offset) * revPointsPerBase);
+
+                // Try small offsets at trace level to find best peak alignment
+                let bestCorrelation = -Infinity;
+                let bestTraceOffset = 0;
+                const searchRange = Math.floor(fwdPointsPerBase * 2); // Search ±2 bases worth of trace points
+
+                for (let traceOffset = -searchRange; traceOffset <= searchRange; traceOffset++) {
+                    let correlation = 0;
+                    let count = 0;
+
+                    // Calculate correlation between forward and shifted reverse traces
+                    for (let i = fwdTraceStart; i < fwdTraceEnd; i++) {
+                        const j = i - fwdTraceStart + revTraceStart + traceOffset;
+                        if (j >= 0 && j < reverseRCData.trace_data.A.length) {
+                            // Sum correlation across all channels
+                            correlation += forwardData.trace_data.A[i] * reverseRCData.trace_data.A[j];
+                            correlation += forwardData.trace_data.C[i] * reverseRCData.trace_data.C[j];
+                            correlation += forwardData.trace_data.G[i] * reverseRCData.trace_data.G[j];
+                            correlation += forwardData.trace_data.T[i] * reverseRCData.trace_data.T[j];
+                            count++;
+                        }
+                    }
+
+                    if (count > 0 && correlation > bestCorrelation) {
+                        bestCorrelation = correlation;
+                        bestTraceOffset = traceOffset;
+                    }
+                }
+
+                bestMatch.traceOffset = bestTraceOffset;
+
+                // Calculate scale factor: ratio of trace densities
+                // This allows us to stretch/compress reverse to match forward
+                bestMatch.scale = revPointsPerBase / fwdPointsPerBase;
+            }
+        }
+
+        return bestMatch;
+    }
+
+    function scrollToPosition(value) {
+        if (!chromatogramData) return;
+        const maxPos = Math.max(0, editedForwardSequence.length - Math.floor(basesPerView / zoomLevel));
+        currentPosition = Math.floor((value / 100) * maxPos);
+        drawChromatogram();
+    }
+
+    function updateScrollbar() {
+        if (!chromatogramData) return;
+        const maxPos = Math.max(0, editedForwardSequence.length - Math.floor(basesPerView / zoomLevel));
+        const scrollbar = document.getElementById('position-scrollbar');
+        if (scrollbar && maxPos > 0) {
+            scrollbar.max = 100;
+            scrollbar.value = (currentPosition / maxPos) * 100;
+        }
+    }
+
+    function jumpToPosition() {
+        if (!chromatogramData) return;
+        const pos = prompt('Jump to position (0-' + editedForwardSequence.length + '):');
+        if (pos !== null) {
+            const newPos = parseInt(pos);
+            if (!isNaN(newPos) && newPos >= 0 && newPos < editedForwardSequence.length) {
+                currentPosition = newPos;
+                updateScrollbar();
+                drawChromatogram();
+            }
+        }
+    }
+
+    function saveSequenceEdits() {
+        if (!chromatogramData) return;
+
+        // Build consensus sequence from the consensus row (peak-corrected sequence)
+        let consensusSequence = '';
+
+        const forwardData = chromatogramData.forward;
+        const forwardBasePositions = forwardData.base_positions;
+        const ambiguityCodes = {
+            'R': ['A', 'G'], 'Y': ['C', 'T'], 'M': ['A', 'C'],
+            'K': ['G', 'T'], 'S': ['G', 'C'], 'W': ['A', 'T'],
+            'H': ['A', 'C', 'T'], 'B': ['C', 'G', 'T'],
+            'V': ['A', 'C', 'G'], 'D': ['A', 'G', 'T'], 'N': ['A', 'C', 'G', 'T']
+        };
+
+        // Generate consensus by resolving all ambiguity codes based on peaks
+        for (let i = 0; i < editedForwardSequence.length; i++) {
+            const base = editedForwardSequence[i];
+
+            if (forwardBasePositions && i < forwardBasePositions.length) {
+                const traceIndex = Math.round(forwardBasePositions[i]);
+
+                // Check all peaks to find highest
+                let maxPeak = 0;
+                let resolvedBase = base;
+
+                for (const checkBase of ['A', 'C', 'G', 'T']) {
+                    const peakValue = forwardData.trace_data[checkBase][traceIndex] || 0;
+                    if (peakValue > maxPeak) {
+                        maxPeak = peakValue;
+                        resolvedBase = checkBase;
+                    }
+                }
+
+                // If it's an ambiguity code, use peak-based call
+                if (ambiguityCodes[base]) {
+                    consensusSequence += resolvedBase;
+                } else {
+                    consensusSequence += base;
+                }
+            } else {
+                consensusSequence += base;
+            }
+        }
+
+        // Send to backend to save as FASTA for persistence
+        const filename = chromatogramData.filename;
+
+        showLoading('Saving edits to server...');
+
+        fetch('/sequence/save-edit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                filename: filename,
+                sequence: consensusSequence
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    showToast('Edits saved to server! Regenerate consensus to apply changes.', 'success');
+
+                    // Also trigger local download for convenience
+                    const fastaContent = '>' + filename.replace(/\.(ab1|abi)$/i, '_corrected') + '\n' +
+                        consensusSequence.match(/.{1,80}/g).join('\n') + '\n';
+
+                    const blob = new Blob([fastaContent], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename.replace(/\.(ab1|abi)$/i, '_corrected.fasta');
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } else {
+                    showToast('Error saving edits: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showToast('Failed to save edits: ' + error.message, 'danger');
+            });
+    }
+
+
+
+</script>
+{% endblock %}

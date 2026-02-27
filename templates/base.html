@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HaoXai{% endblock %} - Wildlife Surveillance System</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            /* IDE-inspired Color Palette - VS Code Dark+ inspired */
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #252526;
+            --bg-tertiary: #2d2d30;
+            --bg-sidebar: #252526;
+            --bg-panel: #1e1e1e;
+            --bg-hover: #2a2d2e;
+            --bg-active: #37373d;
+            --bg-input: #3c3c3c;
+            
+            /* Accent Colors - Subtle and professional */
+            --accent-primary: #007acc;
+            --accent-secondary: #4ec9b0;
+            --accent-warning: #cca700;
+            --accent-error: #f44336;
+            --accent-success: #4ec9b0;
+            
+            /* Text Colors */
+            --text-primary: #d4d4d4;
+            --text-secondary: #9cdcfe;
+            --text-muted: #808080;
+            --text-bright: #ffffff;
+            --text-link: #4ec9b0;
+            
+            /* Border Colors */
+            --border-primary: #3e3e42;
+            --border-secondary: #454545;
+            --border-focus: #007acc;
+            
+            /* Dimensions */
+            --sidebar-width: 260px;
+            --header-height: 35px;
+            --statusbar-height: 22px;
+            
+            /* Typography */
+            --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        /* Header - VS Code Activity Bar style */
+        .navbar {
+            background: var(--bg-secondary) !important;
+            border-bottom: 1px solid var(--border-primary);
+            min-height: var(--header-height);
+            padding: 0 12px;
+            font-size: 12px;
+        }
+
+        .navbar-brand {
+            font-weight: 500;
+            letter-spacing: 0;
+            font-size: 13px;
+            color: var(--text-primary) !important;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .navbar-brand img {
+            height: 20px;
+            width: auto;
+        }
+
+        /* Window Controls (IDE style) */
+        .window-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .window-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .window-btn:hover {
+            opacity: 0.7;
+        }
+
+        .window-close { background: #ff5f56; }
+        .window-min { background: #ffbd2e; }
+        .window-max { background: #27c93f; }
+
+        /* Sidebar - VS Code Explorer style */
+        .sidebar {
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            bottom: var(--statusbar-height);
+            width: var(--sidebar-width);
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-primary);
+            overflow-y: auto;
+            z-index: 100;
+            font-size: 13px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 0;
+        }
+
+        .sidebar-header {
+            padding: 8px 16px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .sidebar-header:hover {
+            background: var(--bg-hover);
+        }
+
+        .sidebar-header i {
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+
+        .sidebar-header.collapsed i {
+            transform: rotate(-90deg);
+        }
+
+        .sidebar .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--text-primary);
+            padding: 5px 16px !important;
+            margin: 0;
+            border-radius: 0;
+            transition: all 0.15s ease;
+            position: relative;
+            border-left: 2px solid transparent;
+        }
+
+        .sidebar .nav-link:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .sidebar .nav-link.active {
+            background: var(--bg-active);
+            color: var(--text-bright);
+            border-left-color: var(--accent-primary);
+        }
+
+        .sidebar .nav-link i {
+            font-size: 14px;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+        }
+
+        .sidebar .nav-link.active i {
+            color: var(--text-bright);
+        }
+
+        .sidebar .nav-link span {
+            flex: 1;
+        }
+
+        /* Keyboard shortcut badges */
+        .key-shortcut {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            padding: 1px 5px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-secondary);
+            border-radius: 3px;
+            color: var(--text-muted);
+        }
+
+        /* Main Content - Editor area style */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 0;
+            padding-bottom: var(--statusbar-height);
+            min-height: calc(100vh - var(--header-height) - var(--statusbar-height));
+            max-height: calc(100vh - var(--header-height) - var(--statusbar-height));
+            overflow-y: auto;
+            background: var(--bg-primary);
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Content wrapper with padding */
+        .content-wrapper {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Breadcrumb - File path style */
+        .breadcrumb-nav {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-primary);
+            padding: 6px 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-mono);
+        }
+
+        .breadcrumb-nav .sep {
+            color: var(--text-muted);
+        }
+
+        .breadcrumb-nav .item {
+            color: var(--text-primary);
+        }
+
+        .breadcrumb-nav .item.active {
+            color: var(--text-secondary);
+        }
+
+        /* Status Bar - VS Code style */
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            height: var(--statusbar-height);
+            background: var(--accent-primary);
+            color: white;
+            font-size: 12px;
+            z-index: 99;
+            transition: left 0.3s ease;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 16px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .status-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .status-left {
+            display: flex;
+            gap: 8px;
+        }
+
+        .status-right {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .status-bar i {
+            font-size: 12px;
+        }
+
+        /* Cards - Clean minimal style */
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 4px;
+            box-shadow: none;
+            transition: border-color 0.2s;
+        }
+
+        .card:hover {
+            border-color: var(--border-secondary);
+        }
+
+        .card-header {
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-primary);
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .card-body {
+            padding: 16px;
+        }
+
+        /* Buttons - IDE style */
+        .btn {
+            font-size: 13px;
+            padding: 4px 12px;
+            border-radius: 3px;
+            font-weight: 400;
+            transition: all 0.15s;
+            border: 1px solid transparent;
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #005a9e;
+            border-color: #005a9e;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            border-color: var(--border-primary);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-secondary);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border-color: var(--border-secondary);
+            color: var(--text-primary);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        /* Tables - Data grid style */
+        .table {
+            font-size: 13px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .table th {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-primary);
+            padding: 8px 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-align: left;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-primary);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 12px;
+        }
+
+        .table tr:hover td {
+            background: var(--bg-hover);
+        }
+
+        .table tr.selected td {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        /* Forms - IDE input style */
+        .form-control, .form-select {
+            background: var(--bg-input);
+            border: 1px solid var(--border-primary);
+            color: var(--text-primary);
+            font-size: 13px;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-family: var(--font-ui);
+        }
+
+        .form-control:focus, .form-select:focus {
+            background: var(--bg-input);
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 1px var(--accent-primary);
+            outline: none;
+        }
+
+        .form-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        /* Dropdown menus */
+        .dropdown-menu {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 4px;
+            padding: 4px 0;
+            font-size: 13px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        }
+
+        .dropdown-item {
+            color: var(--text-primary);
+            padding: 6px 16px;
+            transition: all 0.15s;
+        }
+
+        .dropdown-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .dropdown-divider {
+            border-color: var(--border-primary);
+            margin: 4px 0;
+        }
+
+        /* Alerts - IDE notification style */
+        .alert {
+            border: 1px solid;
+            border-radius: 4px;
+            padding: 10px 14px;
+            font-size: 13px;
+        }
+
+        .alert-primary {
+            background: rgba(0, 122, 204, 0.1);
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+        }
+
+        .alert-success {
+            background: rgba(78, 201, 176, 0.1);
+            border-color: var(--accent-success);
+            color: var(--text-primary);
+        }
+
+        .alert-warning {
+            background: rgba(204, 167, 0, 0.1);
+            border-color: var(--accent-warning);
+            color: var(--text-primary);
+        }
+
+        .alert-danger {
+            background: rgba(244, 67, 54, 0.1);
+            border-color: var(--accent-error);
+            color: var(--text-primary);
+        }
+
+        /* Code/Monospace areas */
+        .code-block {
+            background: var(--bg-input);
+            border: 1px solid var(--border-primary);
+            border-radius: 4px;
+            padding: 12px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            overflow-x: auto;
+        }
+
+        .code-block .keyword { color: #569cd6; }
+        .code-block .string { color: #ce9178; }
+        .code-block .number { color: #b5cea8; }
+        .code-block .comment { color: #6a9955; }
+        .code-block .function { color: #dcdcaa; }
+
+        /* Scrollbar - IDE style */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-primary);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-secondary);
+        }
+
+        /* Firefox scrollbar */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-primary) transparent;
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(30, 30, 30, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: var(--sidebar-width);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .status-bar {
+                left: 0;
+            }
+        }
+
+        /* Badge - IDE style */
+        .badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .badge-primary {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .badge-success {
+            background: var(--accent-success);
+            color: black;
+        }
+
+        .badge-warning {
+            background: var(--accent-warning);
+            color: black;
+
+        }
+
+        .badge-danger {
+            background: var(--accent-error);
+            color: white;
+        }
+
+        /* Tab bar - IDE style */
+        .tab-bar {
+            display: flex;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-primary);
+            overflow-x: auto;
+        }
+
+        .tab-item {
+            padding: 8px 16px;
+            border-right: 1px solid var(--border-primary);
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 120px;
+            max-width: 200px;
+            transition: background 0.15s;
+            user-select: none;
+        }
+
+        .tab-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .tab-item.active {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--accent-primary);
+            margin-bottom: -1px;
+        }
+
+        .tab-item .close {
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .tab-item:hover .close {
+            opacity: 1;
+        }
+
+        /* Tooltips */
+        .tooltip-inner {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+            font-size: 12px;
+            padding: 6px 10px;
+        }
+
+        /* Toast notifications */
+        .toast {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .toast-header {
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-primary);
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <!-- Header Bar - IDE Title Bar Style -->
+    <nav class="navbar navbar-dark fixed-top">
+        <div class="container-fluid">
+            <div class="d-flex align-items-center gap-3">
+                <!-- Menu Toggle -->
+                <button class="btn btn-sm btn-outline" id="sidebarToggle" title="Toggle Sidebar (Ctrl+B)">
+                    <i class="bi bi-list"></i>
+                </button>
+                
+                <!-- Logo/Brand -->
+                <a class="navbar-brand d-flex align-items-center" href="/">
+                    <img src="/static/logo-icon.svg" alt="HaoXai" height="18">
+                    <span class="ms-2">HaoXai</span>
+                    <span class="text-muted ms-1">v1.0</span>
+                </a>
+                
+                <!-- Connection Status -->
+                <span class="navbar-text" id="connection-status">
+                    <i class="bi bi-circle-fill text-danger"></i>
+                    <span class="ms-1">Disconnected</span>
+                </span>
+            </div>
+            
+            <div class="d-flex align-items-center gap-2">
+                <!-- Command Palette Button -->
+                <button class="btn btn-sm btn-outline" id="commandPaletteBtn" title="Command Palette (Ctrl+Shift+P)">
+                    <i class="bi bi-search"></i>
+                </button>
+                
+                <!-- User Menu -->
+                {% if session.authenticated %}
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle"></i>
+                        <span class="d-none d-md-inline">{{ session.username }}</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <h6 class="dropdown-header">
+                                {{ session.username }}
+                                <span class="badge badge-primary ms-1">{{ session.role|title }}</span>
+                            </h6>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/admin/users"><i class="bi bi-people me-2"></i>User Management</a></li>
+                        <li><a class="dropdown-item" href="/admin/security"><i class="bi bi-shield-check me-2"></i>Security</a></li>
+                        <li><a class="dropdown-item" href="/admin/settings"><i class="bi bi-gear me-2"></i>Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="/auth/logout"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
+                {% else %}
+                <a class="btn btn-sm btn-primary" href="/auth/connect">
+                    <i class="bi bi-plug me-1"></i>Connect
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar - IDE Explorer Style -->
+    <div class="sidebar" id="sidebar">
+        {% if session.authenticated %}
+        <!-- Explorer Section -->
+        <div class="sidebar-section">
+            <div class="sidebar-header" onclick="toggleSection(this)">
+                <i class="bi bi-chevron-down"></i>
+                <span>EXPLORER</span>
+            </div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="/main/dashboard">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/main/schema">
+                        <i class="bi bi-diagram-3"></i>
+                        <span>Database Schema</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Data Section -->
+        <div class="sidebar-section">
+            <div class="sidebar-header" onclick="toggleSection(this)">
+                <i class="bi bi-chevron-down"></i>
+                <span>DATA</span>
+            </div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="/excel/import">
+                        <i class="bi bi-magic"></i>
+                        <span>Auto Import</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/database/import">
+                        <i class="bi bi-file-earmark-excel"></i>
+                        <span>Manual Import</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/excel_merge/merge">
+                        <i class="bi bi-layers"></i>
+                        <span>Excel Merge</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/file_manager">
+                        <i class="bi bi-folder2-open"></i>
+                        <span>File Manager</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Analysis Section -->
+        <div class="sidebar-section">
+            <div class="sidebar-header" onclick="toggleSection(this)">
+                <i class="bi bi-chevron-down"></i>
+                <span>ANALYSIS</span>
+            </div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="/query/editor">
+                        <i class="bi bi-code-square"></i>
+                        <span>SQL Editor</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/query/notebook">
+                        <i class="bi bi-journal-code"></i>
+                        <span>Notebook</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/sequence/analysis">
+                        <i class="bi bi-activity"></i>
+                        <span>Sequence Analysis</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/chat/">
+                        <i class="bi bi-chat-dots"></i>
+                        <span>AI Chat</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/bat-identification">
+                        <i class="bi bi-cpu"></i>
+                        <span>🦇 Bat ID</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Tools Section -->
+        <div class="sidebar-section">
+            <div class="sidebar-header" onclick="toggleSection(this)">
+                <i class="bi bi-chevron-down"></i>
+                <span>TOOLS</span>
+            </div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="/extraction">
+                        <i class="bi bi-table"></i>
+                        <span>Extraction Layout</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/auto-link">
+                        <i class="bi bi-link-45deg"></i>
+                        <span>Table Link</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/database/recycle-bin">
+                        <i class="bi bi-trash"></i>
+                        <span>Recycle Bin</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Admin Section -->
+        {% if session.role == 'admin' %}
+        <div class="sidebar-section">
+            <div class="sidebar-header" onclick="toggleSection(this)">
+                <i class="bi bi-chevron-down"></i>
+                <span>ADMIN</span>
+            </div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/users">
+                        <i class="bi bi-people"></i>
+                        <span>User Management</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/security">
+                        <i class="bi bi-shield-check"></i>
+                        <span>Security</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/settings">
+                        <i class="bi bi-sliders"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+        {% else %}
+        <!-- Not authenticated - Limited options -->
+        <div class="sidebar-section">
+            <div class="sidebar-header">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span>NOT CONNECTED</span>
+            </div>
+            <div class="p-3">
+                <div class="alert alert-warning mb-0">
+                    <small>Please connect to database to access features</small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Status Bar - IDE Style -->
+    <div class="status-bar">
+        <div class="status-left">
+            <div class="status-item" id="status-git">
+                <i class="bi bi-git"></i>
+                <span>main</span>
+            </div>
+            <div class="status-item" id="status-errors">
+                <i class="bi bi-x-circle"></i>
+                <span>0</span>
+            </div>
+            <div class="status-item" id="status-warnings">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span>0</span>
+            </div>
+        </div>
+        <div class="status-right">
+            <div class="status-item" id="status-db">
+                <i class="bi bi-database"></i>
+                <span id="status-db-name">--</span>
+            </div>
+            <div class="status-item" id="status-user">
+                <i class="bi bi-person"></i>
+                <span id="status-username">--</span>
+            </div>
+            <div class="status-item" id="status-position">
+                <span>Ln 1, Col 1</span>
+            </div>
+            <div class="status-item" id="status-encoding">
+                <span>UTF-8</span>
+            </div>
+            <div class="status-item" id="status-language">
+                <span>SQL</span>
+            </div>
+            <div class="status-item" id="status-notify">
+                <i class="bi bi-bell"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Socket.IO for real-time updates -->
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+
+    <!-- Real-time updates -->
+    <script src="{{ url_for('static', filename='js/realtime.js') }}"></script>
+
+    <!-- Excel Upload functionality -->
+    <script src="{{ url_for('static', filename='js/excel_upload.js') }}"></script>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <!-- Custom JS -->
+    <script>
+        // Toggle sidebar section
+        function toggleSection(header) {
+            header.classList.toggle('collapsed');
+            const section = header.closest('.sidebar-section');
+            const nav = section.querySelector('.nav');
+            if (nav) {
+                nav.style.display = nav.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        // Mobile sidebar toggle
+        document.addEventListener('DOMContentLoaded', function () {
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const statusBar = document.querySelector('.status-bar');
+
+            if (sidebarToggle && sidebar) {
+                sidebarToggle.addEventListener('click', function () {
+                    sidebar.classList.toggle('show');
+                    if (sidebar.classList.contains('show')) {
+                        mainContent.style.marginLeft = window.innerWidth > 768 ? 'var(--sidebar-width)' : '0';
+                        if (statusBar) statusBar.style.left = window.innerWidth > 768 ? 'var(--sidebar-width)' : '0';
+                    } else {
+                        mainContent.style.marginLeft = '0';
+                        if (statusBar) statusBar.style.left = '0';
+                    }
+                });
+
+                // Close sidebar when clicking outside on mobile
+                document.addEventListener('click', function (e) {
+                    if (window.innerWidth <= 768) {
+                        if (!sidebar.contains(e.target) && !sidebarToggle.contains(e.target)) {
+                            sidebar.classList.remove('show');
+                        }
+                    }
+                });
+            }
+
+            // Handle window resize
+            window.addEventListener('resize', function () {
+                if (window.innerWidth > 768) {
+                    sidebar.classList.remove('show');
+                    mainContent.style.marginLeft = '';
+                    if (statusBar) statusBar.style.left = '';
+                }
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Ctrl+B - Toggle sidebar
+                if (e.ctrlKey && e.key === 'b') {
+                    e.preventDefault();
+                    sidebarToggle.click();
+                }
+                // Ctrl+Shift+P - Command palette (placeholder)
+                if (e.ctrlKey && e.shiftKey && e.key === 'P') {
+                    e.preventDefault();
+                    showToast('Command palette coming soon!', 'info');
+                }
+            });
+        });
+
+        // Update connection status
+        function updateConnectionStatus() {
+            fetch('/auth/status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusEl = document.getElementById('connection-status');
+                    const dbNameEl = document.getElementById('status-db-name');
+                    const usernameEl = document.getElementById('status-username');
+                    
+                    if (data.connected) {
+                        statusEl.innerHTML = `<i class="bi bi-circle-fill text-success"></i><span class="ms-1">${data.db_name}</span>`;
+                        if (dbNameEl) dbNameEl.textContent = data.db_name || 'Connected';
+                        if (usernameEl) usernameEl.textContent = data.username || '--';
+                        updateStatus('Connected', 'check-circle-fill');
+                    } else {
+                        statusEl.innerHTML = '<i class="bi bi-circle-fill text-danger"></i><span class="ms-1">Disconnected</span>';
+                        if (dbNameEl) dbNameEl.textContent = '--';
+                        if (usernameEl) usernameEl.textContent = '--';
+                        updateStatus('Not connected', 'x-circle');
+                    }
+                })
+                .catch(error => console.error('Error checking connection:', error));
+        }
+
+        // Disconnect database
+        function disconnectDatabase() {
+            globalConfirm(
+                'Are you sure you want to disconnect from the database?',
+                'Disconnect Database',
+                () => {
+                    fetch('/auth/disconnect', { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                window.location.href = '/auth/connect';
+                            } else {
+                                globalAlert('Failed to disconnect from database', 'danger', 'Error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error disconnecting:', error);
+                            globalAlert('Error disconnecting from database', 'danger', 'Error');
+                        });
+                }
+            );
+        }
+
+        // Show loading overlay
+        function showLoading(message = 'Loading...') {
+            const overlay = document.createElement('div');
+            overlay.className = 'loading-overlay';
+            overlay.id = 'loading-overlay';
+            overlay.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">${message}</p>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        // Hide loading overlay
+        function hideLoading() {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.remove();
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toastHtml = `
+                <div class="toast align-items-center text-bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">${message}</div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+
+            let toastContainer = document.querySelector('.toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+                document.body.appendChild(toastContainer);
+            }
+
+            const toastEl = document.createElement('div');
+            toastEl.innerHTML = toastHtml;
+            toastContainer.appendChild(toastEl.firstElementChild);
+
+            const toast = new bootstrap.Toast(toastContainer.lastElementChild);
+            toast.show();
+        }
+
+        // Update status message
+        function updateStatus(message, icon = 'info-circle') {
+            const statusMessageEl = document.getElementById('status-message');
+            if (statusMessageEl) {
+                statusMessageEl.innerHTML = `<i class="bi bi-${icon}"></i> ${message}`;
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            updateConnectionStatus();
+            setInterval(updateConnectionStatus, 30000); // Update every 30 seconds
+
+            // Initialize AJAX form handling
+            initializeAjaxForms();
+        });
+
+        // AJAX Form Handling for Real-time Updates
+        function initializeAjaxForms() {
+            // Convert all forms to AJAX submissions
+            document.querySelectorAll('form[data-ajax="true"]').forEach(form => {
+                form.addEventListener('submit', handleAjaxFormSubmit);
+            });
+        }
+
+        function handleAjaxFormSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const submitBtn = form.querySelector('button[type="submit"]');
+
+            // Show loading state
+            if (submitBtn) {
+                const originalText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+
+                // Restore button after request completes
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }, 5000);
+            }
+
+            // Submit form via AJAX
+            fetch(form.action, {
+                method: form.method || 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success notification
+                        if (data.message) {
+                            showToast(data.message, 'success');
+                        }
+
+                        // Emit real-time update event
+                        if (window.realtimeClient && data.table) {
+                            window.realtimeClient.socket.emit('data_changed', {
+                                action: data.action || 'insert',
+                                table: data.table,
+                                count: data.count || 1
+                            });
+                        }
+
+                        // Handle form-specific actions
+                        handleFormSuccess(form, data);
+                    } else {
+                        // Show error notification
+                        if (data.message) {
+                            showToast(data.message, 'danger');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Form submission error:', error);
+                    showToast('An error occurred while submitting the form', 'danger');
+                })
+                .finally(() => {
+                    // Restore button state
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = submitBtn.dataset.originalText || submitBtn.innerHTML;
+                    }
+                });
+        }
+
+        function handleFormSuccess(form, data) {
+            // Reset form if appropriate
+            if (data.reset_form !== false) {
+                form.reset();
+            }
+
+            // Close modal if form is in one
+            const modal = form.closest('.modal');
+            if (modal) {
+                const bsModal = bootstrap.Modal.getInstance(modal);
+                if (bsModal) {
+                    bsModal.hide();
+                }
+            }
+
+            // Update UI elements based on response
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            } else if (data.reload) {
+                // Use real-time refresh instead of page reload
+                if (window.realtimeClient && data.table) {
+                    window.realtimeClient.refreshTableContent(data.table);
+                }
+            } else if (data.update_elements) {
+                // Update specific DOM elements
+                data.update_elements.forEach(update => {
+                    const element = document.querySelector(update.selector);
+                    if (element) {
+                        if (update.html) {
+                            element.innerHTML = update.html;
+                        } else if (update.text) {
+                            element.textContent = update.text;
+                        } else if (update.value) {
+                            element.value = update.value;
+                        }
+                    }
+                });
+            }
+        }
+
+        // Utility function to make forms AJAX-enabled
+        function enableAjaxForm(formSelector) {
+            document.querySelectorAll(formSelector).forEach(form => {
+                form.dataset.ajax = 'true';
+                form.addEventListener('submit', handleAjaxFormSubmit);
+            });
+        }
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>
+
+<!-- Global Modern Modal System -->
+<div class="modal fade" id="globalConfirmModal" tabindex="-1" aria-labelledby="globalConfirmModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="globalConfirmModalLabel">
+                    <i class="bi bi-question-circle me-2"></i>Confirm Action
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="globalConfirmMessage" class="mb-0"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-warning" id="globalConfirmButton">
+                    <i class="bi bi-check-circle me-1"></i>Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="globalAlertModal" tabindex="-1" aria-labelledby="globalAlertModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" id="globalAlertModalHeader">
+                <h5 class="modal-title" id="globalAlertModalLabel">
+                    <i class="bi me-2" id="globalAlertIcon"></i>
+                    <span id="globalAlertTitle">Notification</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="globalAlertMessage" class="mb-0"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" id="globalAlertButton" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Global Modal Functions - Replace all confirm() and alert() calls
+    window.globalConfirm = function (message, title = 'Confirm Action', onConfirm = null, onCancel = null) {
+        return new Promise((resolve) => {
+            document.getElementById('globalConfirmMessage').innerHTML = message;
+            document.getElementById('globalConfirmModalLabel').innerHTML = `<i class="bi bi-question-circle me-2"></i>${title}`;
+
+            const confirmButton = document.getElementById('globalConfirmButton');
+            const modal = new bootstrap.Modal(document.getElementById('globalConfirmModal'));
+
+            // Remove previous event listeners
+            const newConfirmButton = confirmButton.cloneNode(true);
+            confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+
+            // Add event listeners
+            newConfirmButton.addEventListener('click', () => {
+                modal.hide();
+                if (onConfirm) onConfirm();
+                resolve(true);
+            });
+
+            // Handle cancel
+            document.getElementById('globalConfirmModal').addEventListener('hidden.bs.modal', function handler() {
+                this.removeEventListener('hidden.bs.modal', handler);
+                if (onCancel) onCancel();
+                resolve(false);
+            }, { once: true });
+
+            modal.show();
+        });
+    };
+
+    window.globalAlert = function (message, type = 'info', title = 'Notification', autoClose = false) {
+        const modal = document.getElementById('globalAlertModal');
+        const header = document.getElementById('globalAlertModalHeader');
+        const icon = document.getElementById('globalAlertIcon');
+        const titleElement = document.getElementById('globalAlertTitle');
+        const messageElement = document.getElementById('globalAlertMessage');
+        const button = document.getElementById('globalAlertButton');
+
+        // Set content
+        titleElement.textContent = title;
+        messageElement.textContent = message;
+
+        // Set styling based on type
+        header.className = 'modal-header';
+        button.className = 'btn';
+
+        switch (type) {
+            case 'success':
+                header.classList.add('bg-success', 'text-white');
+                icon.className = 'bi bi-check-circle-fill me-2';
+                button.classList.add('btn-success');
+                break;
+            case 'danger':
+                header.classList.add('bg-danger', 'text-white');
+                icon.className = 'bi bi-exclamation-triangle-fill me-2';
+                button.classList.add('btn-danger');
+                break;
+            case 'warning':
+                header.classList.add('bg-warning', 'text-dark');
+                icon.className = 'bi bi-exclamation-triangle-fill me-2';
+                button.classList.add('btn-warning');
+                break;
+            case 'info':
+            default:
+                header.classList.add('bg-info', 'text-white');
+                icon.className = 'bi bi-info-circle-fill me-2';
+                button.classList.add('btn-info');
+        }
+
+        // Show modal
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+
+        // Auto-hide if requested
+        if (autoClose) {
+            setTimeout(() => {
+                bsModal.hide();
+            }, 3000);
+        }
+
+        return new Promise((resolve) => {
+            modal.addEventListener('hidden.bs.modal', () => resolve(), { once: true });
+        });
+    };
+
+    // Global Prompt Function
+    window.globalPrompt = function (message, defaultValue = '', title = 'Input Required') {
+        return new Promise((resolve) => {
+            // Create prompt modal dynamically
+            const promptModal = document.createElement('div');
+            promptModal.className = 'modal fade';
+            promptModal.innerHTML = `
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-pencil-square me-2"></i>${title}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>${message}</p>
+                        <input type="text" class="form-control" id="promptInput" value="${defaultValue}" placeholder="Enter value...">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-1"></i>Cancel
+                        </button>
+                        <button type="button" class="btn btn-primary" id="promptConfirm">
+                            <i class="bi bi-check-circle me-1"></i>OK
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+            document.body.appendChild(promptModal);
+
+            const modal = new bootstrap.Modal(promptModal);
+            const input = document.getElementById('promptInput');
+            const confirmBtn = document.getElementById('promptConfirm');
+
+            // Focus input
+            setTimeout(() => input.focus(), 300);
+
+            // Handle confirm
+            confirmBtn.addEventListener('click', () => {
+                modal.hide();
+                resolve(input.value);
+            });
+
+            // Handle cancel
+            promptModal.addEventListener('hidden.bs.modal', () => {
+                document.body.removeChild(promptModal);
+                resolve(null);
+            });
+
+            // Handle Enter key
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    modal.hide();
+                }
+            });
+
+            modal.show();
+        });
+    };
+
+    // Optional: Override native confirm and alert (use with caution)
+    // window.confirm = globalConfirm;
+    // window.alert = globalAlert;
+</script>

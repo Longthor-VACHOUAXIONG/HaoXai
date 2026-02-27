@@ -1,0 +1,976 @@
+{% extends "base.html" %}
+
+{% block title %}AI Assistant{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Simple flex layout for chat */
+    .ai-chat-layout {
+        display: flex;
+        height: calc(100vh - 200px);
+        gap: 20px;
+        overflow: hidden;
+    }
+
+    .chat-sidebar {
+        width: 280px;
+        flex-shrink: 0;
+        overflow-y: auto;
+    }
+
+    .chat-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: linear-gradient(180deg, rgba(15, 23, 42, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+        border-radius: 24px;
+        border: 1px solid rgba(148, 163, 184, 0.1);
+        overflow: hidden;
+    }
+
+    .chat-header-bar {
+        padding: 20px 24px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(15, 23, 42, 0.4);
+        flex-shrink: 0;
+    }
+
+    .chat-header-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .ai-avatar-large {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .ai-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #10b981;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    .chat-messages-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .chat-messages-area::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .chat-messages-area::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .chat-messages-area::-webkit-scrollbar-thumb {
+        background: rgba(99, 102, 241, 0.3);
+        border-radius: 3px;
+    }
+
+    .message-row {
+        display: flex;
+        gap: 12px;
+        max-width: 85%;
+    }
+
+    .message-row.user {
+        margin-left: auto;
+        flex-direction: row-reverse;
+    }
+
+    .message-avatar-small {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .message-avatar-small.user {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    }
+
+    .message-avatar-small.ai {
+        background: rgba(6, 182, 212, 0.15);
+        border: 1px solid rgba(6, 182, 212, 0.3);
+        color: #06b6d4;
+    }
+
+    .message-content {
+        padding: 14px 18px;
+        border-radius: 18px;
+        font-size: 14px;
+        line-height: 1.6;
+        position: relative;
+    }
+
+    .message-row.user .message-content {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        border-bottom-right-radius: 4px;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .message-row.ai .message-content {
+        background: rgba(30, 41, 59, 0.8);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        color: var(--text-primary);
+        border-bottom-left-radius: 4px;
+        white-space: pre-line;
+    }
+
+    .message-time {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 6px;
+        text-align: right;
+    }
+
+    .chat-input-bar {
+        padding: 20px 24px;
+        border-top: 1px solid rgba(148, 163, 184, 0.1);
+        background: rgba(15, 23, 42, 0.6);
+        flex-shrink: 0;
+    }
+
+    .input-wrapper {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 16px;
+        padding: 8px 8px 8px 16px;
+        transition: all 0.3s ease;
+    }
+
+    .input-wrapper:focus-within {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    .chat-textarea {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--text-primary);
+        font-size: 14px;
+        resize: none;
+        min-height: 24px;
+        max-height: 120px;
+        padding: 8px 0;
+        outline: none;
+    }
+
+    .chat-textarea::placeholder {
+        color: var(--text-muted);
+    }
+
+    .send-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        border: none;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+    }
+
+    .send-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    }
+
+    .quick-prompts {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+    }
+
+    .prompt-chip {
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        color: var(--primary-light);
+        padding: 8px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .prompt-chip:hover {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        border-color: transparent;
+    }
+
+    .typing-bubble {
+        display: flex;
+        gap: 4px;
+        padding: 16px 20px;
+        background: rgba(30, 41, 59, 0.8);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 18px;
+        border-bottom-left-radius: 4px;
+        width: fit-content;
+    }
+
+    .typing-bubble .dot {
+        width: 8px;
+        height: 8px;
+        background: var(--primary);
+        border-radius: 50%;
+        animation: bounce 1.4s infinite ease-in-out both;
+    }
+
+    .typing-bubble .dot:nth-child(1) {
+        animation-delay: -0.32s;
+    }
+
+    .typing-bubble .dot:nth-child(2) {
+        animation-delay: -0.16s;
+    }
+
+    @keyframes bounce {
+
+        0%,
+        80%,
+        100% {
+            transform: scale(0.6);
+        }
+
+        40% {
+            transform: scale(1);
+        }
+    }
+
+    .sidebar-card {
+        background: rgba(15, 23, 42, 0.4);
+        border: 1px solid rgba(148, 163, 184, 0.1);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 16px;
+    }
+
+    .sidebar-title {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        margin-bottom: 12px;
+        font-weight: 600;
+    }
+
+    .feature-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .feature-list li {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        font-size: 13px;
+        color: var(--text-secondary);
+        border-bottom: 1px solid rgba(148, 163, 184, 0.05);
+    }
+
+    .feature-list li:last-child {
+        border-bottom: none;
+    }
+
+    .feature-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary-light);
+    }
+
+    .excel-preview {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 12px;
+        padding: 16px;
+        margin: 12px 0;
+    }
+
+    .excel-preview h6 {
+        color: var(--text-primary);
+        margin-bottom: 12px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .excel-preview .table {
+        font-size: 12px;
+        margin-bottom: 0;
+    }
+
+    .excel-preview .table th {
+        background: rgba(99, 102, 241, 0.2);
+        border-color: rgba(148, 163, 184, 0.2);
+        color: var(--text-primary);
+        font-weight: 600;
+        padding: 8px 12px;
+        white-space: nowrap;
+    }
+
+    .excel-preview .table td {
+        border-color: rgba(148, 163, 184, 0.1);
+        color: var(--text-secondary);
+        padding: 6px 12px;
+        max-width: 150px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .excel-preview .table-striped tbody tr:nth-of-type(odd) {
+        background: rgba(99, 102, 241, 0.05);
+    }
+
+    .excel-preview .table-responsive {
+        max-height: 300px;
+        overflow-y: auto;
+        border-radius: 8px;
+    }
+
+    .excel-preview .table-responsive::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .excel-preview .table-responsive::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.4);
+    }
+
+    .excel-preview .table-responsive::-webkit-scrollbar-thumb {
+        background: rgba(99, 102, 241, 0.3);
+        border-radius: 3px;
+    }
+
+    .welcome-banner {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 16px;
+        padding: 24px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .welcome-banner h3 {
+        margin: 0 0 8px 0;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .welcome-banner p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    @media (max-width: 991px) {
+        .ai-chat-layout {
+            height: calc(100vh - 200px);
+            flex-direction: column;
+        }
+
+        .chat-sidebar {
+            width: 100%;
+            display: none;
+        }
+
+        .chat-sidebar.show-mobile {
+            display: block;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column" style="height: 100%;">
+    <!-- Page Header -->
+    <div class="page-header flex-shrink-0">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="page-title"><i class="bi bi-stars me-3"></i>AI Assistant</h1>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <button class="btn btn-glass" onclick="clearChat()">
+                    <i class="bi bi-plus-lg me-2"></i>New Chat
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Layout -->
+    <div class="ai-chat-layout">
+        <!-- Sidebar -->
+        <div class="chat-sidebar">
+            <!-- Welcome -->
+            <div class="welcome-banner">
+                <img src="/static/logo-icon.svg" alt="HaoXai" class="mb-3 mx-auto" style="width: 56px; height: 56px;">
+                <h3 class="text-light">HaoXai AI</h3>
+                <p>Ready to help with your data</p>
+            </div>
+
+            <!-- Capabilities -->
+            <div class="sidebar-card">
+                <div class="sidebar-title">What I Can Do</div>
+                <ul class="feature-list">
+                    <li>
+                        <div class="feature-icon"><i class="bi bi-search"></i></div>
+                        <span>Search & query data</span>
+                    </li>
+                    <li>
+                        <div class="feature-icon"><i class="bi bi-file-earmark-excel"></i></div>
+                        <span>Auto-fill Excel data</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Quick Tips -->
+            <div class="sidebar-card">
+                <div class="sidebar-title">Try Asking</div>
+                <ul class="feature-list">
+                    <li>
+                        <div class="feature-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;"><i
+                                class="bi bi-search"></i></div>
+                        <span>Find sample CANB_ANA25_001</span>
+                    </li>
+                    <li>
+                        <div class="feature-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;"><i
+                                class="bi bi-file-earmark-excel"></i></div>
+                        <span>Fill Excel with sample data</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ML Model Training Section -->
+            <div class="sidebar-card">
+                <div class="sidebar-title">
+                    <i class="bi bi-cpu me-2"></i>ML Model Training
+                </div>
+                
+                <!-- Model Type Selection -->
+                <div class="mb-3">
+                    <label class="form-label small text-muted">Model Type</label>
+                    <select class="form-select form-select-sm" id="ml-model-type">
+                        <option value="classification">Classification</option>
+                        <option value="regression">Regression</option>
+                        <option value="clustering">Clustering</option>
+                        <option value="anomaly_detection">Anomaly Detection</option>
+                    </select>
+                </div>
+
+                <!-- Train Button -->
+                <button class="btn btn-primary btn-sm w-100 mb-2" onclick="trainMLModelAuto()">
+                    <i class="bi bi-play-circle me-2"></i>Train Model
+                </button>
+
+                <!-- Model Status -->
+                <div id="ml-status" class="alert alert-info small" style="display: none;">
+                    <i class="bi bi-info-circle me-1"></i>
+                    <span id="ml-status-text">Ready to train...</span>
+                </div>
+
+                <!-- Model Results -->
+                <div id="ml-results" style="display: none;">
+                    <div class="mb-2">
+                        <small class="text-muted">Model Performance</small>
+                        <div id="ml-metrics" class="small"></div>
+                    </div>
+                    <button class="btn btn-outline-primary btn-sm w-100" onclick="useMLModel()">
+                        <i class="bi bi-arrow-right-circle me-1"></i>Use for Predictions
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="chat-main">
+            <!-- Header -->
+            <div class="chat-header-bar">
+                <div class="chat-header-info">
+                    <img src="/static/logo-icon.svg" alt="HaoXai" style="width: 44px; height: 44px; border-radius: 14px;">
+                    <div>
+                        <div class="fw-semibold">HaoXai Assistant</div>
+                        <div class="ai-status">
+                            <span class="status-dot"></span>
+                            <span>Online</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-glass btn-sm d-lg-none" onclick="toggleSidebar()">
+                        <i class="bi bi-list me-1"></i>Menu
+                    </button>
+                    <button class="btn btn-glass btn-sm" onclick="downloadChat()">
+                        <i class="bi bi-download me-1"></i>Export
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            <div class="chat-messages-area" id="chat-messages">
+                <!-- Welcome Message -->
+                <div class="message-row ai">
+                    <img src="/static/logo-icon.svg" alt="HaoXai" style="width: 32px; height: 32px; border-radius: 10px;">
+                    <div>
+                        <div class="message-content">
+                            Hello! I'm your HaoXai AI Assistant. How can I help you today?
+                        </div>
+                        <div class="message-time">Just now</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="chat-input-bar">
+                <!-- Quick Prompts -->
+                <div class="quick-prompts">
+                    <div class="prompt-chip" onclick="sendQuick('Show me host statistics')">
+                        <i class="bi bi-bar-chart-line"></i>Host Stats
+                    </div>
+                    <div class="prompt-chip" onclick="sendQuick('Help with SQL query')">
+                        <i class="bi bi-code-slash"></i>SQL Help
+                    </div>
+                    <div class="prompt-chip" onclick="sendQuick('Explain database schema')">
+                        <i class="bi bi-diagram-3"></i>Schema
+                    </div>
+                    <div class="prompt-chip" onclick="sendQuick('Analyze screening results')">
+                        <i class="bi bi-clipboard-data"></i>Analysis
+                    </div>
+                    <div class="prompt-chip" onclick="document.getElementById('excel-upload').click()">
+                        <i class="bi bi-file-earmark-excel"></i>Upload Excel
+                    </div>
+                </div>
+
+                <!-- Input -->
+                <div class="input-wrapper">
+                    <input type="file" id="excel-upload" accept=".xlsx,.xls,.csv" style="display: none;"
+                        onchange="handleFileUpload(this)">
+                    <button class="btn btn-glass btn-sm" onclick="document.getElementById('excel-upload').click()"
+                        title="Upload Excel file">
+                        <i class="bi bi-paperclip"></i>
+                    </button>
+                    <textarea class="chat-textarea" id="chat-input" placeholder="Type your message..." rows="1"
+                        onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
+                    <button class="send-btn" onclick="sendMessage()">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+
+    {% block extra_js %}
+    <script>
+        let chatHistory = [];
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+
+        function sendQuick(text) {
+            document.getElementById('chat-input').value = text;
+            sendMessage();
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            // Add user message
+            addMessage(message, 'user');
+            input.value = '';
+            input.style.height = 'auto';
+
+            // Show typing
+            showTyping();
+
+            // Call backend API
+            fetch('/chat/ask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ question: message })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    hideTyping();
+                    if (data.success) {
+                        addMessage(data.answer, 'ai');
+                    } else {
+                        addMessage('Sorry, I encountered an error: ' + data.answer, 'ai');
+                    }
+                })
+                .catch(error => {
+                    hideTyping();
+                    addMessage('Sorry, I encountered a network error. Please try again.', 'ai');
+                });
+        }
+
+        function addMessage(text, sender) {
+            const container = document.getElementById('chat-messages');
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            const row = document.createElement('div');
+            row.className = 'message-row ' + sender;
+
+            const avatar = sender === 'user' ? '<i class="bi bi-person-fill"></i>' : '<img src="/static/logo-icon.svg" alt="HaoXai" style="width: 32px; height: 32px; border-radius: 10px;">';
+            const avatarClass = sender === 'user' ? 'user' : 'ai';
+
+            // Convert newlines to <br> tags for proper display
+            const formattedText = text.replace(/\n/g, '<br>');
+
+            row.innerHTML = `
+            <div class="message-avatar-small ${avatarClass}">${avatar}</div>
+            <div>
+                <div class="message-content">${formattedText}</div>
+                <div class="message-time">${time}</div>
+            </div>
+        `;
+
+            container.appendChild(row);
+            container.scrollTop = container.scrollHeight;
+
+            chatHistory.push({ sender, text, time });
+        }
+
+        function showTyping() {
+            const container = document.getElementById('chat-messages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message-row ai';
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = `
+            <div class="message-avatar-small ai"><img src="/static/logo-icon.svg" alt="HaoXai" style="width: 32px; height: 32px; border-radius: 10px;"></div>
+            <div class="typing-bubble">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+        `;
+            container.appendChild(typingDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function hideTyping() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) indicator.remove();
+        }
+
+        function clearChat() {
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = `
+            <div class="message-row ai">
+                <div class="message-avatar-small ai"><img src="/static/logo-icon.svg" alt="HaoXai" style="width: 32px; height: 32px; border-radius: 10px;"></div>
+                <div>
+                    <div class="message-content">Hello! I'm your HaoXai AI Assistant. How can I help you today?</div>
+                    <div class="message-time">Just now</div>
+                </div>
+            </div>
+        `;
+            chatHistory = [];
+        }
+
+        function toggleSidebar() {
+            document.querySelector('.chat-sidebar').classList.toggle('show-mobile');
+        }
+
+        // Store last uploaded data for download
+        let lastUploadedData = null;
+
+        function handleFileUpload(input) {
+            if (!input.files || input.files.length === 0) return;
+
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Show user message
+            addMessage('Uploading: ' + file.name, 'user');
+            showTyping();
+
+            // Upload file
+            fetch('/chat/upload_excel', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    hideTyping();
+                    if (data.success) {
+                        lastUploadedData = data.data;
+
+                        let messageHtml = data.message;
+
+                        // Add preview table if available
+                        if (data.preview && data.preview.headers && data.preview.rows) {
+                            messageHtml += '<br><br><div class="excel-preview">';
+                            messageHtml += '<h6><i class="bi bi-table"></i> Preview (First 5 Rows)</h6>';
+                            messageHtml += '<div class="table-responsive">';
+                            messageHtml += '<table class="table table-sm table-dark table-striped">';
+
+                            // Headers
+                            messageHtml += '<thead><tr>';
+                            data.preview.headers.forEach(header => {
+                                messageHtml += `<th>${header}</th>`;
+                            });
+                            messageHtml += '</tr></thead>';
+
+                            // Rows
+                            messageHtml += '<tbody>';
+                            data.preview.rows.forEach(row => {
+                                messageHtml += '<tr>';
+                                data.preview.headers.forEach(header => {
+                                    const value = row[header] || '';
+                                    messageHtml += `<td>${value}</td>`;
+                                });
+                                messageHtml += '</tr>';
+                            });
+                            messageHtml += '</tbody></table>';
+                            messageHtml += '</div></div>';
+                        }
+
+                        // Add download button
+                        messageHtml += '<br><button onclick="downloadExcel()" class="btn btn-primary btn-sm">' +
+                            '<i class="bi bi-download"></i> Download Complete Results (Excel)</button>';
+
+                        addMessage(messageHtml, 'ai');
+                    } else {
+                        addMessage('Error: ' + (data.error || 'Failed to process file'), 'ai');
+                    }
+                })
+                .catch(error => {
+                    hideTyping();
+                    addMessage('Sorry, upload failed: ' + error.message, 'ai');
+                })
+                .finally(() => {
+                    input.value = ''; // Reset input
+                });
+        }
+
+        function downloadExcel() {
+            if (!lastUploadedData || lastUploadedData.length === 0) {
+                showToast('No data to download', 'warning');
+                return;
+            }
+
+            // Create Excel file using SheetJS library
+            const headers = Object.keys(lastUploadedData[0]);
+            const worksheet_data = [headers];
+
+            // Add data rows
+            lastUploadedData.forEach(row => {
+                const data_row = headers.map(header => row[header] || '');
+                worksheet_data.push(data_row);
+            });
+
+            // Create worksheet
+            const worksheet = XLSX.utils.aoa_to_sheet(worksheet_data);
+
+            // Create workbook
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Enriched Samples');
+
+            // Generate Excel file and download
+            XLSX.writeFile(workbook, 'enriched_samples_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+
+            showToast('Excel file downloaded!', 'success');
+        }
+
+        function downloadChat() {
+            if (chatHistory.length === 0) {
+                showToast('No messages to export', 'warning');
+                return;
+            }
+
+            let content = 'HaoXai AI Chat History\n';
+            content += '=====================\n\n';
+
+            chatHistory.forEach(msg => {
+                content += `[${msg.time}] ${msg.sender.toUpperCase()}: ${msg.text}\n\n`;
+            });
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'chat-history-' + new Date().toISOString().slice(0, 10) + '.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showToast('Chat exported successfully', 'success');
+        }
+
+        // ML Model Training Functions
+        let currentMLModels = [];
+
+        function trainMLModelAuto() {
+            const modelType = document.getElementById('ml-model-type').value;
+            
+            // Show training status
+            const statusDiv = document.getElementById('ml-status');
+            const statusText = document.getElementById('ml-status-text');
+            statusDiv.style.display = 'block';
+            statusDiv.className = 'alert alert-info small';
+            statusText.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div>Training models on all tables...';
+            
+            // Hide previous results
+            document.getElementById('ml-results').style.display = 'none';
+            
+            // Train models on all tables automatically
+            fetch('/ml/chat/train-auto', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model_type: modelType })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentMLModels = data.details;
+                    statusDiv.className = 'alert alert-success small';
+                    statusText.innerHTML = `<i class="bi bi-check-circle me-1"></i>Trained ${data.models_trained} models successfully!`;
+                    
+                    // Show results
+                    const resultsDiv = document.getElementById('ml-results');
+                    const metricsDiv = document.getElementById('ml-metrics');
+                    
+                    // Display summary of all trained models
+                    let summaryHtml = `<div class="mb-2"><strong>Models Trained:</strong> ${data.models_trained}</div>`;
+                    if (data.failed_tables > 0) {
+                        summaryHtml += `<div class="text-warning small mt-1"><strong>Failed Tables:</strong> ${data.failed_tables}</div>`;
+                    }
+                    
+                    // Show individual model summaries
+                    summaryHtml += '<div class="mt-2" style="max-height: 200px; overflow-y: auto;">';
+                    data.model_summaries.forEach(model => {
+                        summaryHtml += `
+                            <div class="alert alert-secondary small mb-1">
+                                <strong>${model.table}</strong><br>
+                                <small>Samples: ${model.samples} | Features: ${model.features} | Accuracy: ${model.accuracy}</small>
+                            </div>
+                        `;
+                    });
+                    summaryHtml += '</div>';
+                    
+                    metricsDiv.innerHTML = summaryHtml;
+                    resultsDiv.style.display = 'block';
+                    
+                    // Add message to chat
+                    addMessage(`🐍 ML Training Complete!\n\nSuccessfully trained ${data.models_trained} ${modelType} models across all database tables.\n\n${data.models_trained > 0 ? 'Model Details:\n' + data.model_summaries.map(m => `• ${m.table}: ${m.samples} samples, ${m.features} features, ${m.accuracy} accuracy`).join('\n') : ''}\n\nAll models are ready for predictions.`, 'ai');
+                } else {
+                    statusDiv.className = 'alert alert-danger small';
+                    statusText.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>' + data.message;
+                }
+            })
+            .catch(error => {
+                statusDiv.className = 'alert alert-danger small';
+                statusText.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Training failed';
+            });
+        }
+
+        function formatMLMetrics(metrics) {
+            let html = '';
+            for (const [key, value] of Object.entries(metrics)) {
+                html += `<div><strong>${key}:</strong> ${typeof value === 'number' ? (value * 100).toFixed(2) + '%' : value}</div>`;
+            }
+            return html;
+        }
+
+        function useMLModel() {
+            if (!currentMLModels || currentMLModels.length === 0) {
+                showToast('No trained models available', 'warning');
+                return;
+            }
+            
+            // Show available models
+            let modelList = currentMLModels.map(model => 
+                `• ${model.table}: ${model.metrics.samples} samples, ${model.metrics.features} features`
+            ).join('\n');
+            
+            // Create dynamic examples based on actual trained tables
+            let uniqueTables = [...new Set(currentMLModels.map(model => model.table))];
+            let examples = '';
+            
+            if (uniqueTables.length >= 2) {
+                examples = `Example: "Predict using the ${uniqueTables[0]} table model" or "Show me predictions from ${uniqueTables[1]} table"`;
+            } else if (uniqueTables.length === 1) {
+                examples = `Example: "Predict using the ${uniqueTables[0]} table model"`;
+            }
+            
+            addMessage(`🐍 ML Models Ready!\n\nAvailable models for predictions:\n${modelList}\n\nYou can ask me to make predictions using any of the trained models. ${examples}`, 'ai');
+        }
+    </script>
+    {% endblock %}

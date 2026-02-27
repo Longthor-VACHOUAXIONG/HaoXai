@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}500 - Server Error{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: calc(100vh - 200px);">
+    <div class="col-md-6 text-center">
+        <div class="glass-card" style="border-radius: 24px; border-color: rgba(239, 68, 68, 0.3);">
+            <div class="mb-4">
+                <i class="bi bi-x-octagon-fill" style="font-size: 80px; color: var(--danger);"></i>
+            </div>
+            <h1 class="page-title mb-3" style="background: linear-gradient(135deg, #ef4444 0%, #f59e0b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Server Error</h1>
+            <p class="text-muted mb-4">Something went wrong on our end. We're working to fix it.</p>
+            <div class="d-flex gap-3 justify-content-center">
+                <a href="/main/dashboard" class="btn btn-gradient">
+                    <i class="bi bi-house-door me-2"></i>Dashboard
+                </a>
+                <a href="javascript:location.reload()" class="btn btn-glass">
+                    <i class="bi bi-arrow-clockwise me-2"></i>Reload
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

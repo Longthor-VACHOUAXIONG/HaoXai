@@ -1,0 +1,514 @@
+{% extends "base.html" %}
+
+{% block title %}SQL Editor{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.css">
+<style>
+    .CodeMirror {
+        height: 300px;
+        border: 1px solid #444;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    
+    .results-container {
+        max-height: 500px;
+        overflow: auto;
+    }
+    
+    /* Autocomplete hint styling */
+    .CodeMirror-hints {
+        max-height: 300px !important;
+        overflow-y: auto !important;
+    }
+    
+    .sql-keyword-hint {
+        color: #ff79c6 !important;
+        font-weight: bold;
+    }
+    
+    .sql-table-hint {
+        color: #8be9fd !important;
+    }
+    
+    .sql-column-hint {
+        color: #50fa7b !important;
+    }
+    
+    .CodeMirror-hint {
+        padding: 4px 8px !important;
+        font-family: 'Consolas', 'Monaco', monospace;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h1><i class="bi bi-code-square"></i> SQL Editor</h1>
+        </div>
+    </div>
+    
+    <!-- Editor Card -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Query Editor</h5>
+                    <div>
+                        <button class="btn btn-success btn-sm" onclick="executeQuery()">
+                            <i class="bi bi-play-fill"></i> Execute (F5)
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="clearEditor()">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </button>
+                        <button class="btn btn-info btn-sm" onclick="formatQuery()">
+                            <i class="bi bi-code"></i> Format
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <textarea id="sql-editor"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Results Card -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-table"></i> Query Results</h5>
+                    <div id="results-actions" style="display: none;">
+                        <button class="btn btn-primary btn-sm" onclick="exportResults('csv')">
+                            <i class="bi bi-download"></i> Export CSV
+                        </button>
+                        <button class="btn btn-primary btn-sm" onclick="exportResults('xlsx')">
+                            <i class="bi bi-download"></i> Export Excel
+                        </button>
+                        <button class="btn btn-info btn-sm" onclick="visualizeResults()">
+                            <i class="bi bi-graph-up"></i> Visualize
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="results-message" class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Enter a SQL query and click Execute to see results.
+                    </div>
+                    <div id="results-container" class="results-container" style="display: none;">
+                        <div class="table-responsive">
+                            <table id="results-table" class="table table-dark table-striped table-hover">
+                                <thead id="results-thead"></thead>
+                                <tbody id="results-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/sql/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/sql-hint.min.js"></script>
+<script>
+    let editor;
+    let lastResults = null;
+    let schemaData = {};
+    
+    // Initialize CodeMirror
+    document.addEventListener('DOMContentLoaded', function() {
+        editor = CodeMirror.fromTextArea(document.getElementById('sql-editor'), {
+            mode: 'text/x-sql',
+            theme: 'dracula',
+            lineNumbers: true,
+            autofocus: true,
+            extraKeys: {
+                "F5": executeQuery,
+                "Ctrl-Enter": executeQuery,
+                "Ctrl-Space": "autocomplete"
+            }
+        });
+        
+        console.log('CodeMirror initialized');
+        
+        // Load schema and setup autocomplete
+        loadSchema();
+        
+        // Check URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const table = urlParams.get('table');
+        const action = urlParams.get('action');
+        
+        if (table) {
+            if (action === 'view') {
+                editor.setValue(`SELECT * FROM ${table} LIMIT 100;`);
+                executeQuery();
+            } else {
+                editor.setValue(`SELECT * FROM ${table} WHERE `);
+            }
+        }
+    });
+    
+    // Load database schema for autocomplete
+    function loadSchema() {
+        fetch('/query/autocomplete')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    schemaData = data.schema;
+                    console.log('Schema loaded:', Object.keys(schemaData).length, 'tables');
+                    
+                    // Setup autocomplete now that schema is loaded
+                    setupAutocomplete();
+                }
+            })
+            .catch(err => {
+                console.error('Failed to load schema:', err);
+            });
+    }
+    
+    // Setup autocomplete with custom hint function
+    function setupAutocomplete() {
+        // Register custom SQL hint
+        CodeMirror.registerHelper("hint", "sql", function(cm, options) {
+            const cur = cm.getCursor();
+            const curLine = cm.getLine(cur.line);
+            const end = cur.ch;
+            let start = end;
+            
+            // Find word start
+            while (start && /[\w$.]/.test(curLine.charAt(start - 1))) --start;
+            const curWord = start !== end ? curLine.slice(start, end) : "";
+            
+            const list = [];
+            
+            // SQL Keywords
+            const keywords = [
+                "SELECT", "FROM", "WHERE", "INSERT", "UPDATE", "DELETE", 
+                "CREATE", "DROP", "ALTER", "TABLE", "INDEX", "VIEW",
+                "JOIN", "LEFT", "RIGHT", "INNER", "OUTER", "CROSS", "ON",
+                "GROUP BY", "ORDER BY", "HAVING", "LIMIT", "OFFSET", "DISTINCT",
+                "AS", "AND", "OR", "NOT", "NULL", "IS", "IN", "LIKE", "BETWEEN",
+                "ASC", "DESC", "COUNT", "SUM", "AVG", "MIN", "MAX",
+                "UNION", "INTERSECT", "EXCEPT", "EXISTS", "CASE", "WHEN", "THEN", "ELSE", "END"
+            ];
+            
+            // Add keywords
+            keywords.forEach(kw => {
+                if (!curWord || kw.toLowerCase().startsWith(curWord.toLowerCase())) {
+                    list.push(kw);
+                }
+            });
+            
+            // Add table names
+            Object.keys(schemaData).forEach(table => {
+                if (!curWord || table.toLowerCase().indexOf(curWord.toLowerCase()) >= 0) {
+                    list.push(table);
+                }
+            });
+            
+            // Add columns from all tables
+            Object.keys(schemaData).forEach(table => {
+                if (schemaData[table] && Array.isArray(schemaData[table])) {
+                    schemaData[table].forEach(col => {
+                        if (!curWord || col.toLowerCase().indexOf(curWord.toLowerCase()) >= 0) {
+                            list.push(col);
+                        }
+                    });
+                }
+            });
+            
+            return {
+                list: list,
+                from: CodeMirror.Pos(cur.line, start),
+                to: CodeMirror.Pos(cur.line, end)
+            };
+        });
+        
+        // Enable autocomplete on typing
+        editor.on("keyup", function(cm, event) {
+            // Don't show on special keys
+            if (!cm.state.completionActive && 
+                event.keyCode !== 13 && // Enter
+                event.keyCode !== 27 && // Escape
+                /[a-zA-Z]/.test(event.key)) {
+                CodeMirror.commands.autocomplete(cm, null, {completeSingle: false});
+            }
+        });
+        
+        console.log('Autocomplete ready! Press Ctrl+Space or just start typing');
+    }
+    
+    // Custom SQL autocomplete function
+    CodeMirror.registerHelper("hint", "sql", function(editor, options) {
+        const cur = editor.getCursor();
+        const curLine = editor.getLine(cur.line);
+        const end = cur.ch;
+        let start = end;
+        
+        // Find word start
+        while (start && /[\w$]/.test(curLine.charAt(start - 1))) --start;
+        const curWord = start !== end && curLine.slice(start, end);
+        
+        const list = [];
+        
+        // SQL Keywords
+        const keywords = [
+            "SELECT", "FROM", "WHERE", "INSERT", "UPDATE", "DELETE", 
+            "CREATE", "DROP", "ALTER", "TABLE", "INDEX", "VIEW",
+            "JOIN", "LEFT", "RIGHT", "INNER", "OUTER", "CROSS", "ON",
+            "GROUP BY", "ORDER BY", "HAVING", "LIMIT", "OFFSET", "DISTINCT",
+            "AS", "AND", "OR", "NOT", "NULL", "IS", "IN", "LIKE", "BETWEEN",
+            "ASC", "DESC", "COUNT", "SUM", "AVG", "MIN", "MAX",
+            "UNION", "INTERSECT", "EXCEPT", "EXISTS", "CASE", "WHEN", "THEN", "ELSE", "END"
+        ];
+        
+        // Add keywords
+        keywords.forEach(kw => {
+            if (!curWord || kw.toLowerCase().startsWith(curWord.toLowerCase())) {
+                list.push({
+                    text: kw,
+                    displayText: kw,
+                    className: "sql-keyword-hint"
+                });
+            }
+        });
+        
+        // Add table names
+        Object.keys(schemaData).forEach(table => {
+            if (!curWord || table.toLowerCase().indexOf(curWord.toLowerCase()) >= 0) {
+                list.push({
+                    text: table,
+                    displayText: `📊 ${table}`,
+                    className: "sql-table-hint"
+                });
+            }
+        });
+        
+        // Add column names from context
+        const tableContext = getTableFromContext(curLine, end);
+        if (tableContext && schemaData[tableContext]) {
+            schemaData[tableContext].forEach(col => {
+                if (!curWord || col.toLowerCase().indexOf(curWord.toLowerCase()) >= 0) {
+                    list.push({
+                        text: col,
+                        displayText: `🔹 ${col} (${tableContext})`,
+                        className: "sql-column-hint"
+                    });
+                }
+            });
+        }
+        
+        // Add columns from all tables if no specific context
+        if (!tableContext) {
+            Object.keys(schemaData).forEach(table => {
+                schemaData[table].forEach(col => {
+                    if (!curWord || col.toLowerCase().indexOf(curWord.toLowerCase()) >= 0) {
+                        list.push({
+                            text: col,
+                            displayText: `🔹 ${col}`,
+                            className: "sql-column-hint"
+                        });
+                    }
+                });
+            });
+        }
+        
+        return {
+            list: list.slice(0, 50), // Limit to 50 suggestions
+            from: CodeMirror.Pos(cur.line, start),
+            to: CodeMirror.Pos(cur.line, end)
+        };
+    });
+    
+    // Helper function to determine table context
+    function getTableFromContext(line, pos) {
+        // Simple heuristic: look for FROM or JOIN followed by table name
+        const beforeCursor = line.substring(0, pos).toUpperCase();
+        const fromMatch = beforeCursor.match(/FROM\s+(\w+)/);
+        const joinMatch = beforeCursor.match(/JOIN\s+(\w+)/);
+        
+        if (fromMatch && fromMatch[1]) {
+            return fromMatch[1].toLowerCase();
+        }
+        
+        return null;
+    }
+    
+    // Execute SQL query
+    function executeQuery() {
+        const query = editor.getValue().trim();
+        
+        if (!query) {
+            showToast('Please enter a SQL query', 'warning');
+            return;
+        }
+        
+        showLoading('Executing query...');
+        updateStatus('Executing query...', 'hourglass-split');
+        
+        fetch('/query/execute', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: query })
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            
+            if (data.success) {
+                if (data.has_results) {
+                    displayResults(data);
+                    updateStatus(`Query executed successfully. ${data.row_count} rows returned.`, 'check-circle');
+                    showToast(data.message, 'success');
+                } else {
+                    hideResults();
+                    document.getElementById('results-message').innerHTML = 
+                        `<i class="bi bi-check-circle"></i> ${data.message}`;
+                    document.getElementById('results-message').className = 'alert alert-success';
+                    updateStatus(data.message, 'check-circle');
+                    showToast(data.message, 'success');
+                }
+                
+                // Save to history
+                saveQueryToHistory(query);
+            } else {
+                hideResults();
+                document.getElementById('results-message').innerHTML = 
+                    `<i class="bi bi-exclamation-triangle"></i> ${data.message}`;
+                document.getElementById('results-message').className = 'alert alert-danger';
+                updateStatus('Query failed', 'x-circle');
+                showToast(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            hideResults();
+            document.getElementById('results-message').innerHTML = 
+                `<i class="bi bi-exclamation-triangle"></i> Error: ${error.message}`;
+            document.getElementById('results-message').className = 'alert alert-danger';
+            updateStatus('Query failed', 'x-circle');
+            showToast('Error: ' + error.message, 'danger');
+        });
+    }
+    
+    // Display query results
+    function displayResults(data) {
+        lastResults = data;
+        
+        // Hide message, show table
+        document.getElementById('results-message').style.display = 'none';
+        document.getElementById('results-container').style.display = 'block';
+        document.getElementById('results-actions').style.display = 'block';
+        
+        // Build table header
+        const thead = document.getElementById('results-thead');
+        thead.innerHTML = '<tr>' + 
+            data.columns.map(col => `<th>${col}</th>`).join('') + 
+            '</tr>';
+        
+        // Build table body
+        const tbody = document.getElementById('results-tbody');
+        tbody.innerHTML = data.data.map(row => {
+            return '<tr>' + 
+                data.columns.map(col => `<td>${row[col] !== null ? row[col] : '<em class="text-muted">NULL</em>'}</td>`).join('') + 
+                '</tr>';
+        }).join('');
+    }
+    
+    // Hide results
+    function hideResults() {
+        document.getElementById('results-message').style.display = 'block';
+        document.getElementById('results-container').style.display = 'none';
+        document.getElementById('results-actions').style.display = 'none';
+    }
+    
+    // Clear editor
+    function clearEditor() {
+        if (confirm('Clear the editor?')) {
+            editor.setValue('');
+        }
+    }
+    
+    // Format query (basic formatting)
+    function formatQuery() {
+        let query = editor.getValue();
+        // Basic SQL formatting
+        query = query.replace(/\s+/g, ' ')
+                    .replace(/\b(SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|INNER|OUTER|ON|GROUP BY|ORDER BY|HAVING|LIMIT)\b/gi, '\n$1')
+                    .replace(/,/g, ',\n  ')
+                    .trim();
+        editor.setValue(query);
+    }
+    
+    // Export results
+    function exportResults(format) {
+        if (!lastResults) {
+            showToast('No results to export', 'warning');
+            return;
+        }
+        
+        const query = editor.getValue();
+        
+        showLoading(`Exporting as ${format.toUpperCase()}...`);
+        
+        fetch('/database/export', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                query: query,
+                format: format
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                showToast(data.message, 'success');
+                // Trigger download
+                window.open(data.download_url, '_blank');
+            } else {
+                showToast(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showToast('Export failed: ' + error.message, 'danger');
+        });
+    }
+    
+    // Visualize results
+    function visualizeResults() {
+        if (!lastResults) {
+            showToast('No results to visualize', 'warning');
+            return;
+        }
+        window.location.href = '/analytics/dashboard';
+    }
+    
+    // Save query to history
+    function saveQueryToHistory(query) {
+        fetch('/query/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: query })
+        });
+    }
+</script>
+{% endblock %}

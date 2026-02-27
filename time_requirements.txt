@@ -1,0 +1,11 @@
+# Time Zone Requirements for HaoXai Backup System
+# Install with: pip install -r time_requirements.txt
+
+# Time zone handling
+pytz>=2023.3
+
+# Windows timezone detection (optional but recommended)
+# tzlocal>=5.2
+
+# For Windows service (already in service_requirements.txt)
+# pywin32>=306

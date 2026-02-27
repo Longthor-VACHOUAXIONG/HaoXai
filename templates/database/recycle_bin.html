@@ -1,0 +1,907 @@
+{% extends "base.html" %}
+
+{% block title %}Recycle Bin{% endblock %}
+
+{% block content %}
+<div class="row mb-5 entry-animation">
+    <div class="col-md-7">
+        <h1 class="page-title display-5 fw-extrabold mb-1">
+            <span class="text-gradient">Recycle Bin</span>
+        </h1>
+    </div>
+    <div class="col-md-5 text-md-end d-flex align-items-center justify-content-md-end gap-3 mt-3 mt-md-0">
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-premium-glass magnetic">
+            <i class="bi bi-arrow-left me-2"></i>Dashboard
+        </a>
+        <button class="btn btn-premium-danger magnetic" onclick="cleanupOldItems()">
+            <i class="bi bi-broom me-2"></i>Purge Old Items
+        </button>
+    </div>
+</div>
+
+{% if error %}
+<div class="glass-error-card entry-animation" style="--delay: 100ms">
+    <div class="d-flex align-items-center gap-4">
+        <div class="error-icon-pulse">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <div>
+            <div class="fw-bold fs-5">System Integrity Warning</div>
+            <div class="opacity-75 font-monospace small">{{ error }}</div>
+        </div>
+    </div>
+</div>
+{% else %}
+
+<!-- Advanced Stats Grid -->
+<div class="row g-4 mb-5 entry-animation" style="--delay: 200ms">
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card-v2 primary position-relative overflow-hidden">
+            <div class="card-noise"></div>
+            <div class="card-glow"></div>
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon-v2">
+                    <i class="bi bi-box-seam"></i>
+                </div>
+                <span class="badge-v2">Active</span>
+            </div>
+            <div class="stat-label">Total Bundles</div>
+            <div class="stat-value">{{ items|length }}</div>
+            <div class="stat-progress">
+                <div class="progress-bar" style="width: 100%"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        {% set total_rows = items|map(attribute='row_count')|list|sum if items else 0 %}
+        <div class="stat-card-v2 success position-relative overflow-hidden">
+            <div class="card-noise"></div>
+            <div class="card-glow"></div>
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon-v2">
+                    <i class="bi bi-database-check"></i>
+                </div>
+                <span class="badge-v2">Recoverable</span>
+            </div>
+            <div class="stat-label">Archived Records</div>
+            <div class="stat-value">{{ total_rows }}</div>
+            <div class="stat-progress">
+                <div class="progress-bar" style="width: 85%"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        {% set table_count = items|selectattr('has_schema', 'equalto', True)|list|length if items else 0 %}
+        <div class="stat-card-v2 info position-relative overflow-hidden">
+            <div class="card-noise"></div>
+            <div class="card-glow"></div>
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon-v2">
+                    <i class="bi bi-table"></i>
+                </div>
+                <span class="badge-v2">Schemas</span>
+            </div>
+            <div class="stat-label">Full Tables</div>
+            <div class="stat-value">{{ table_count }}</div>
+            <div class="stat-progress">
+                <div class="progress-bar" style="width: 70%"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card-v2 warning position-relative overflow-hidden">
+            <div class="card-noise"></div>
+            <div class="card-glow"></div>
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon-v2">
+                    <i class="bi bi-shield-lock"></i>
+                </div>
+                <span class="badge-v2">Auto</span>
+            </div>
+            <div class="stat-label">Retention Period</div>
+            <div class="stat-value">30 Days</div>
+            <div class="stat-progress">
+                <div class="progress-bar" style="width: 100%"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="glass-panel-v2 entry-animation" style="--delay: 300ms">
+    <div class="panel-header d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="panel-icon">
+                <i class="bi bi-layers"></i>
+            </div>
+            <h5 class="mb-0 fw-bold">Archived Assets</h5>
+            <span class="count-indicator" id="item-count">{{ items|length }} Items</span>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <div class="premium-search-box magnetic">
+                <i class="bi bi-search"></i>
+                <input type="text" id="bin-search" placeholder="Filter archive..." onkeyup="filterItems()">
+            </div>
+        </div>
+    </div>
+
+    {% if items %}
+    <div class="table-container custom-scrollbar">
+        <table class="premium-table">
+            <thead>
+                <tr>
+                    <th>Identifier</th>
+                    <th>Asset Classification</th>
+                    <th>Original Reference</th>
+                    <th>Data Weight</th>
+                    <th>Deletion Lifecycle</th>
+                    <th class="text-end">Command</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr class="asset-row" style="--row-index: {{ loop.index0 }}">
+                    <td class="id-cell">
+                        <span class="hash-symbol">#</span>{{ item.id }}
+                    </td>
+                    <td>
+                        <div class="status-indicator-bar {{ 'type-table' if item.has_schema else 'type-records' }}">
+                        </div>
+                        {% if item.has_schema %}
+                        <div class="asset-type type-table">
+                            <i class="bi bi-table"></i> DEFINITION
+                        </div>
+                        {% else %}
+                        <div class="asset-type type-records">
+                            <i class="bi bi-list-nested"></i> BATCH
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="asset-ref">
+                            <span class="ref-text">{{ item.table }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="weight-pill">
+                            <span class="weight-num">{{ item.row_count }}</span>
+                            <span class="weight-unit">entries</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="time-stamp">
+                            <i class="bi bi-calendar2-event me-2"></i>
+                            {{ item.deleted_at }}
+                        </div>
+                    </td>
+                    <td class="text-end">
+                        <div class="action-orbit">
+                            <button class="btn-orbit restore action-restore magnetic" data-id="{{ item.id }}"
+                                data-table="{{ item.table }}" data-type="{{ item.type }}" title="Restore Matrix">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+                            <button class="btn-orbit delete action-delete magnetic" data-id="{{ item.id }}"
+                                data-table="{{ item.table }}" title="Destructive Purge">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="luminous-empty-state">
+        <div class="flow-container">
+            <div class="flow-circle"></div>
+            <div class="flow-circle delay-1"></div>
+            <div class="flow-circle delay-2"></div>
+        </div>
+        <div class="empty-content position-relative">
+            <div class="cyber-icon mb-4">
+                <i class="bi bi-recycle"></i>
+            </div>
+            <h3 class="fw-extrabold text-white mb-2">Zero Latent Data</h3> <br>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Pagination Controls -->
+{% if pagination and pagination.total_pages > 1 %}
+<div class="d-flex justify-content-center align-items-center gap-3 mt-4 entry-animation" style="--delay: 400ms">
+    <button class="btn btn-premium-glass magnetic {% if not pagination.has_prev %} disabled{% endif %}" 
+            onclick="loadPage('{{ pagination.page - 1 }}')"
+            {% if not pagination.has_prev %}disabled{% endif %}>
+        <i class="bi bi-chevron-left me-2"></i>Previous
+    </button>
+    
+    <div class="d-flex align-items-center gap-2">
+        {% for p in range(1, pagination.total_pages + 1) %}
+            {% if p == pagination.page %}
+                <span class="btn btn-premium-gradient">{{ p }}</span>
+            {% elif p <= 3 or p >= pagination.total_pages - 2 or (p >= pagination.page - 2 and p <= pagination.page + 2) %}
+                <button class="btn btn-premium-glass magnetic" onclick="loadPage('{{ p }}')">{{ p }}</button>
+            {% elif p == 4 or p == pagination.total_pages - 3 %}
+                <span class="text-muted">...</span>
+            {% endif %}
+        {% endfor %}
+    </div>
+    
+    <button class="btn btn-premium-glass magnetic {% if not pagination.has_next %} disabled{% endif %}" 
+            onclick="loadPage('{{ pagination.page + 1 }}')"
+            {% if not pagination.has_next %}disabled{% endif %}>
+        Next<i class="bi bi-chevron-right ms-2"></i>
+    </button>
+</div>
+
+<div class="text-center mt-3">
+    <small class="text-muted">
+        Showing {{ (pagination.page - 1) * pagination.per_page + 1 }}-{{ 
+            [pagination.page * pagination.per_page, pagination.total_items]|min 
+        }} of {{ pagination.total_items }} items
+    </small>
+</div>
+{% endif %}
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+    :root {
+        --glass-panel: rgba(15, 23, 42, 0.7);
+        --glass-border-light: rgba(255, 255, 255, 0.1);
+        --glass-border-vibrant: rgba(99, 102, 241, 0.2);
+        --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        --text-muted-custom: #64748b;
+        --entry-timing: cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .fw-extrabold {
+        font-weight: 800;
+    }
+
+    .tracking-wider {
+        letter-spacing: 0.1em;
+    }
+
+    .text-gradient {
+        background: linear-gradient(to right, #fff, #a5b4fc);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* Entry Animations */
+    .entry-animation {
+        animation: slideInUp 0.8s var(--entry-timing) forwards;
+        opacity: 0;
+        animation-delay: var(--delay, 0ms);
+    }
+
+    @keyframes slideInUp {
+        from {
+            transform: translateY(30px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    /* Premium Buttons */
+    .btn-premium-glass {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--glass-border-light);
+        color: white;
+        padding: 10px 24px;
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-premium-glass:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--primary-light);
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+        color: white;
+    }
+
+    .btn-premium-danger {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        color: #f87171;
+        padding: 10px 24px;
+        border-radius: 12px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-premium-danger:hover {
+        background: rgba(239, 68, 68, 0.2);
+        border-color: #ef4444;
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+        color: white;
+    }
+
+    /* Stat Cards V2 */
+    .stat-card-v2 {
+        background: var(--glass-panel);
+        border: 1px solid var(--glass-border-light);
+        border-radius: 24px;
+        padding: 24px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .stat-card-v2:hover {
+        transform: translateY(-8px) scale(1.02);
+        border-color: var(--glass-border-vibrant);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .card-noise {
+        position: absolute;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3%3Cfilter id='noiseFilter'%3%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3%3C/filter%3%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3%3C/svg%3");
+        opacity: 0.02;
+        pointer-events: none;
+    }
+
+    .card-glow {
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
+        pointer-events: none;
+        transition: 0.5s;
+    }
+
+    .stat-card-v2:hover .card-glow {
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 60%);
+    }
+
+    .stat-icon-v2 {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        color: white;
+        border: 1px solid var(--glass-border-light);
+    }
+
+    .badge-v2 {
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        padding: 4px 8px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-muted-custom);
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        color: var(--text-muted-custom);
+        margin-bottom: 4px;
+        font-weight: 600;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 800;
+        color: white;
+        margin-bottom: 12px;
+    }
+
+    .stat-progress {
+        height: 4px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 2px;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: var(--primary-gradient);
+    }
+
+    /* Glass Panel V2 */
+    .glass-panel-v2 {
+        background: var(--glass-panel);
+        border: 1px solid var(--glass-border-light);
+        border-radius: 32px;
+        padding: 32px;
+        box-shadow: 0 40px 80px rgba(0, 0, 0, 0.3);
+    }
+
+    .panel-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--primary-gradient);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
+    }
+
+    .count-indicator {
+        background: rgba(99, 102, 241, 0.1);
+        color: #818cf8;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    /* Premium Table */
+    .premium-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 8px;
+    }
+
+    .premium-table thead th {
+        padding: 12px 20px;
+        color: var(--text-muted-custom);
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .asset-row {
+        background: rgba(255, 255, 255, 0.02);
+        transition: all 0.3s ease;
+        animation: fadeInRow 0.5s ease forwards;
+        opacity: 0;
+        animation-delay: calc(var(--row-index) * 50ms + 400ms);
+    }
+
+    @keyframes fadeInRow {
+        from {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .asset-row:hover {
+        background: rgba(255, 255, 255, 0.05);
+        transform: scale(1.002);
+    }
+
+    .asset-row td {
+        padding: 18px 20px;
+        background: transparent;
+    }
+
+    .asset-row td:first-child {
+        border-radius: 12px 0 0 12px;
+    }
+
+    .asset-row td:last-child {
+        border-radius: 0 12px 12px 0;
+    }
+
+    .id-cell {
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 600;
+        color: #6366f1;
+    }
+
+    .hash-symbol {
+        opacity: 0.4;
+        margin-right: 2px;
+    }
+
+    .status-indicator-bar {
+        position: absolute;
+        left: 0;
+        top: 20%;
+        bottom: 20%;
+        width: 3px;
+        border-radius: 4px;
+    }
+
+    .status-indicator-bar.type-table {
+        background: #10b981;
+    }
+
+    .status-indicator-bar.type-records {
+        background: #6366f1;
+    }
+
+    .asset-type {
+        font-size: 0.7rem;
+        font-weight: 800;
+        padding: 4px 10px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .asset-type.type-table {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+    }
+
+    .asset-type.type-records {
+        background: rgba(99, 102, 241, 0.1);
+        color: #818cf8;
+    }
+
+    .asset-ref {
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    .weight-pill {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 4px 12px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: baseline;
+        gap: 4px;
+    }
+
+    .weight-num {
+        font-weight: 700;
+        color: white;
+    }
+
+    .weight-unit {
+        font-size: 0.75rem;
+        color: var(--text-muted-custom);
+    }
+
+    /* Orbiting Action Buttons */
+    .action-orbit {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+
+    .btn-orbit {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.03);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .btn-orbit.restore:hover {
+        background: var(--primary-gradient);
+        border-color: transparent;
+        transform: scale(1.15) rotate(15deg);
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-orbit.delete:hover {
+        background: linear-gradient(135deg, #ef4444 0%, #f43f5e 100%);
+        border-color: transparent;
+        transform: scale(1.15) rotate(-15deg);
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+    }
+
+    /* Premium Search Box */
+    .premium-search-box {
+        position: relative;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--glass-border-light);
+        border-radius: 14px;
+        padding: 0 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 280px;
+        transition: 0.3s;
+    }
+
+    .premium-search-box:focus-within {
+        border-color: var(--primary);
+        background: rgba(0, 0, 0, 0.3);
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    }
+
+    .premium-search-box input {
+        background: transparent;
+        border: none;
+        outline: none;
+        color: white;
+        padding: 12px 0;
+        width: 100%;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    /* Luminous Empty State */
+    .luminous-empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        position: relative;
+    }
+
+    .flow-container {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .flow-circle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100px;
+        height: 100px;
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.2) 0%, transparent 70%);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        animation: flowMove 8s infinite ease-in-out;
+    }
+
+    .flow-circle.delay-1 {
+        animation-delay: -2s;
+        background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+    }
+
+    .flow-circle.delay-2 {
+        animation-delay: -4s;
+        background: radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, transparent 70%);
+    }
+
+    @keyframes flowMove {
+
+        0%,
+        100% {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        50% {
+            transform: translate(-10%, -60%) scale(2.5);
+            opacity: 0.5;
+        }
+    }
+
+    .cyber-icon {
+        font-size: 4rem;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.3));
+    }
+
+    .btn-premium-gradient {
+        background: var(--primary-gradient);
+        border: none;
+        color: white;
+        border-radius: 16px;
+        font-weight: 700;
+        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .btn-premium-gradient:hover {
+        transform: translateY(-5px) scale(1.05);
+        box-shadow: 0 20px 40px rgba(99, 102, 241, 0.5);
+        color: white;
+    }
+
+    .breadcrumb-dot {
+        width: 8px;
+        height: 8px;
+        background: #6366f1;
+        border-radius: 50%;
+        box-shadow: 0 0 10px #6366f1;
+    }
+</style>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Magnetic Button Effect
+        document.addEventListener('mousemove', function (e) {
+            const magnetics = document.querySelectorAll('.magnetic');
+            magnetics.forEach(btn => {
+                const rect = btn.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+
+                const distance = Math.sqrt(x * x + y * y);
+                const maxDistance = 100;
+
+                if (distance < maxDistance) {
+                    const strength = 18; // Increased strength for more premium feel
+                    const moveX = (x / maxDistance) * strength;
+                    const moveY = (y / maxDistance) * strength;
+                    btn.style.transform = `translate(${moveX}px, ${moveY}px)`;
+                } else {
+                    btn.style.transform = `translate(0px, 0px)`;
+                }
+            });
+        });
+
+        // Global Event Delegation for orbit buttons
+        document.body.addEventListener('click', (e) => {
+            const restoreBtn = e.target.closest('.action-restore');
+            if (restoreBtn) {
+                const id = restoreBtn.getAttribute('data-id');
+                const table = restoreBtn.getAttribute('data-table');
+                const type = restoreBtn.getAttribute('data-type');
+                restoreItem(id, table, type);
+                return;
+            }
+
+            const deleteBtn = e.target.closest('.action-delete');
+            if (deleteBtn) {
+                const id = deleteBtn.getAttribute('data-id');
+                const table = deleteBtn.getAttribute('data-table');
+                permanentDelete(id, table);
+            }
+        });
+    });
+
+    function restoreItem(itemId, tableName, type) {
+        globalConfirm(
+            `<div class="text-center py-3">
+                <div class="stat-icon-v2 mx-auto bg-primary bg-opacity-10 text-primary mb-3" style="width: 60px; height: 60px; font-size: 2rem;">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </div>
+                <h5 class="fw-bold">Restore Matrix Archive?</h5>
+                <p class="text-muted small">Reconstructing <strong>${tableName}</strong> (${type}) from latent backup.</p>
+            </div>`,
+            'Confim System Restoration',
+            () => {
+                showLoading('Reconstructing architecture...');
+
+                fetch(`/database/recycle-bin/restore/${itemId}`, {
+                    method: 'POST'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        hideLoading();
+                        if (data.success) {
+                            showToast(data.message, 'success');
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showToast(data.message, 'danger');
+                        }
+                    })
+                    .catch(error => {
+                        hideLoading();
+                        showToast('Error: ' + error.message, 'danger');
+                    });
+            }
+        );
+    }
+
+    function permanentDelete(itemId, tableName) {
+        globalConfirm(
+            `<div class="text-center py-3">
+                <div class="stat-icon-v2 mx-auto bg-danger bg-opacity-10 text-danger mb-3" style="width: 60px; height: 60px; font-size: 2rem;">
+                    <i class="bi bi-trash3"></i>
+                </div>
+                <h5 class="fw-bold text-danger">Execute Permanent Purge?</h5>
+                <p class="text-muted small">Archival data for <strong>${tableName}</strong> will be destroyed across all sectors.</p>
+                <div class="alert alert-danger py-2 small fw-bold mt-2">IRREVERSIBLE COMMAND</div>
+            </div>`,
+            'Danger: Permanent Purge',
+            () => {
+                showLoading('Purging archival data...');
+
+                fetch(`/database/recycle-bin/delete/${itemId}`, {
+                    method: 'POST'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        hideLoading();
+                        if (data.success) {
+                            showToast(data.message, 'success');
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showToast(data.message, 'danger');
+                        }
+                    })
+                    .catch(error => {
+                        hideLoading();
+                        showToast('Error: ' + error.message, 'danger');
+                    });
+            }
+        );
+    }
+
+    function cleanupOldItems() {
+        globalConfirm(
+            `<div class="text-center py-3">
+                <div class="stat-icon-v2 mx-auto bg-warning bg-opacity-10 text-warning mb-3" style="width: 60px; height: 60px; font-size: 2rem;">
+                    <i class="bi bi-broom"></i>
+                </div>
+                <h5 class="fw-bold">Purge Expired Buffers?</h5>
+                <p class="text-muted small">Removing all architectural fragments older than 30 days to optimize storage.</p>
+            </div>`,
+            'System Cleanup',
+            () => {
+                showLoading('Optimizing storage clusters...');
+
+                fetch('/database/recycle-bin/cleanup', {
+                    method: 'POST'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        hideLoading();
+                        if (data.success) {
+                            showToast(data.message, 'success');
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showToast(data.message, 'danger');
+                        }
+                    })
+                    .catch(error => {
+                        hideLoading();
+                        showToast('Error: ' + error.message, 'danger');
+                    });
+            }
+        );
+    }
+
+    function filterItems() {
+        const query = document.getElementById('bin-search').value.toLowerCase();
+        const rows = document.querySelectorAll('.asset-row');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const tableName = row.querySelector('.ref-text').textContent.toLowerCase();
+            const typeBadge = row.querySelector('.asset-type');
+            const typeName = typeBadge ? typeBadge.textContent.toLowerCase() : '';
+
+            if (tableName.includes(query) || typeName.includes(query)) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        const countBadge = document.getElementById('item-count');
+        if (countBadge) countBadge.textContent = visibleCount + ' Items';
+    }
+
+    function loadPage(pageNum) {
+        const url = new URL(window.location);
+        url.searchParams.set('page', pageNum);
+        window.location.href = url.toString();
+    }
+</script>
+{% endblock %}

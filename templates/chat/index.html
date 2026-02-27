@@ -1,0 +1,615 @@
+{% extends "base.html" %}
+
+{% block title %}AI Assistant{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ai-chat-layout {
+        display: flex;
+        height: calc(100vh - 180px);
+        gap: 20px;
+    }
+
+    .chat-sidebar {
+        width: 280px;
+        flex-shrink: 0;
+    }
+
+    .chat-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: linear-gradient(180deg, rgba(15, 23, 42, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+        border-radius: 24px;
+        border: 1px solid rgba(148, 163, 184, 0.1);
+        overflow: hidden;
+    }
+
+    .chat-header-bar {
+        padding: 20px 24px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(15, 23, 42, 0.4);
+    }
+
+    .chat-header-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .ai-avatar-large {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .ai-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #10b981;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    .chat-messages-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .chat-messages-area::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .chat-messages-area::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .chat-messages-area::-webkit-scrollbar-thumb {
+        background: rgba(99, 102, 241, 0.3);
+        border-radius: 3px;
+    }
+
+    .message-row {
+        display: flex;
+        gap: 12px;
+        max-width: 85%;
+    }
+
+    .message-row.user {
+        margin-left: auto;
+        flex-direction: row-reverse;
+    }
+
+    .message-avatar-small {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .message-avatar-small.user {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    }
+
+    .message-avatar-small.ai {
+        background: rgba(6, 182, 212, 0.15);
+        border: 1px solid rgba(6, 182, 212, 0.3);
+        color: #06b6d4;
+    }
+
+    .message-content {
+        padding: 14px 18px;
+        border-radius: 18px;
+        font-size: 14px;
+        line-height: 1.6;
+        position: relative;
+    }
+
+    .message-row.user .message-content {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        border-bottom-right-radius: 4px;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .message-row.ai .message-content {
+        background: rgba(30, 41, 59, 0.8);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        color: var(--text-primary);
+        border-bottom-left-radius: 4px;
+    }
+
+    .message-time {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 6px;
+        text-align: right;
+    }
+
+    .chat-input-bar {
+        padding: 20px 24px;
+        border-top: 1px solid rgba(148, 163, 184, 0.1);
+        background: rgba(15, 23, 42, 0.6);
+    }
+
+    .input-wrapper {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 16px;
+        padding: 8px 8px 8px 16px;
+        transition: all 0.3s ease;
+    }
+
+    .input-wrapper:focus-within {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    .chat-textarea {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--text-primary);
+        font-size: 14px;
+        resize: none;
+        min-height: 24px;
+        max-height: 120px;
+        padding: 8px 0;
+        outline: none;
+    }
+
+    .chat-textarea::placeholder {
+        color: var(--text-muted);
+    }
+
+    .send-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        border: none;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+    }
+
+    .send-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    }
+
+    .quick-prompts {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+    }
+
+    .prompt-chip {
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        color: var(--primary-light);
+        padding: 8px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .prompt-chip:hover {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        border-color: transparent;
+    }
+
+    .typing-bubble {
+        display: flex;
+        gap: 4px;
+        padding: 16px 20px;
+        background: rgba(30, 41, 59, 0.8);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 18px;
+        border-bottom-left-radius: 4px;
+        width: fit-content;
+    }
+
+    .typing-bubble .dot {
+        width: 8px;
+        height: 8px;
+        background: var(--primary);
+        border-radius: 50%;
+        animation: bounce 1.4s infinite ease-in-out both;
+    }
+
+    .typing-bubble .dot:nth-child(1) {
+        animation-delay: -0.32s;
+    }
+
+    .typing-bubble .dot:nth-child(2) {
+        animation-delay: -0.16s;
+    }
+
+    @keyframes bounce {
+
+        0%,
+        80%,
+        100% {
+            transform: scale(0.6);
+        }
+
+        40% {
+            transform: scale(1);
+        }
+    }
+
+    .sidebar-card {
+        background: rgba(15, 23, 42, 0.4);
+        border: 1px solid rgba(148, 163, 184, 0.1);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 16px;
+    }
+
+    .sidebar-title {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        margin-bottom: 12px;
+        font-weight: 600;
+    }
+
+    .feature-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .feature-list li {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        font-size: 13px;
+        color: var(--text-secondary);
+        border-bottom: 1px solid rgba(148, 163, 184, 0.05);
+    }
+
+    .feature-list li:last-child {
+        border-bottom: none;
+    }
+
+    .feature-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary-light);
+    }
+
+    .welcome-banner {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 16px;
+        padding: 24px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .welcome-banner h3 {
+        margin: 0 0 8px 0;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .welcome-banner p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="page-title"><i class="bi bi-stars me-3"></i>AI Assistant</h1>
+            <p class="page-subtitle">Your intelligent companion for wildlife data analysis</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <button class="btn btn-glass" onclick="clearChat()">
+                <i class="bi bi-plus-lg me-2"></i>New Chat
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Chat Layout -->
+<div class="ai-chat-layout">
+    <!-- Sidebar -->
+    <div class="chat-sidebar">
+        <!-- Welcome -->
+        <div class="welcome-banner">
+            <img src="/static/logo-icon.svg" alt="HaoXai" class="mb-3 mx-auto" style="width: 56px; height: 56px;">
+            <h3 class="text-light">HaoXai AI</h3>
+            <p>Ready to help with your data</p>
+        </div>
+
+        <!-- Capabilities -->
+        <div class="sidebar-card">
+            <div class="sidebar-title">What I Can Do</div>
+            <ul class="feature-list">
+                <li>
+                    <div class="feature-icon"><i class="bi bi-search"></i></div>
+                    <span>Search & query data</span>
+                </li>
+                <li>
+                    <div class="feature-icon"><i class="bi bi-bar-chart"></i></div>
+                    <span>Analyze statistics</span>
+                </li>
+                <li>
+                    <div class="feature-icon"><i class="bi bi-code-square"></i></div>
+                    <span>Write SQL queries</span>
+                </li>
+                <li>
+                    <div class="feature-icon"><i class="bi bi-diagram-3"></i></div>
+                    <span>Explain schema</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Quick Tips -->
+        <div class="sidebar-card">
+            <div class="sidebar-title">Try Asking</div>
+            <ul class="feature-list">
+                <li>
+                    <div class="feature-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;"><i
+                            class="bi bi-question-circle"></i></div>
+                    <span>"Show host statistics"</span>
+                </li>
+                <li>
+                    <div class="feature-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;"><i
+                            class="bi bi-question-circle"></i></div>
+                    <span>"Find bat samples"</span>
+                </li>
+                <li>
+                    <div class="feature-icon" style="background: rgba(236, 72, 153, 0.1); color: #ec4899;"><i
+                            class="bi bi-question-circle"></i></div>
+                    <span>"Screening results 2024"</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Main Chat Area -->
+    <div class="chat-main">
+        <!-- Header -->
+        <div class="chat-header-bar">
+            <div class="chat-header-info">
+                <img src="/static/logo-icon.svg" alt="HaoXai" style="width: 44px; height: 44px; border-radius: 14px;">
+                <div>
+                    <div class="fw-semibold">HaoXai Assistant</div>
+                    <div class="ai-status">
+                        <span class="status-dot"></span>
+                        <span>Online</span>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-glass btn-sm" onclick="downloadChat()">
+                    <i class="bi bi-download me-1"></i>Export
+                </button>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chat-input-bar">
+            <!-- Quick Prompts -->
+            <div class="quick-prompts">
+                <div class="prompt-chip" onclick="sendQuick('Show me host statistics')">
+                    <i class="bi bi-bar-chart-line"></i>Host Stats
+                </div>
+                <div class="prompt-chip" onclick="sendQuick('Help with SQL query')">
+                    <i class="bi bi-code-slash"></i>SQL Help
+                </div>
+                <div class="prompt-chip" onclick="sendQuick('Explain database schema')">
+                    <i class="bi bi-diagram-3"></i>Schema
+                </div>
+                <div class="prompt-chip" onclick="sendQuick('Analyze screening results')">
+                    <i class="bi bi-clipboard-data"></i>Analysis
+                </div>
+            </div>
+
+            <!-- Input -->
+            <div class="input-wrapper">
+                <textarea class="chat-textarea" id="chat-input" placeholder="Type your message..." rows="1"
+                    onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
+                <button class="send-btn" onclick="sendMessage()">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let chatHistory = [];
+
+    function handleKeyDown(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            sendMessage();
+        }
+    }
+
+    function autoResize(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    }
+
+    function sendQuick(text) {
+        document.getElementById('chat-input').value = text;
+        sendMessage();
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('chat-input');
+        const message = input.value.trim();
+
+        if (!message) return;
+
+        // Add user message
+        addMessage(message, 'user');
+        input.value = '';
+        input.style.height = 'auto';
+
+        // Show typing
+        showTyping();
+
+        // Simulate AI response
+        setTimeout(() => {
+            hideTyping();
+            addMessage('I understand you asked: "' + message + '"<br><br>Connect me to your AI backend for real responses!', 'ai');
+        }, 1500);
+    }
+
+    function addMessage(text, sender) {
+        const container = document.getElementById('chat-messages');
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        const row = document.createElement('div');
+        row.className = 'message-row ' + sender;
+
+        const avatar = sender === 'user' ? '<i class="bi bi-person-fill"></i>' : '<img src="/static/logo-icon.svg" alt="HaoXai" style="width: 32px; height: 32px; border-radius: 10px;">';
+        const avatarClass = sender === 'user' ? 'user' : 'ai';
+
+        row.innerHTML = `
+            <div class="message-avatar-small ${avatarClass}">${avatar}</div>
+            <div>
+                <div class="message-content">${text}</div>
+                <div class="message-time">${time}</div>
+            </div>
+        `;
+
+        container.appendChild(row);
+        container.scrollTop = container.scrollHeight;
+
+        chatHistory.push({ sender, text, time });
+    }
+
+    function showTyping() {
+        const container = document.getElementById('chat-messages');
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'message-row ai';
+        typingDiv.id = 'typing-indicator';
+        typingDiv.innerHTML = `
+            <div class="message-avatar-small ai"><img src="/static/logo-icon.svg" alt="HaoXai" style="width: 32px; height: 32px; border-radius: 10px;"></div>
+            <div class="typing-bubble">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+        `;
+        container.appendChild(typingDiv);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function hideTyping() {
+        const indicator = document.getElementById('typing-indicator');
+        if (indicator) indicator.remove();
+    }
+
+    function clearChat() {
+        const container = document.getElementById('chat-messages');
+        container.innerHTML = `
+            <div class="message-row ai">
+                <div class="message-avatar-small ai"><img src="/static/logo-icon.svg" alt="HaoXai" style="width: 32px; height: 32px; border-radius: 10px;"></div>
+                <div>
+                    <div class="message-content">Hello! I'm your HaoXai AI Assistant. How can I help you today?</div>
+                    <div class="message-time">Just now</div>
+                </div>
+            </div>
+        `;
+        chatHistory = [];
+    }
+
+    function downloadChat() {
+        if (chatHistory.length === 0) {
+            showToast('No messages to export', 'warning');
+            return;
+        }
+
+        let content = 'HaoXai AI Chat History\n';
+        content += '=====================\n\n';
+
+        chatHistory.forEach(msg => {
+            content += `[${msg.time}] ${msg.sender.toUpperCase()}: ${msg.text}\n\n`;
+        });
+
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'chat-history-' + new Date().toISOString().slice(0, 10) + '.txt';
+        a.click();
+        URL.revokeObjectURL(url);
+
+        showToast('Chat exported successfully', 'success');
+    }
+</script>
+{% endblock %}

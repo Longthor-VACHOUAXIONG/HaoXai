@@ -1,0 +1,549 @@
+{% extends "base.html" %}
+
+{% block title %}Manual Import{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="page-title"><i class="bi bi-upload me-3"></i>Manual Import</h1>
+            <p class="page-subtitle">Import data with manual table and column mapping</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="/excel/import" class="btn btn-glass">
+                <i class="bi bi-magic me-2"></i>Auto Import
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Main Import Form -->
+    <div class="col-lg-8">
+        <div class="glass-card">
+            <div class="section-title mb-4">
+                <i class="bi bi-file-earmark-arrow-up text-primary me-2"></i>Upload & Configure
+            </div>
+            
+            <form id="import-form" enctype="multipart/form-data">
+                <!-- File Upload -->
+                <div class="mb-4">
+                    <label class="form-label text-muted small text-uppercase fw-semibold">Select File</label>
+                    <div class="input-group">
+                        <span class="input-group-text" style="background: rgba(99, 102, 241, 0.1); border-color: rgba(148, 163, 184, 0.2);">
+                            <i class="bi bi-file-earmark text-primary"></i>
+                        </span>
+                        <input type="file" class="form-control" id="file-input" name="file" accept=".xlsx,.xls,.csv" required
+                               style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                    </div>
+                    <div class="form-text text-muted mt-2">
+                        <i class="bi bi-info-circle me-1"></i> Supports Excel (.xlsx, .xls) and CSV formats
+                    </div>
+                </div>
+
+                <!-- Sheet Selector -->
+                <div class="mb-4" id="sheet-selector" style="display: none;">
+                    <label class="form-label text-muted small text-uppercase fw-semibold">Select Sheet</label>
+                    <select class="form-select" id="sheet-name" name="sheet_name"
+                            style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                        <option value="0">First sheet</option>
+                    </select>
+                </div>
+
+                <!-- Table Selection -->
+                <div class="mb-4">
+                    <label class="form-label text-muted small text-uppercase fw-semibold">Target Table</label>
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <select class="form-select" id="table-selection" name="table_selection"
+                                    style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                                <option value="">-- Select Existing Table --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="table_option" id="existing-table" value="existing" checked>
+                                    <label class="form-check-label text-muted" for="existing-table">Existing</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="table_option" id="new-table" value="new">
+                                    <label class="form-check-label text-muted" for="new-table">New</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- New Table Name -->
+                <div class="mb-4" id="new-table-section" style="display: none;">
+                    <label class="form-label text-muted small text-uppercase fw-semibold">New Table Name</label>
+                    <input type="text" class="form-control" id="new-table-name" name="new_table_name" placeholder="Enter table name"
+                           style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                </div>
+
+                <!-- Column Mapping -->
+                <div class="mb-4" id="column-section" style="display: none;">
+                    <label class="form-label text-muted small text-uppercase fw-semibold">Column Mapping</label>
+                    <div id="column-mapping" class="glass-card" style="background: rgba(15, 23, 42, 0.3);">
+                        <!-- Columns populated dynamically -->
+                    </div>
+                    
+                    <!-- Duplicate Check Options -->
+                    <div class="mt-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="check-duplicates" name="check_duplicates" checked>
+                            <label class="form-check-label text-muted" for="check-duplicates">
+                                Check for duplicates before importing
+                            </label>
+                        </div>
+                        <div class="form-check ms-4" id="update-existing-section">
+                            <input class="form-check-input" type="checkbox" id="update-existing" name="update_existing" checked>
+                            <label class="form-check-label text-muted" for="update-existing">
+                                Update existing records if changed
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn btn-gradient btn-lg w-100">
+                    <i class="bi bi-upload me-2"></i>Import Data
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Import Tips -->
+    <div class="col-lg-4">
+        <div class="glass-card" style="background: rgba(6, 182, 212, 0.1); border-color: rgba(6, 182, 212, 0.3);">
+            <div class="section-title mb-4" style="font-size: 14px;">
+                <i class="bi bi-lightbulb text-info me-2"></i>Import Tips
+            </div>
+            
+            <div class="mb-4">
+                <h6 class="text-light mb-2"><i class="bi bi-check-circle me-2"></i>Before Importing:</h6>
+                <ul class="text-muted small mb-0">
+                    <li>Ensure first row contains headers</li>
+                    <li>Check for empty rows</li>
+                    <li>Validate data formats</li>
+                    <li>Remove formulas</li>
+                </ul>
+            </div>
+            
+            <div class="mb-4">
+                <h6 class="text-light mb-2"><i class="bi bi-table me-2"></i>Column Mapping:</h6>
+                <p class="text-muted small mb-0">Map Excel columns to database fields for accurate import.</p>
+            </div>
+            
+            <div>
+                <h6 class="text-light mb-2"><i class="bi bi-shield-check me-2"></i>Duplicate Handling:</h6>
+                <p class="text-muted small mb-0">Choose to skip, update, or replace existing records.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Import Results -->
+<div class="glass-card mt-4" id="import-results" style="display: none; border-left: 4px solid var(--success);">
+    <div class="section-title mb-4">
+        <i class="bi bi-check-circle-fill text-success me-2"></i>Import Results
+    </div>
+    <div id="import-stats"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let availableTables = [];
+    let fileColumns = [];
+    let tableColumns = {};
+
+    // Load available tables on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        loadAvailableTables();
+
+        // Setup event listeners
+        document.getElementById('existing-table').addEventListener('change', handleTableOptionChange);
+        document.getElementById('new-table').addEventListener('change', handleTableOptionChange);
+        document.getElementById('table-selection').addEventListener('change', handleTableSelection);
+        document.getElementById('file-input').addEventListener('change', handleFileSelection);
+        document.getElementById('check-duplicates').addEventListener('change', handleDuplicateCheckChange);
+
+        // Add listener for sheet selection change
+        document.getElementById('sheet-name').addEventListener('change', function () {
+            const file = document.getElementById('file-input').files[0];
+            if (file) {
+                detectExcelColumns(file, this.value);
+            }
+        });
+    });
+
+    // Handle duplicate check checkbox change
+    function handleDuplicateCheckChange() {
+        const checkDuplicates = document.getElementById('check-duplicates').checked;
+        const updateExistingSection = document.getElementById('update-existing-section');
+
+        if (checkDuplicates) {
+            updateExistingSection.style.display = 'block';
+        } else {
+            updateExistingSection.style.display = 'none';
+            document.getElementById('update-existing').checked = false;
+        }
+    }
+
+    // Load available tables from database
+    function loadAvailableTables() {
+        fetch('/database/tables')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    availableTables = data.tables;
+
+                    // Preserve current selection
+                    const currentSelection = document.getElementById('table-selection').value;
+                    populateTableDropdown(currentSelection);
+                }
+            })
+            .catch(error => console.error('Error loading tables:', error));
+    }
+
+    // Populate table dropdown
+    function populateTableDropdown(preserveSelection = null) {
+        const select = document.getElementById('table-selection');
+        select.innerHTML = '<option value="">-- Select Existing Table --</option>';
+
+        availableTables.forEach(table => {
+            const option = document.createElement('option');
+            option.value = table;
+            option.textContent = table;
+
+            // Restore selection if it matches
+            if (preserveSelection && table === preserveSelection) {
+                option.selected = true;
+            }
+
+            select.appendChild(option);
+        });
+
+        // Re-enable the dropdown if it was disabled
+        if (document.getElementById('existing-table').checked) {
+            select.disabled = false;
+        }
+    }
+
+    // Handle table option change (existing vs new)
+    function handleTableOptionChange() {
+        const isExisting = document.getElementById('existing-table').checked;
+        const tableSelection = document.getElementById('table-selection');
+        const newTableSection = document.getElementById('new-table-section');
+        const newTableInput = document.getElementById('new-table-name');
+
+        if (isExisting) {
+            tableSelection.disabled = false;
+            newTableSection.style.display = 'none';
+            newTableInput.removeAttribute('required');
+            newTableInput.value = ''; // Clear the value
+
+            // Refresh tables to show any newly created ones
+            loadAvailableTables();
+        } else {
+            tableSelection.disabled = true;
+            newTableSection.style.display = 'block';
+            newTableInput.setAttribute('required', 'required');
+            // Don't clear the table selection when switching to new table
+        }
+
+        // Hide column section until table is selected
+        document.getElementById('column-section').style.display = 'none';
+    }
+
+    // Handle table selection
+    function handleTableSelection() {
+        const selectedTable = document.getElementById('table-selection').value;
+
+        if (selectedTable) {
+            loadTableColumns(selectedTable);
+        } else {
+            document.getElementById('column-section').style.display = 'none';
+        }
+    }
+
+    // Load columns for selected table
+    function loadTableColumns(tableName) {
+        fetch(`/database/get-table-columns/${tableName}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    tableColumns[tableName] = data.columns;
+                    if (fileColumns.length > 0) {
+                        showColumnMapping();
+                    }
+                } else {
+                    console.error('Error from server:', data.message);
+                    showToast('Error loading table columns: ' + data.message, 'warning');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading table columns:', error);
+                showToast('Error loading table columns: ' + error.message, 'warning');
+            });
+    }
+
+    // Handle file selection
+    function handleFileSelection() {
+        const file = document.getElementById('file-input').files[0];
+        const sheetSelector = document.getElementById('sheet-selector');
+
+        if (file) {
+            // For Excel files, detect columns/sheets on server side
+            if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+                detectExcelColumns(file);
+                sheetSelector.style.display = 'block';
+                return;
+            }
+
+            sheetSelector.style.display = 'none';
+
+            // Read CSV files to get actual column names
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                try {
+                    let columns = [];
+                    const text = e.target.result;
+                    const lines = text.split('\n');
+                    if (lines.length > 0) {
+                        columns = lines[0].split(',').map(col => col.trim().replace(/^"|"$/g, ''));
+                    }
+
+                    fileColumns = columns.filter(col => col); // Remove empty columns
+
+                    // Show column mapping if table is selected
+                    const selectedTable = document.getElementById('table-selection').value;
+                    if (selectedTable) {
+                        showColumnMapping();
+                    }
+                } catch (error) {
+                    console.error('Error reading file:', error);
+                    showToast('Error reading file columns', 'warning');
+                }
+            };
+
+            reader.readAsText(file);
+        }
+    }
+
+    // Detect Excel file columns on server
+    function detectExcelColumns(file, sheetName = null) {
+        const formData = new FormData();
+        formData.append('file', file);
+        if (sheetName) {
+            formData.append('sheet_name', sheetName);
+        }
+
+        fetch('/database/detect-file-columns', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    fileColumns = data.columns;
+
+                    // Update sheets dropdown if sheets were returned
+                    const sheetDropdown = document.getElementById('sheet-name');
+                    if (data.sheets && data.sheets.length > 0) {
+                        // Only rebuild if sheet list doesn't match current length (simple check)
+                        // or if we're doing the initial detection
+                        if (!sheetName) {
+                            sheetDropdown.innerHTML = '';
+                            data.sheets.forEach((sheet, idx) => {
+                                const option = document.createElement('option');
+                                option.value = sheet;
+                                option.textContent = sheet;
+                                if (idx === 0) option.selected = true;
+                                sheetDropdown.appendChild(option);
+                            });
+                        }
+                    }
+
+                    showToast(`Detected ${fileColumns.length} columns in sheet`, 'success');
+
+                    // Show column mapping if table is selected
+                    const selectedTable = document.getElementById('table-selection').value;
+                    if (selectedTable) {
+                        showColumnMapping();
+                    }
+                } else {
+                    console.error('Error detecting columns:', data.message);
+                    showToast('Error detecting Excel columns: ' + data.message, 'warning');
+                }
+            })
+            .catch(error => {
+                console.error('Error detecting columns:', error);
+                showToast('Error detecting Excel columns: ' + error.message, 'warning');
+            });
+    }
+
+    // Show column mapping interface
+    function showColumnMapping() {
+        const selectedTable = document.getElementById('table-selection').value;
+        const columnMapping = document.getElementById('column-mapping');
+
+        if (!selectedTable || fileColumns.length === 0) return;
+
+        const tableCols = tableColumns[selectedTable] || [];
+
+        let html = '<div class="row mb-3"><div class="col-md-6"><h6 class="fw-bold text-dark">File Columns</h6></div><div class="col-md-6"><h6 class="fw-bold text-dark">Table Columns</h6></div></div>';
+
+        fileColumns.forEach((fileCol, index) => {
+            html += `
+                <div class="row mb-2 align-items-center">
+                    <div class="col-md-6">
+                        <div class="form-control bg-white border-secondary text-dark">
+                            <strong>${fileCol}</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <select class="form-select" name="column_map_${index}">
+                            <option value="">-- Skip Column --</option>
+                            ${tableCols.map(tableCol =>
+                `<option value="${tableCol}" ${fileCol.toLowerCase() === tableCol.toLowerCase() ? 'selected' : ''}>${tableCol}</option>`
+            ).join('')}
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="duplicate_check_${index}" 
+                                   id="dup_check_${index}" value="${fileCol}">
+                            <label class="form-check-label" for="dup_check_${index}" title="Check for duplicates">
+                                <i class="bi bi-shield-check"></i>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        columnMapping.innerHTML = html;
+        document.getElementById('column-section').style.display = 'block';
+    }
+
+    document.getElementById('import-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        // Validate form based on table option
+        const isNewTable = document.getElementById('new-table').checked;
+        const newTableName = document.getElementById('new-table-name').value;
+
+        if (isNewTable && !newTableName.trim()) {
+            showToast('Please enter a name for the new table', 'warning');
+            document.getElementById('new-table-name').focus();
+            return;
+        }
+
+        // Collect all form data including column mappings
+        const formData = new FormData(this);
+
+        // Add column mapping data manually (since they might not be included in form submission)
+        const selectedTable = document.getElementById('table-selection').value;
+        if (selectedTable) {
+            console.log('Processing column mappings for table:', selectedTable);
+            console.log('File columns:', fileColumns);
+
+            fileColumns.forEach((fileCol, index) => {
+                const mapping = document.querySelector(`select[name="column_map_${index}"]`);
+                const duplicateCheck = document.querySelector(`input[name="duplicate_check_${index}"]`);
+
+                console.log(`Processing column ${index}: ${fileCol}`);
+                console.log('Mapping element:', mapping);
+                console.log('Duplicate check element:', duplicateCheck);
+
+                if (mapping) {
+                    const mappingValue = mapping.value;
+                    console.log(`Mapping ${fileCol} -> ${mappingValue}`);
+                    formData.append(`column_map_${index}`, mappingValue);
+                }
+                if (duplicateCheck && duplicateCheck.checked) {
+                    console.log(`Adding duplicate check for ${fileCol}`);
+                    formData.append('duplicate_columns', fileCol);
+                }
+            });
+        }
+
+        // Debug: Log form data
+        console.log('Form data being submitted:');
+        for (let [key, value] of formData.entries()) {
+            console.log(key, value);
+        }
+
+        showLoading('Importing data...');
+        updateStatus('Uploading and processing file...', 'hourglass-split');
+
+        fetch('/database/import', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    updateStatus('Import completed successfully', 'check-circle');
+
+                    // Display statistics
+                    const stats = data.stats;
+                    const statsHtml = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center p-3">
+                                <h2 class="text-warning">${stats.existing_records || 0}</h2>
+                                <p class="text-muted">Existing Records</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3">
+                                <h2 class="text-info">${stats.updated_records || 0}</h2>
+                                <p class="text-muted">Updated Records</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3">
+                                <h2 class="text-success">${stats.new_records || 0}</h2>
+                                <p class="text-muted">New Records</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                    document.getElementById('import-stats').innerHTML = statsHtml;
+                    document.getElementById('import-results').style.display = 'block';
+
+                    // Refresh table list in case a new table was created
+                    loadAvailableTables();
+
+                    // Reset form
+                    this.reset();
+                    document.getElementById('column-section').style.display = 'none';
+
+                } else {
+                    showToast(data.message, 'danger');
+                    updateStatus('Import failed', 'x-circle');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showToast('Import failed: ' + error.message, 'danger');
+                updateStatus('Import failed', 'x-circle');
+            });
+    });
+</script>
+{% endblock %}

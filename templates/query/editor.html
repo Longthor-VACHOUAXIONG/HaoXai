@@ -1,0 +1,2913 @@
+{% extends "base.html" %}
+
+{% block title %}SQL Editor{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material-darker.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.css">
+<style>
+    /* ===== PROFESSIONAL SQL EDITOR DESIGN ===== */
+    :root {
+        --bg-primary: #0d1117;
+        --bg-secondary: #161b22;
+        --bg-tertiary: #21262d;
+        --bg-hover: #30363d;
+        --border-color: #30363d;
+        --border-light: #8b949e;
+        --text-primary: #f0f6fc;
+        --text-secondary: #8b949e;
+        --text-muted: #6e7681;
+        --accent-primary: #58a6ff;
+        --accent-success: #3fb950;
+        --accent-warning: #d29922;
+        --accent-danger: #f85149;
+        --accent-info: #58a6ff;
+        --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', monospace;
+        --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        --radius-sm: 6px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+    }
+
+    /* ===== LAYOUT STRUCTURE ===== */
+    .split-container {
+        display: flex;
+        gap: 0;
+        height: calc(100vh - 180px);
+        min-height: 500px;
+        position: relative;
+        background: var(--bg-primary);
+    }
+
+    .editor-panel,
+    .results-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        min-width: 250px;
+        max-width: 85%;
+    }
+
+    /* ===== DRAGGABLE SPLITTER ===== */
+    .splitter {
+        width: 4px;
+        background: var(--border-color);
+        cursor: col-resize;
+        position: relative;
+        flex-shrink: 0;
+        transition: background-color 0.2s ease, width 0.2s ease;
+    }
+
+    .splitter:hover,
+    .split-container.dragging .splitter {
+        width: 6px;
+        background: var(--accent-primary);
+    }
+
+    /* ===== CARDS & PANELS ===== */
+    .editor-panel .card,
+    .results-panel .card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+    }
+
+    .card-header {
+        background: linear-gradient(180deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+        border-bottom: 1px solid var(--border-color);
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .card-header h5 {
+        font-family: var(--font-sans);
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        letter-spacing: 0.3px;
+    }
+
+    .card-header h5 i {
+        color: var(--accent-primary);
+        font-size: 16px;
+    }
+
+    .editor-panel .card-body {
+        flex: 1;
+        overflow: hidden;
+        padding: 0;
+        background: var(--bg-primary);
+    }
+
+    .results-panel .card-body {
+        flex: 1;
+        overflow: hidden;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-secondary);
+    }
+
+    /* ===== CODE MIRROR EDITOR ===== */
+    .CodeMirror {
+        height: 100% !important;
+        background: var(--bg-primary) !important;
+        color: var(--text-primary) !important;
+        font-family: var(--font-mono) !important;
+        font-size: 13px !important;
+        line-height: 1.6 !important;
+        border: none !important;
+        border-radius: 0 !important;
+    }
+
+    .CodeMirror-gutters {
+        background: var(--bg-secondary) !important;
+        border-right: 1px solid var(--border-color) !important;
+        color: var(--text-muted) !important;
+    }
+
+    .CodeMirror-linenumber {
+        color: var(--text-muted) !important;
+        font-size: 12px !important;
+    }
+
+    .CodeMirror-cursor {
+        border-left: 2px solid var(--accent-primary) !important;
+    }
+
+    .CodeMirror-selected {
+        background: rgba(88, 166, 255, 0.3) !important;
+    }
+
+    .CodeMirror-focused .CodeMirror-selected {
+        background: rgba(88, 166, 255, 0.4) !important;
+    }
+
+    /* ===== MODERN BUTTONS ===== */
+    .btn {
+        font-family: var(--font-sans);
+        font-size: 12px;
+        font-weight: 500;
+        padding: 8px 14px;
+        border-radius: var(--radius-sm);
+        border: 1px solid transparent;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        letter-spacing: 0.2px;
+    }
+
+    .btn-sm {
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+
+    .btn-success {
+        background: rgba(63, 185, 80, 0.15);
+        color: var(--accent-success);
+        border-color: rgba(63, 185, 80, 0.4);
+    }
+
+    .btn-success:hover {
+        background: rgba(63, 185, 80, 0.25);
+        border-color: var(--accent-success);
+        box-shadow: 0 0 10px rgba(63, 185, 80, 0.3);
+    }
+
+    .btn-secondary {
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+        border-color: var(--border-color);
+    }
+
+    .btn-secondary:hover {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+        border-color: var(--border-light);
+    }
+
+    .btn-primary {
+        background: rgba(88, 166, 255, 0.15);
+        color: var(--accent-primary);
+        border-color: rgba(88, 166, 255, 0.4);
+    }
+
+    .btn-primary:hover,
+    .btn-primary.active {
+        background: rgba(88, 166, 255, 0.25);
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 10px rgba(88, 166, 255, 0.3);
+    }
+
+    .btn-warning {
+        background: rgba(210, 153, 34, 0.15);
+        color: var(--accent-warning);
+        border-color: rgba(210, 153, 34, 0.4);
+    }
+
+    .btn-warning:hover {
+        background: rgba(210, 153, 34, 0.25);
+        border-color: var(--accent-warning);
+    }
+
+    .btn-info {
+        background: rgba(88, 166, 255, 0.15);
+        color: var(--accent-info);
+        border-color: rgba(88, 166, 255, 0.4);
+    }
+
+    .btn-info:hover {
+        background: rgba(88, 166, 255, 0.25);
+        border-color: var(--accent-info);
+    }
+
+    /* ===== RESULTS TABLE ===== */
+    .results-container {
+        flex: 1;
+        overflow: auto;
+        position: relative;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        background: var(--bg-primary);
+    }
+
+    .results-table {
+        table-layout: auto;
+        width: 100%;
+        margin: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-family: var(--font-mono);
+        font-size: 12px;
+    }
+
+    .results-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .results-table th {
+        white-space: nowrap;
+        padding: 12px 14px;
+        font-weight: 600;
+        text-align: left;
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        border-bottom: 2px solid var(--border-color);
+        border-right: 1px solid var(--border-color);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .results-table th:last-child {
+        border-right: none;
+    }
+
+    .results-table td {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 350px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border-color);
+        border-right: 1px solid var(--border-color);
+        background: var(--bg-primary);
+        color: var(--text-secondary);
+    }
+
+    .results-table td:last-child {
+        border-right: none;
+    }
+
+    .results-table tbody tr:hover td {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+    }
+
+    .results-table tbody tr:nth-child(even) td {
+        background: rgba(22, 27, 34, 0.5);
+    }
+
+    .results-table tbody tr:nth-child(even):hover td {
+        background: var(--bg-tertiary);
+    }
+
+    /* ===== LOADING STATES ===== */
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(13, 17, 23, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        display: none;
+        backdrop-filter: blur(2px);
+    }
+
+    .loading-overlay.active {
+        display: flex;
+    }
+
+    .loading-spinner {
+        width: 36px;
+        height: 36px;
+        border: 3px solid var(--border-color);
+        border-top: 3px solid var(--accent-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* ===== ALERTS & MESSAGES ===== */
+    .alert {
+        border-radius: var(--radius-md);
+        border: 1px solid;
+        padding: 16px 20px;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .alert-info {
+        background: rgba(88, 166, 255, 0.1);
+        border-color: rgba(88, 166, 255, 0.3);
+        color: var(--accent-info);
+    }
+
+    .alert-success {
+        background: rgba(63, 185, 80, 0.1);
+        border-color: rgba(63, 185, 80, 0.3);
+        color: var(--accent-success);
+    }
+
+    .alert-danger {
+        background: rgba(248, 81, 73, 0.1);
+        border-color: rgba(248, 81, 73, 0.3);
+        color: var(--accent-danger);
+    }
+
+    /* ===== PAGINATION INFO ===== */
+    .pagination-info {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+        font-family: var(--font-sans);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .pagination-info strong {
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    /* ===== SCHEMA PANEL ===== */
+    .schema-panel {
+        width: 260px;
+        min-width: 200px;
+        max-width: 350px;
+        background: var(--bg-secondary);
+        border-right: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+    }
+
+    .schema-panel.collapsed {
+        width: 0;
+        min-width: 0;
+        border-right: none;
+    }
+
+    .schema-panel-header {
+        padding: 14px 16px;
+        background: var(--bg-tertiary);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .schema-panel-header h6 {
+        margin: 0;
+        color: var(--text-primary);
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-sans);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .schema-panel-header h6 i {
+        color: var(--accent-primary);
+    }
+
+    .schema-search {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .schema-search input {
+        width: 100%;
+        padding: 8px 12px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-size: 12px;
+        font-family: var(--font-sans);
+        transition: all 0.2s ease;
+    }
+
+    .schema-search input:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+    }
+
+    .schema-search input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .schema-table-count {
+        font-size: 11px;
+        color: var(--text-muted);
+        padding: 8px 16px;
+        border-bottom: 1px solid var(--border-color);
+        background: var(--bg-secondary);
+        font-family: var(--font-sans);
+    }
+
+    .schema-panel-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px 0;
+    }
+
+    .schema-table-item {
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .schema-table-header {
+        padding: 10px 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 12px;
+        transition: all 0.2s ease;
+        font-family: var(--font-sans);
+    }
+
+    .schema-table-header:hover {
+        background: var(--bg-hover);
+    }
+
+    .schema-table-header .table-icon {
+        color: var(--accent-warning);
+        font-size: 14px;
+    }
+
+    .schema-table-header .expand-icon {
+        margin-left: auto;
+        transition: transform 0.2s ease;
+        color: var(--text-muted);
+        font-size: 10px;
+    }
+
+    .schema-table-header.expanded .expand-icon {
+        transform: rotate(90deg);
+        color: var(--accent-primary);
+    }
+
+    .schema-columns {
+        display: none;
+        background: var(--bg-primary);
+    }
+
+    .schema-columns.show {
+        display: block;
+    }
+
+    .schema-column-item {
+        padding: 7px 16px 7px 36px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-secondary);
+        font-size: 11px;
+        transition: all 0.2s ease;
+        font-family: var(--font-mono);
+        border-left: 2px solid transparent;
+    }
+
+    .schema-column-item:hover {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        border-left-color: var(--accent-primary);
+    }
+
+    .schema-column-item .col-icon {
+        color: var(--accent-info);
+        font-size: 9px;
+    }
+
+    .schema-column-item .col-type {
+        margin-left: auto;
+        font-size: 10px;
+        color: var(--text-muted);
+        font-style: italic;
+        font-family: var(--font-sans);
+    }
+
+    .schema-toggle-btn {
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 100;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-left: none;
+        border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+        padding: 10px 5px;
+        cursor: pointer;
+        color: var(--text-secondary);
+        transition: all 0.2s ease;
+    }
+
+    .schema-toggle-btn:hover {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+        border-color: var(--border-light);
+    }
+
+    .schema-panel:not(.collapsed)~.schema-toggle-btn {
+        left: 260px;
+    }
+
+    /* ===== MAIN LAYOUT ===== */
+    .main-layout {
+        display: flex;
+        height: calc(100vh - 160px);
+        min-height: 500px;
+        position: relative;
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .editor-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        min-width: 0;
+    }
+
+    .editor-content .split-container {
+        flex: 1;
+        height: 100%;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    /* ===== AUTOCOMPLETE ===== */
+    .CodeMirror-hints {
+        max-height: 350px !important;
+        overflow-y: auto !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: var(--radius-md) !important;
+        background: var(--bg-secondary) !important;
+        box-shadow: var(--shadow-lg) !important;
+        font-family: var(--font-mono) !important;
+        font-size: 13px !important;
+    }
+
+    .CodeMirror-hint {
+        padding: 8px 14px !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        transition: all 0.15s ease !important;
+        color: var(--text-secondary) !important;
+    }
+
+    .CodeMirror-hint:last-child {
+        border-bottom: none !important;
+    }
+
+    .CodeMirror-hint:hover {
+        background: var(--bg-hover) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .CodeMirror-hint-active {
+        background: var(--accent-primary) !important;
+        color: var(--bg-primary) !important;
+        font-weight: 600;
+    }
+
+    /* ===== PAGE HEADER ===== */
+    .page-header {
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .page-header h1 {
+        font-family: var(--font-sans);
+        font-size: 24px;
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0;
+        letter-spacing: -0.5px;
+    }
+
+    .page-header h1 i {
+        color: var(--accent-primary);
+        font-size: 28px;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+        .split-container {
+            flex-direction: column;
+            height: auto;
+        }
+
+        .editor-panel,
+        .results-panel {
+            max-width: 100%;
+        }
+
+        .CodeMirror {
+            font-size: 12px !important;
+        }
+
+        .results-container {
+            max-height: 400px;
+        }
+
+        .btn {
+            padding: 6px 10px;
+            font-size: 11px;
+        }
+
+        .card-header h5 {
+            font-size: 13px;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .schema-panel {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .schema-panel.collapsed {
+            left: -260px;
+        }
+    }
+
+    /* ===== SCROLLBAR STYLING ===== */
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--bg-secondary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 5px;
+        border: 2px solid var(--bg-secondary);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--border-light);
+    }
+
+    /* ===== UTILITY ===== */
+    .d-flex.gap-1 {
+        gap: 8px !important;
+    }
+
+    .split-container.dragging {
+        user-select: none;
+    }
+
+    /* ===== LOADING ROWS ===== */
+    .loading-rows {
+        text-align: center;
+        padding: 20px;
+        color: var(--text-muted);
+        font-size: 12px;
+        font-family: var(--font-sans);
+    }
+
+    .loading-rows i {
+        color: var(--accent-primary);
+        margin-right: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Professional Page Header -->
+    <div class="page-header">
+        <h1><i class="bi bi-database"></i> SQL Editor</h1>
+    </div>
+
+    <!-- Main Layout with Schema Panel -->
+    <div class="main-layout">
+        <!-- Schema Panel -->
+        <div class="schema-panel" id="schema-panel">
+            <div class="schema-panel-header">
+                <h6><i class="bi bi-table"></i> Database Schema</h6>
+                <button class="btn btn-sm btn-outline-secondary" onclick="toggleSchemaPanel()" title="Hide Schema">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+            </div>
+            <div class="schema-search">
+                <input type="text" id="schema-search" placeholder="Search tables..." onkeyup="filterSchemaTables()">
+            </div>
+            <div class="schema-table-count" id="schema-table-count"></div>
+            <div class="schema-panel-body" id="schema-panel-body">
+                <div class="text-muted text-center p-3">Loading schema...</div>
+            </div>
+        </div>
+
+        <!-- Toggle button when panel is collapsed -->
+        <button class="schema-toggle-btn" id="schema-toggle-btn" onclick="toggleSchemaPanel()" style="display: none;"
+            title="Show Schema">
+            <i class="bi bi-chevron-right"></i>
+        </button>
+
+        <!-- Editor Content Area -->
+        <div class="editor-content">
+            <!-- Split Screen Layout -->
+            <div class="split-container" id="split-container">
+                <!-- Editor Panel -->
+                <div class="editor-panel" id="editor-panel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="bi bi-code-square"></i> Query Editor</h5>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <button class="btn btn-success" onclick="executeQuery()">
+                                    <i class="bi bi-play-fill"></i> <span class="d-none d-sm-inline">Execute</span>
+                                </button>
+                                <button class="btn btn-secondary" onclick="clearEditor()">
+                                    <i class="bi bi-x-lg"></i> <span class="d-none d-sm-inline">Clear</span>
+                                </button>
+                                <button class="btn btn-warning" onclick="clearLocalStorage()">
+                                    <i class="bi bi-trash3"></i> <span class="d-none d-sm-inline">Clear Saved</span>
+                                </button>
+                                <button class="btn btn-info" onclick="formatQuery()">
+                                    <i class="bi bi-braces"></i> <span class="d-none d-sm-inline">Format</span>
+                                </button>
+                                <button id="auto-execute-btn" class="btn btn-primary active"
+                                    onclick="toggleAutoExecute()">
+                                    <i class="bi bi-lightning-fill"></i> <span class="d-none d-sm-inline">Auto</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <textarea id="sql-editor"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Draggable Splitter -->
+                <div class="splitter" id="splitter"></div>
+
+                <!-- Results Panel -->
+                <div class="results-panel" id="results-panel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="bi bi-grid-3x3"></i> Results</h5>
+                            <div id="results-actions" class="d-flex gap-1" style="display: none;">
+                                <button class="btn btn-primary" onclick="exportResults('csv')">
+                                    <i class="bi bi-filetype-csv"></i> <span class="d-none d-sm-inline">CSV</span>
+                                </button>
+                                <button class="btn btn-primary" onclick="exportResults('xlsx')">
+                                    <i class="bi bi-file-earmark-excel"></i> <span
+                                        class="d-none d-sm-inline">Excel</span>
+                                </button>
+                                <button class="btn btn-primary" onclick="exportResults('fasta')">
+                                    <i class="bi bi-dna"></i> <span class="d-none d-sm-inline">FASTA</span>
+                                </button>
+                                <button class="btn btn-info" onclick="visualizeResults()">
+                                    <i class="bi bi-bar-chart"></i> <span class="d-none d-sm-inline">Visualize</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="results-message" class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> Enter a SQL query and click Execute to see results.
+                            </div>
+                            <div id="results-container" class="results-container" style="display: none;">
+                                <div class="loading-overlay" id="results-loading">
+                                    <div class="loading-spinner"></div>
+                                </div>
+                                <div class="pagination-info" id="pagination-info" style="display: none;"></div>
+                                <table id="results-table"
+                                    class="table table-dark table-striped table-hover results-table">
+                                    <thead id="results-thead"></thead>
+                                    <tbody id="results-tbody"></tbody>
+                                </table>
+                                <div class="loading-rows" id="loading-rows" style="display: none;">
+                                    <i class="bi bi-hourglass-split"></i> Loading more rows...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- End main-content -->
+    </div><!-- End main-layout -->
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/sql/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.js"></script>
+<script>
+    let editor;
+    let lastResults = null;
+    let schemaData = {};
+    let currentPage = 0;
+    let rowsPerPage = 100;
+    let isLoadingRows = false;
+    let autoExecuteTimeout;
+    let isAutoExecute = true; // Enable real-time execution by default
+
+    // Initialize CodeMirror
+    document.addEventListener('DOMContentLoaded', function () {
+        editor = CodeMirror.fromTextArea(document.getElementById('sql-editor'), {
+            mode: 'text/x-sql',
+            theme: 'material-darker',
+            lineNumbers: true,
+            autofocus: true,
+            lineWrapping: true,
+            indentUnit: 4,
+            tabSize: 4,
+            matchBrackets: true,
+            autoCloseBrackets: true,
+            foldGutter: true,
+            gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+            extraKeys: {
+                'F5': executeQuery,
+                'Ctrl-Enter': executeQuery,
+                'Cmd-Enter': executeQuery,
+                'Ctrl-Space': 'autocomplete',
+                'Ctrl-S': immediateSave,
+                'Cmd-S': immediateSave,
+                'Tab': function (cm) {
+                    if (cm.somethingSelected()) {
+                        cm.indentSelection('add');
+                    } else {
+                        cm.replaceSelection('    ', 'end');
+                    }
+                }
+            }
+        });
+
+        // Add focus/blur effects
+        editor.on('focus', function () {
+            editor.getWrapperElement().classList.add('CodeMirror-focused');
+        });
+
+        editor.on('blur', function () {
+            editor.getWrapperElement().classList.remove('CodeMirror-focused');
+        });
+
+        console.log('CodeMirror initialized');
+
+        // Restore saved content from localStorage
+        restoreFromLocalStorage();
+
+        // Load schema and setup autocomplete
+        loadSchema();
+
+        // Check URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const table = urlParams.get('table');
+        const action = urlParams.get('action');
+
+        if (table) {
+            if (action === 'view') {
+                editor.setValue(`SELECT * FROM ${table} LIMIT 100;`);
+                // Wait a bit for editor to be fully ready
+                setTimeout(() => {
+                    console.log('DEBUG: Auto-executing view query');
+                    executeQuery();
+                }, 500);
+            } else {
+                editor.setValue(`SELECT * FROM ${table} WHERE `);
+            }
+        }
+
+        // Auto-execute initial query if there's content and auto-execute is enabled
+        if (isAutoExecute) {
+            setTimeout(() => {
+                const query = editor.getValue().trim();
+                if (query && isValidQuery(query)) {
+                    executeQuery(true); // Silent execution
+                }
+            }, 1000); // Wait 1 second for initialization
+        }
+
+        // Auto-save to localStorage on change (debounced for performance)
+        editor.on('change', debouncedSave);
+
+        // Real-time execution on change (debounced)
+        editor.on('change', debouncedAutoExecute);
+
+        // Save immediately before page unload
+        window.addEventListener('beforeunload', immediateSave);
+
+        // Setup virtual scrolling for results table
+        setupLMSScrolling();
+
+        // Handle window resize to ensure proper editor sizing
+        window.addEventListener('resize', function () {
+            if (editor) {
+                editor.refresh();
+            }
+        });
+
+        // Initialize draggable splitter
+        initSplitter();
+    });
+
+    // Load database schema for autocomplete
+    function loadSchema() {
+        fetch('/query/autocomplete')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    schemaData = data.schema;
+                    // Default to sqlite if not provided
+                    window.currentDbType = data.db_type || 'sqlite';
+                    console.log('Schema loaded:', Object.keys(schemaData).length, 'tables', 'DB Type:', window.currentDbType);
+
+                    // Setup autocomplete now that schema is loaded
+                    setupAutocomplete();
+
+                    // Populate schema panel UI
+                    populateSchemaPanel();
+                }
+            })
+            .catch(err => {
+                console.error('Failed to load schema:', err);
+                document.getElementById('schema-panel-body').innerHTML =
+                    '<div class="text-danger text-center p-3">Failed to load schema</div>';
+            });
+    }
+
+    // Populate schema panel with tables and columns
+    function populateSchemaPanel() {
+        const container = document.getElementById('schema-panel-body');
+        const tableCount = document.getElementById('schema-table-count');
+        const tables = Object.keys(schemaData).sort();
+
+        tableCount.textContent = `${tables.length} tables`;
+
+        if (tables.length === 0) {
+            container.innerHTML = '<div class="text-muted text-center p-3">No tables found</div>';
+            return;
+        }
+
+        let html = '';
+        tables.forEach(table => {
+            const columns = schemaData[table] || [];
+            html += `
+                <div class="schema-table-item" data-table="${table.toLowerCase()}">
+                    <div class="schema-table-header" onclick="toggleTableColumns(this, '${table}')">
+                        <i class="bi bi-table table-icon"></i>
+                        <span class="table-name">${table}</span>
+                        <span class="badge bg-secondary" style="font-size: 10px;">${columns.length}</span>
+                        <i class="bi bi-chevron-right expand-icon"></i>
+                    </div>
+                    <div class="schema-columns" id="columns-${table}">
+                        ${columns.map(col => {
+                const colName = typeof col === 'object' ? col.name : col;
+                const colType = typeof col === 'object' ? col.type : '';
+                return `
+                            <div class="schema-column-item" onclick="insertIntoEditor('${colName}')" title="${colType || 'Click to insert'}">
+                                <i class="bi bi-columns-gap col-icon"></i>
+                                <span>${colName}</span>
+                                ${colType ? `<span class="col-type">${colType}</span>` : ''}
+                            </div>
+                        `}).join('')}
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    // Toggle table columns visibility
+    function toggleTableColumns(header, tableName) {
+        const columnsDiv = document.getElementById('columns-' + tableName);
+        const isExpanded = header.classList.contains('expanded');
+
+        if (isExpanded) {
+            header.classList.remove('expanded');
+            columnsDiv.classList.remove('show');
+        } else {
+            header.classList.add('expanded');
+            columnsDiv.classList.add('show');
+        }
+    }
+
+    // Insert text into editor at cursor position
+    function insertIntoEditor(text) {
+        if (editor) {
+            const cursor = editor.getCursor();
+            editor.replaceRange(text, cursor);
+            editor.focus();
+        }
+    }
+
+    // Toggle schema panel visibility
+    function toggleSchemaPanel() {
+        const panel = document.getElementById('schema-panel');
+        const toggleBtn = document.getElementById('schema-toggle-btn');
+
+        if (panel.classList.contains('collapsed')) {
+            panel.classList.remove('collapsed');
+            toggleBtn.style.display = 'none';
+        } else {
+            panel.classList.add('collapsed');
+            toggleBtn.style.display = 'block';
+        }
+
+        // Refresh editor after layout change
+        setTimeout(() => {
+            if (editor) editor.refresh();
+        }, 300);
+    }
+
+    // Filter schema tables by search input
+    function filterSchemaTables() {
+        const searchTerm = document.getElementById('schema-search').value.toLowerCase();
+        const tableItems = document.querySelectorAll('.schema-table-item');
+        let visibleCount = 0;
+
+        tableItems.forEach(item => {
+            const tableName = item.dataset.table;
+            if (tableName.includes(searchTerm)) {
+                item.style.display = 'block';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        document.getElementById('schema-table-count').textContent =
+            `${visibleCount} of ${tableItems.length} tables`;
+    }
+
+    // Setup autocomplete with custom hint function
+    function setupAutocomplete() {
+        // Register custom SQL hint
+        CodeMirror.registerHelper("hint", "sql", function (cm, options) {
+            const cur = cm.getCursor();
+            const curLine = cm.getLine(cur.line);
+            const end = cur.ch;
+            let start = end;
+
+            // Find word start
+            while (start && /[\w$.]/.test(curLine.charAt(start - 1))) --start;
+            const curWord = start !== end ? curLine.slice(start, end) : "";
+
+            // Don't show suggestions if nothing is typed
+            if (!curWord || curWord.length < 1) {
+                return { list: [], from: CodeMirror.Pos(cur.line, start), to: CodeMirror.Pos(cur.line, end) };
+            }
+
+            const curWordLower = curWord.toLowerCase();
+            const list = [];
+            const seen = new Set(); // Track duplicates
+
+            // Dictionary of keywords by database type
+            const commonKeywords = [
+                // Data Query
+                "SELECT", "FROM", "WHERE", "AND", "OR", "NOT", "IN", "LIKE", "BETWEEN",
+                "IS", "NULL", "AS", "DISTINCT", "ALL",
+                // Joins (Common)
+                "JOIN", "INNER", "LEFT", "OUTER", "CROSS", "NATURAL", "ON", "USING",
+                "INNER JOIN", "LEFT JOIN", "LEFT OUTER JOIN", "CROSS JOIN", "NATURAL JOIN",
+                // Sorting & Grouping
+                "ORDER BY", "ASC", "DESC", "GROUP BY", "HAVING", "LIMIT", "OFFSET", "DISTINCT",
+                "AS", "AND", "OR", "NOT", "NULL", "IS", "IN", "LIKE", "BETWEEN",
+                // Data Modification
+                "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE",
+                // Table Operations
+                "CREATE", "ALTER", "DROP", "TABLE", "VIEW", "INDEX", "TRIGGER",
+                "ADD", "COLUMN", "RENAME", "TO",
+                // Constraints
+                "PRIMARY", "KEY", "FOREIGN", "REFERENCES", "UNIQUE", "CHECK", "DEFAULT", "NOT NULL",
+                "CONSTRAINT",
+                // Transactions
+                "BEGIN", "COMMIT", "ROLLBACK", "TRANSACTION", "SAVEPOINT", "RELEASE",
+                // Set Operations
+                "UNION", "INTERSECT", "EXCEPT",
+                // Subqueries
+                "EXISTS", "CASE", "WHEN", "THEN", "ELSE", "END",
+                // Aggregates
+                "COUNT", "SUM", "AVG", "MIN", "MAX", "GROUP_CONCAT",
+                // Standard Functions (Common)
+                "COALESCE", "NULLIF", "ABS", "ROUND", "CEIL", "FLOOR", "POWER", "SQRT",
+                "UPPER", "LOWER", "LENGTH", "TRIM", "LTRIM", "RTRIM", "SUBSTR", "REPLACE",
+                "CAST", "DATE", "TIME", "NOW", "CURRENT_DATE", "CURRENT_TIMESTAMP"
+            ];
+
+            const sqliteKeywords = [
+                // SQLite Specific
+                "PRAGMA", "VACUUM", "REINDEX", "ATTACH", "DETACH", "GLOB", "REGEXP", "MATCH",
+                "AUTOINCREMENT", "TEMP", "TEMPORARY", "IF NOT EXISTS",
+                "STRFTIME", "JULIANDAY", "RANDOM", "TOTAL", "INSTR"
+            ];
+
+            const mysqlKeywords = [
+                // MySQL Specific
+                "SHOW", "DESCRIBE", "EXPLAIN", "USE", "IF EXISTS", "AUTO_INCREMENT",
+                "UNSIGNED", "ZEROFILL", "BINARY", "VARBINARY", "BLOB", "TEXT",
+                "DATEDIFF", "DATE_ADD", "DATE_SUB", "NOW", "CURDATE", "CURTIME",
+                "MD5", "SHA1", "CONCAT_WS", "REGEXP", "RLIKE",
+                "LIMIT", "OFFSET",
+                // Joins supported by MySQL but not SQLite
+                "RIGHT JOIN", "RIGHT OUTER JOIN", "RIGHT", "FULL OUTER JOIN", "FULL JOIN"
+            ];
+
+            // Select keywords based on DB type
+            let keywords = [...commonKeywords];
+
+            if (window.currentDbType === 'sqlite') {
+                keywords = [...keywords, ...sqliteKeywords];
+            } else {
+                keywords = [...keywords, ...mysqlKeywords];
+            }
+
+
+            // Add keywords that start with the typed text
+            keywords.forEach(kw => {
+                if (kw.toLowerCase().startsWith(curWordLower) && !seen.has(kw.toLowerCase())) {
+                    seen.add(kw.toLowerCase());
+                    list.push({
+                        text: kw,
+                        displayText: kw,
+                        className: "sql-keyword-hint"
+                    });
+                }
+            });
+
+            // Add table names that start with the typed text
+            Object.keys(schemaData).forEach(table => {
+                if (table.toLowerCase().startsWith(curWordLower) && !seen.has(table.toLowerCase())) {
+                    seen.add(table.toLowerCase());
+                    list.push({
+                        text: table,
+                        displayText: `📊 ${table}`,
+                        className: "sql-table-hint"
+                    });
+                }
+            });
+
+            // Add columns that start with the typed text (handle both object and string formats)
+            Object.keys(schemaData).forEach(table => {
+                if (schemaData[table] && Array.isArray(schemaData[table])) {
+                    schemaData[table].forEach(col => {
+                        const colName = typeof col === 'object' ? col.name : col;
+                        const colType = typeof col === 'object' ? col.type : '';
+                        if (colName && colName.toLowerCase().startsWith(curWordLower) && !seen.has(colName.toLowerCase())) {
+                            seen.add(colName.toLowerCase());
+                            list.push({
+                                text: colName,
+                                displayText: `🔹 ${colName}${colType ? ' (' + colType + ')' : ''}`,
+                                className: "sql-column-hint"
+                            });
+                        }
+                    });
+                }
+            });
+
+            // Sort alphabetically and limit to 20 results
+            list.sort((a, b) => a.text.localeCompare(b.text));
+
+            return {
+                list: list.slice(0, 20),
+                from: CodeMirror.Pos(cur.line, start),
+                to: CodeMirror.Pos(cur.line, end)
+            };
+        });
+
+        // Enable autocomplete on typing
+        editor.on("keyup", function (cm, event) {
+            // Don't show on special keys
+            if (!cm.state.completionActive &&
+                event.keyCode !== 13 && // Enter
+                event.keyCode !== 27 && // Escape
+                event.keyCode !== 37 && // Left arrow
+                event.keyCode !== 38 && // Up arrow
+                event.keyCode !== 39 && // Right arrow
+                event.keyCode !== 40 && // Down arrow
+                event.keyCode !== 32 && // Space
+                /[a-zA-Z_]/.test(event.key)) {
+                CodeMirror.commands.autocomplete(cm, null, { completeSingle: false });
+            }
+        });
+
+        console.log('Autocomplete ready! Press Ctrl+Space or just start typing');
+    }
+
+
+    // Custom SQL autocomplete function
+    CodeMirror.registerHelper("hint", "sql", function (editor, options) {
+        const cur = editor.getCursor();
+        const curLine = editor.getLine(cur.line);
+        const end = cur.ch;
+        let start = end;
+
+        // Find word start
+        while (start && /[\w$]/.test(curLine.charAt(start - 1))) --start;
+        const curWord = start !== end && curLine.slice(start, end);
+
+        const list = [];
+
+        // SQL Keywords
+        const keywords = [
+            "SELECT", "FROM", "WHERE", "INSERT", "UPDATE", "DELETE",
+            "CREATE", "DROP", "ALTER", "TABLE", "INDEX", "VIEW",
+            "JOIN", "LEFT", "RIGHT", "INNER", "OUTER", "CROSS", "ON",
+            "GROUP BY", "ORDER BY", "HAVING", "LIMIT", "OFFSET", "DISTINCT",
+            "AS", "AND", "OR", "NOT", "NULL", "IS", "IN", "LIKE", "BETWEEN",
+            "ASC", "DESC", "COUNT", "SUM", "AVG", "MIN", "MAX",
+            "UNION", "INTERSECT", "EXCEPT", "EXISTS", "CASE", "WHEN", "THEN", "ELSE", "END"
+        ];
+
+        // Add keywords
+        keywords.forEach(kw => {
+            if (!curWord || kw.toLowerCase().startsWith(curWord.toLowerCase())) {
+                list.push({
+                    text: kw,
+                    displayText: kw,
+                    className: "sql-keyword-hint"
+                });
+            }
+        });
+
+        // Add table names
+        Object.keys(schemaData).forEach(table => {
+            if (!curWord || table.toLowerCase().indexOf(curWord.toLowerCase()) >= 0) {
+                list.push({
+                    text: table,
+                    displayText: `📊 ${table}`,
+                    className: "sql-table-hint"
+                });
+            }
+        });
+
+        // Add column names from context
+        const tableContext = getTableFromContext(curLine, end);
+        if (tableContext && schemaData[tableContext]) {
+            schemaData[tableContext].forEach(col => {
+                if (!curWord || col.toLowerCase().indexOf(curWord.toLowerCase()) >= 0) {
+                    list.push({
+                        text: col,
+                        displayText: `🔹 ${col} (${tableContext})`,
+                        className: "sql-column-hint"
+                    });
+                }
+            });
+        }
+
+        // Add columns from all tables if no specific context
+        if (!tableContext) {
+            Object.keys(schemaData).forEach(table => {
+                schemaData[table].forEach(col => {
+                    if (!curWord || col.toLowerCase().indexOf(curWord.toLowerCase()) >= 0) {
+                        list.push({
+                            text: col,
+                            displayText: `🔹 ${col}`,
+                            className: "sql-column-hint"
+                        });
+                    }
+                });
+            });
+        }
+
+        return {
+            list: list.slice(0, 50), // Limit to 50 suggestions
+            from: CodeMirror.Pos(cur.line, start),
+            to: CodeMirror.Pos(cur.line, end)
+        };
+    });
+
+    // Helper function to determine table context
+    function getTableFromContext(line, pos) {
+        // Simple heuristic: look for FROM or JOIN followed by table name
+        const beforeCursor = line.substring(0, pos).toUpperCase();
+        const fromMatch = beforeCursor.match(/FROM\s+(\w+)/);
+        const joinMatch = beforeCursor.match(/JOIN\s+(\w+)/);
+
+        if (fromMatch && fromMatch[1]) {
+            return fromMatch[1].toLowerCase();
+        }
+
+        return null;
+    }
+
+    // Execute SQL query
+    function executeQuery() {
+        console.log('DEBUG: executeQuery called');
+        const query = editor.getValue().trim();
+        console.log('DEBUG: Query value:', query);
+
+        if (!query) {
+            showToast('Please enter a SQL query', 'warning');
+            return;
+        }
+
+        console.log('DEBUG: About to send fetch request');
+        showLoading('Executing query...');
+        updateStatus('Executing query...', 'hourglass-split');
+
+        const requestData = { query: query };
+        console.log('DEBUG: Request data:', requestData);
+
+        fetch('/query/execute', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                hideLoading();
+
+                if (data.success) {
+                    if (data.has_results) {
+                        displayResults(data);
+                        updateStatus(`Query executed successfully. ${data.row_count} rows returned.`, 'check-circle');
+                        showToast(data.message, 'success');
+                    } else {
+                        hideResults();
+                        document.getElementById('results-message').innerHTML =
+                            `<i class="bi bi-check-circle"></i> ${data.message}`;
+                        document.getElementById('results-message').className = 'alert alert-success';
+                        updateStatus(data.message, 'check-circle');
+                        showToast(data.message, 'success');
+                    }
+
+                    // Save to history
+                    saveQueryToHistory(query);
+                } else {
+                    hideResults();
+                    document.getElementById('results-message').innerHTML =
+                        `<i class="bi bi-exclamation-triangle"></i> ${data.message}`;
+                    document.getElementById('results-message').className = 'alert alert-danger';
+                    updateStatus('Query failed', 'x-circle');
+                    showToast(data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                hideLoading();
+                hideResults();
+                document.getElementById('results-message').innerHTML =
+                    `<i class="bi bi-exclamation-triangle"></i> Error: ${error.message}`;
+                document.getElementById('results-message').className = 'alert alert-danger';
+                updateStatus('Query failed', 'x-circle');
+                showToast(`Query execution failed: ${error.message}`, 'danger');
+            });
+    }
+
+    // Display query results - fast performance
+    function displayResults(data) {
+        lastResults = data;
+        currentPage = 0;
+
+        const resultsContainer = document.getElementById('results-container');
+        const resultsMessage = document.getElementById('results-message');
+        const resultsActions = document.getElementById('results-actions');
+        const loadingOverlay = document.getElementById('results-loading');
+
+        // Hide loading immediately
+        loadingOverlay.classList.remove('active');
+
+        // Hide message, show container immediately
+        resultsMessage.style.display = 'none';
+        resultsContainer.style.display = 'block';
+        resultsActions.style.display = 'block';
+
+        // Build table header
+        const thead = document.getElementById('results-thead');
+        thead.innerHTML = '<tr>' +
+            data.columns.map(col => `<th>${col}</th>`).join('') +
+            '</tr>';
+
+        // Show pagination info for large datasets
+        if (data.row_count > rowsPerPage) {
+            const paginationInfo = document.getElementById('pagination-info');
+            paginationInfo.style.display = 'block';
+            paginationInfo.textContent = `Showing ${Math.min(rowsPerPage, data.row_count)} of ${data.row_count} rows`;
+        }
+
+        // Render first page of rows immediately
+        renderRowsPage(0);
+    }
+
+    // Render rows in pages with better formatting
+    function renderRowsPage(page) {
+        const tbody = document.getElementById('results-tbody');
+        const startIndex = page * rowsPerPage;
+        const endIndex = Math.min(startIndex + rowsPerPage, lastResults.data.length);
+
+        if (page === 0) {
+            // Clear and render first page
+            tbody.innerHTML = '';
+        }
+
+        // Render rows for this page
+        const fragment = document.createDocumentFragment();
+        for (let i = startIndex; i < endIndex; i++) {
+            const row = lastResults.data[i];
+            const tr = document.createElement('tr');
+
+            // Create cells with proper formatting
+            const cells = lastResults.columns.map(col => {
+                const value = row[col];
+                let displayValue;
+
+                if (value === null) {
+                    displayValue = '<em class="text-muted">NULL</em>';
+                } else if (value === '') {
+                    displayValue = '<em class="text-muted">[empty]</em>';
+                } else if (typeof value === 'string' && value.length > 100) {
+                    // Truncate long strings with tooltip
+                    displayValue = `<span title="${value.replace(/"/g, '&quot;')}">${value.substring(0, 100)}...</span>`;
+                } else {
+                    displayValue = `<span title="${String(value).replace(/"/g, '&quot;')}">${value}</span>`;
+                }
+
+                return `<td>${displayValue}</td>`;
+            });
+
+            tr.innerHTML = cells.join('');
+            fragment.appendChild(tr);
+        }
+
+        tbody.appendChild(fragment);
+
+        // Update pagination info
+        if (lastResults.row_count > rowsPerPage) {
+            const paginationInfo = document.getElementById('pagination-info');
+            const shownCount = Math.min(endIndex, lastResults.row_count);
+            paginationInfo.textContent = `Showing ${shownCount} of ${lastResults.row_count} rows`;
+        }
+
+        currentPage = page;
+    }
+
+    // Setup virtual scrolling for large datasets
+    function setupLMSScrolling() {
+        const resultsContainer = document.getElementById('results-container');
+
+        resultsContainer.addEventListener('scroll', function () {
+            if (!lastResults || isLoadingRows) return;
+
+            const scrollTop = resultsContainer.scrollTop;
+            const scrollHeight = resultsContainer.scrollHeight;
+            const clientHeight = resultsContainer.clientHeight;
+
+            // Load more rows when scrolling near bottom
+            if (scrollTop + clientHeight >= scrollHeight - 100) {
+                loadMoreRows();
+            }
+        });
+    }
+
+    // Load more rows on scroll
+    function loadMoreRows() {
+        if (!lastResults || isLoadingRows) return;
+
+        const nextPage = currentPage + 1;
+        const startIndex = nextPage * rowsPerPage;
+
+        if (startIndex >= lastResults.data.length) return; // All rows loaded
+
+        isLoadingRows = true;
+        document.getElementById('loading-rows').style.display = 'block';
+
+        // Use setTimeout to allow UI to update
+        setTimeout(() => {
+            renderRowsPage(nextPage);
+            isLoadingRows = false;
+            document.getElementById('loading-rows').style.display = 'none';
+        }, 100);
+    }
+
+    // Hide results - fast performance
+    function hideResults() {
+        const resultsContainer = document.getElementById('results-container');
+        const resultsMessage = document.getElementById('results-message');
+        const resultsActions = document.getElementById('results-actions');
+
+        // Hide immediately
+        resultsContainer.style.display = 'none';
+        resultsMessage.style.display = 'block';
+        resultsActions.style.display = 'none';
+    }
+
+    // Clear editor
+    function clearEditor() {
+        globalConfirm(
+            'Clear the editor?',
+            'Clear Editor',
+            () => {
+                editor.setValue('');
+            }
+        );
+    }
+
+    // Format query (basic formatting)
+    function formatQuery() {
+        let query = editor.getValue();
+        // Basic SQL formatting
+        query = query.replace(/\s+/g, ' ')
+            .replace(/\b(SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|INNER|OUTER|ON|GROUP BY|ORDER BY|HAVING|LIMIT)\b/gi, '\n$1')
+            .replace(/,/g, ',\n  ')
+            .trim();
+        editor.setValue(query);
+    }
+
+    // Export results
+    function exportResults(format) {
+        if (!lastResults) {
+            showToast('No results to export', 'warning');
+            return;
+        }
+
+        const query = editor.getValue();
+
+        showLoading(`Exporting as ${format.toUpperCase()}...`);
+
+        fetch('/database/export', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                query: query,
+                format: format
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    // Trigger download
+                    window.open(data.download_url, '_blank');
+                } else {
+                    showToast(data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showToast('Export failed: ' + error.message, 'danger');
+            });
+    }
+
+    // Visualize results with charts
+    function visualizeResults() {
+        if (!lastResults || !lastResults.data || lastResults.data.length === 0) {
+            showToast('No results to visualize', 'warning');
+            return;
+        }
+
+        // Create visualization modal
+        createVisualizationModal();
+    }
+
+    // Create visualization modal with charts
+    function createVisualizationModal() {
+        // Remove existing modal if any
+        const existingModal = document.getElementById('visualization-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Create modal HTML
+        const modalHTML = `
+            <div class="modal fade" id="visualization-modal" tabindex="-1" aria-labelledby="visualizationModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content bg-dark text-light">
+                        <div class="modal-header border-secondary">
+                            <h5 class="modal-title" id="visualizationModalLabel">
+                                <i class="bi bi-graph-up"></i> Query Results Visualization
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row mb-3">
+                                <div class="col-md-3">
+                                    <label for="chart-type" class="form-label">Chart Type:</label>
+                                    <select id="chart-type" class="form-select bg-secondary text-light border-secondary">
+                                        <optgroup label="Basic Charts">
+                                            <option value="bar">Bar Chart</option>
+                                            <option value="line">Line Chart</option>
+                                            <option value="pie">Pie Chart</option>
+                                            <option value="doughnut">Doughnut Chart</option>
+                                            <option value="scatter">Scatter Plot</option>
+                                        </optgroup>
+                                        <optgroup label="Advanced Charts">
+                                            <option value="bubble">Bubble Chart</option>
+                                            <option value="radar">Radar Chart</option>
+                                            <option value="polarArea">Polar Area Chart</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="x-axis" class="form-label">X-Axis Column:</label>
+                                    <select id="x-axis" class="form-select bg-secondary text-light border-secondary">
+                                        ${lastResults.columns.map(col => `<option value="${col}">${col}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="y-axis" class="form-label">Y-Axis Column:</label>
+                                    <select id="y-axis" class="form-select bg-secondary text-light border-secondary">
+                                        ${lastResults.columns.map(col => `<option value="${col}">${col}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="z-axis" class="form-label">Size/Value Column:</label>
+                                    <select id="z-axis" class="form-select bg-secondary text-light border-secondary">
+                                        <option value="">None</option>
+                                        ${lastResults.columns.map(col => `<option value="${col}">${col}</option>`).join('')}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="chart-theme" class="form-label">Color Theme:</label>
+                                    <select id="chart-theme" class="form-select bg-secondary text-light border-secondary">
+                                        <optgroup label="Standard Themes">
+                                            <option value="vibrant">Vibrant</option>
+                                            <option value="pastel">Pastel</option>
+                                            <option value="professional">Professional</option>
+                                            <option value="neon">Neon</option>
+                                            <option value="dark">Dark Mode</option>
+                                            <option value="gradient">Gradient</option>
+                                            <option value="rainbow">Rainbow</option>
+                                        </optgroup>
+                                        <optgroup label="Academic Publication">
+                                            <option value="nature">Nature Journal</option>
+                                            <option value="science">Science Magazine</option>
+                                            <option value="ieee">IEEE Standards</option>
+                                            <option value="lancet">The Lancet</option>
+                                            <option value="cell">Cell Press</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="aggregation" class="form-label">Aggregation:</label>
+                                    <select id="aggregation" class="form-select bg-secondary text-light border-secondary">
+                                        <option value="none">None (Raw Data)</option>
+                                        <option value="sum">Sum</option>
+                                        <option value="avg">Average</option>
+                                        <option value="count">Count</option>
+                                        <option value="min">Minimum</option>
+                                        <option value="max">Maximum</option>
+                                        <option value="median">Median</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <div class="btn-group w-100">
+                                        <button class="btn btn-primary" onclick="updateChart()">
+                                            <i class="bi bi-arrow-clockwise"></i> Update
+                                        </button>
+                                        <button class="btn btn-info" onclick="toggleAdvancedOptions()">
+                                            <i class="bi bi-gear"></i> Advanced
+                                        </button>
+                                        <button class="btn btn-success" onclick="exportChart()">
+                                            <i class="bi bi-download"></i> Export
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Advanced Options Panel -->
+                            <div id="advanced-options" class="row mb-3" style="display: none;">
+                                <div class="col-12">
+                                    <div class="card bg-secondary">
+                                        <div class="card-header">
+                                            <h6><i class="bi bi-sliders"></i> Advanced Chart Options</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Chart Title:</label>
+                                                    <input type="text" id="chart-title" class="form-control bg-dark text-light border-secondary" placeholder="Enter chart title">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Animation Duration:</label>
+                                                    <input type="range" id="animation-duration" class="form-range" min="0" max="3000" value="1000">
+                                                    <small class="text-muted">ms: <span id="animation-value">1000</span></small>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Data Points Limit:</label>
+                                                    <input type="number" id="data-limit" class="form-control bg-dark text-light border-secondary" placeholder="Max points" value="100">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Grid Lines:</label>
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" id="show-grid" checked>
+                                                        <label class="form-check-label" for="show-grid">Show Grid</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row mt-2">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Legend Position:</label>
+                                                    <select id="legend-position" class="form-select bg-dark text-light border-secondary">
+                                                        <option value="top">Top</option>
+                                                        <option value="bottom">Bottom</option>
+                                                        <option value="left">Left</option>
+                                                        <option value="right">Right</option>
+                                                        <option value="none">Hidden</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Chart Style:</label>
+                                                    <select id="chart-style" class="form-select bg-dark text-light border-secondary">
+                                                        <option value="normal">Normal</option>
+                                                        <option value="minimal">Minimal</option>
+                                                        <option value="3d">3D Effect</option>
+                                                        <option value="gradient">Gradient Fill</option>
+                                                        <option value="pattern">Pattern Fill</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Sort Data:</label>
+                                                    <select id="sort-data" class="form-select bg-dark text-light border-secondary">
+                                                        <option value="none">No Sorting</option>
+                                                        <option value="asc">Ascending</option>
+                                                        <option value="desc">Descending</option>
+                                                        <option value="alpha">Alphabetical</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Statistical Analysis:</label>
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" id="show-stats">
+                                                        <label class="form-check-label" for="show-stats">Show Statistics</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="card bg-secondary">
+                                        <div class="card-body">
+                                            <canvas id="visualization-canvas" width="400" height="200"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="card bg-secondary">
+                                        <div class="card-header">
+                                            <h6><i class="bi bi-info-circle"></i> Data Summary</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-3">
+                                                    <strong>Total Rows:</strong> ${lastResults.row_count.toLocaleString()}
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <strong>Columns:</strong> ${lastResults.columns.length}
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <strong>Numeric Columns:</strong> ${getNumericColumns().length}
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <strong>Text Columns:</strong> ${getTextColumns().length}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-secondary">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-success" onclick="exportChart()">
+                                <i class="bi bi-download"></i> Export Chart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add modal to page
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('visualization-modal'));
+        modal.show();
+
+        // Initialize chart after modal is shown
+        setTimeout(() => {
+            initializeChart();
+        }, 500);
+    }
+
+    // Get numeric columns from results
+    function getNumericColumns() {
+        if (!lastResults || !lastResults.data || lastResults.data.length === 0) return [];
+
+        return lastResults.columns.filter(col => {
+            const sample = lastResults.data.slice(0, 10);
+            return sample.every(row => {
+                const value = row[col];
+                return value === null || value === '' || !isNaN(parseFloat(value));
+            });
+        });
+    }
+
+    // Get text columns from results
+    function getTextColumns() {
+        if (!lastResults || !lastResults.data || lastResults.data.length === 0) return [];
+
+        return lastResults.columns.filter(col => {
+            const sample = lastResults.data.slice(0, 10);
+            return sample.some(row => {
+                const value = row[col];
+                return value !== null && value !== '' && isNaN(parseFloat(value));
+            });
+        });
+    }
+
+    // Initialize chart with default settings
+    let chartInstance = null;
+
+    function initializeChart() {
+        const canvas = document.getElementById('visualization-canvas');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        const numericCols = getNumericColumns();
+        const textCols = getTextColumns();
+
+        // Set default selections based on available data
+        if (numericCols.length >= 1) {
+            // Use first numeric column for Y-axis
+            document.getElementById('y-axis').value = numericCols[0];
+
+            // Use first text column or second numeric column for X-axis
+            if (textCols.length > 0) {
+                document.getElementById('x-axis').value = textCols[0];
+            } else if (numericCols.length >= 2) {
+                document.getElementById('x-axis').value = numericCols[1];
+            }
+        } else if (textCols.length >= 2) {
+            // If no numeric columns, use text columns for frequency chart
+            document.getElementById('x-axis').value = textCols[0];
+            document.getElementById('y-axis').value = textCols[1];
+        }
+
+        // Set default chart type based on data
+        if (numericCols.length >= 1) {
+            document.getElementById('chart-type').value = 'bar';
+        } else {
+            document.getElementById('chart-type').value = 'pie';
+        }
+
+        // Create initial chart
+        updateChart();
+    }
+
+    // Update chart based on current selections
+    function updateChart() {
+        const canvas = document.getElementById('visualization-canvas');
+        if (!canvas || !lastResults) return;
+
+        const ctx = canvas.getContext('2d');
+        const chartType = document.getElementById('chart-type').value;
+        const xAxis = document.getElementById('x-axis').value;
+        const yAxis = document.getElementById('y-axis').value;
+
+        // Validate chart type
+        const validChartTypes = ['bar', 'line', 'pie', 'doughnut', 'scatter', 'bubble', 'radar', 'polarArea'];
+        if (!validChartTypes.includes(chartType)) {
+            showToast('Invalid chart type. Using bar chart instead.', 'warning');
+            document.getElementById('chart-type').value = 'bar';
+            return updateChart();
+        }
+
+        // Prepare data
+        const chartData = prepareChartData(xAxis, yAxis, chartType);
+
+        // Destroy existing chart properly
+        if (chartInstance) {
+            try {
+                chartInstance.destroy();
+                chartInstance = null;
+            } catch (e) {
+                console.warn('Chart destroy error:', e);
+                chartInstance = null;
+            }
+        }
+
+        // Wait a moment for canvas to be ready
+        setTimeout(() => {
+            // Clear canvas completely
+            const canvas = document.getElementById('visualization-canvas');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Reset canvas dimensions to force refresh
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+            }
+
+            // Get advanced options
+            const chartTitle = document.getElementById('chart-title')?.value || '';
+            const animationDuration = parseInt(document.getElementById('animation-duration')?.value || '1000');
+            const showGrid = document.getElementById('show-grid')?.checked !== false;
+            const legendPosition = document.getElementById('legend-position')?.value || 'top';
+
+            // Create new chart with academic paper styling
+            try {
+                chartInstance = new Chart(ctx, {
+                    type: chartType,
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: {
+                            duration: animationDuration,
+                            easing: 'easeInOutQuart'
+                        },
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: {
+                                display: legendPosition !== 'none',
+                                position: legendPosition,
+                                labels: {
+                                    color: '#2c3e50',
+                                    font: {
+                                        family: 'Arial, sans-serif',
+                                        size: 12,
+                                        weight: 'normal'
+                                    },
+                                    padding: 15,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    boxWidth: 8
+                                }
+                            },
+                            title: {
+                                display: chartTitle !== '',
+                                text: chartTitle,
+                                color: '#2c3e50',
+                                font: {
+                                    family: 'Arial, sans-serif',
+                                    size: 16,
+                                    weight: 'bold'
+                                },
+                                padding: {
+                                    top: 10,
+                                    bottom: 20
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                titleColor: '#2c3e50',
+                                bodyColor: '#2c3e50',
+                                borderColor: '#ddd',
+                                borderWidth: 1,
+                                cornerRadius: 4,
+                                displayColors: true,
+                                padding: 10,
+                                titleFont: {
+                                    family: 'Arial, sans-serif',
+                                    weight: 'bold'
+                                },
+                                bodyFont: {
+                                    family: 'Arial, sans-serif'
+                                },
+                                callbacks: {
+                                    label: function (context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        let value = context.parsed.y !== null ? context.parsed.y : context.parsed;
+                                        if (value !== null && value !== undefined) {
+                                            if (typeof value === 'number') {
+                                                label += value.toFixed(2);
+                                            } else {
+                                                label += String(value);
+                                            }
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: (chartType !== 'pie' && chartType !== 'doughnut' && chartType !== 'radar' && chartType !== 'polarArea') ? {
+                            x: {
+                                ticks: {
+                                    color: '#2c3e50',
+                                    font: {
+                                        family: 'Arial, sans-serif',
+                                        size: 11
+                                    },
+                                    maxRotation: 45,
+                                    minRotation: 0
+                                },
+                                grid: {
+                                    color: '#e0e0e0',
+                                    drawBorder: false,
+                                    display: showGrid,
+                                    lineWidth: 1
+                                },
+                                title: {
+                                    display: true,
+                                    text: xAxis,
+                                    color: '#2c3e50',
+                                    font: {
+                                        family: 'Arial, sans-serif',
+                                        size: 14,
+                                        weight: 'bold'
+                                    },
+                                    padding: {
+                                        top: 10,
+                                        bottom: 10
+                                    }
+                                }
+                            },
+                            y: {
+                                ticks: {
+                                    color: '#2c3e50',
+                                    font: {
+                                        family: 'Arial, sans-serif',
+                                        size: 11
+                                    },
+                                    callback: function (value) {
+                                        if (Math.abs(value) >= 1000000) {
+                                            return (value / 1000000).toFixed(1) + 'M';
+                                        } else if (Math.abs(value) >= 1000) {
+                                            return (value / 1000).toFixed(1) + 'K';
+                                        }
+                                        return value;
+                                    }
+                                },
+                                grid: {
+                                    color: '#e0e0e0',
+                                    drawBorder: false,
+                                    display: showGrid,
+                                    lineWidth: 1
+                                },
+                                title: {
+                                    display: true,
+                                    text: yAxis,
+                                    color: '#2c3e50',
+                                    font: {
+                                        family: 'Arial, sans-serif',
+                                        size: 14,
+                                        weight: 'bold'
+                                    },
+                                    padding: {
+                                        top: 10,
+                                        bottom: 10
+                                    }
+                                },
+                                beginAtZero: true
+                            }
+                        } : {}
+                    }
+                });
+            } catch (error) {
+                console.error('Chart creation error:', error);
+                showToast('Error creating chart: ' + error.message, 'danger');
+            }
+        }, 100); // Wait 100ms for canvas to be ready
+    }
+
+    // Toggle advanced options panel
+    function toggleAdvancedOptions() {
+        const advancedPanel = document.getElementById('advanced-options');
+        if (advancedPanel.style.display === 'none') {
+            advancedPanel.style.display = 'block';
+        } else {
+            advancedPanel.style.display = 'none';
+        }
+    }
+
+    // Update animation duration display
+    document.addEventListener('DOMContentLoaded', function () {
+        const animationSlider = document.getElementById('animation-duration');
+        const animationValue = document.getElementById('animation-value');
+
+        if (animationSlider && animationValue) {
+            animationSlider.addEventListener('input', function () {
+                animationValue.textContent = this.value;
+            });
+        }
+    });
+
+    // Enhanced chart data preparation with advanced features
+    function prepareChartData(xAxis, yAxis, chartType) {
+        const data = lastResults.data;
+        const labels = [];
+        const values = [];
+
+        // Get advanced options
+        const chartTheme = document.getElementById('chart-theme')?.value || 'vibrant';
+        const aggregation = document.getElementById('aggregation')?.value || 'none';
+        const dataLimit = parseInt(document.getElementById('data-limit')?.value || '100');
+        const sortData = document.getElementById('sort-data')?.value || 'none';
+
+        // Academic color palettes for publication
+        const colorPalettes = {
+            vibrant: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'],
+            pastel: ['#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAE1FF', '#E0BBE4', '#FEC8D8', '#FFDFD3', '#D4A5A5', '#A8DADC'],
+            professional: ['#2E86AB', '#A23B72', '#F18F01', '#C73E1D', '#6C5B7B', '#355C7D', '#C06C84', '#F67280', '#99B898', '#FECEA8'],
+            neon: ['#FF006E', '#FB5607', '#FFBE0B', '#8338EC', '#3A86FF', '#06FFB4', '#FF4365', '#00D9FF', '#FE5F55', '#7209B7'],
+            dark: ['#2C3E50', '#34495E', '#7F8C8D', '#95A5A6', '#BDC3C7', '#ECF0F1', '#16A085', '#27AE60', '#2980B9', '#8E44AD'],
+            gradient: ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b', '#38f9d7', '#fa709a', '#fee140'],
+            rainbow: ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3', '#FF1493', '#00CED1', '#FFD700'],
+            // Academic publication palettes
+            nature: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'],
+            science: ['#0173b2', '#de8f05', '#029e73', '#cc78bc', '#ca9161', '#fbafe4', '#949494', '#ece133', '#56b4e9', '#009e73'],
+            ieee: ['#0066CC', '#FF6600', '#009900', '#CC0000', '#9933CC', '#666666', '#FF9900', '#3399FF', '#99CC00', '#CC3399'],
+            lancet: ['#008080', '#800000', '#000080', '#808000', '#800080', '#008000', '#C0C0C0', '#808080', '#FFA500', '#A52A2A'],
+            cell: ['#0072B2', '#E69F00', '#009E73', '#F0E442', '#D55E00', '#CC79A7', '#999999', '#56B4E9', '#009E73', '#F0E442']
+        };
+
+        let colors = colorPalettes[chartTheme] || colorPalettes.vibrant;
+
+        // Process data based on aggregation
+        let processedData = processDataForAggregation(data, xAxis, yAxis, aggregation);
+
+        // Sort data if requested
+        if (sortData !== 'none') {
+            processedData = sortProcessedData(processedData, sortData);
+        }
+
+        // Limit data points
+        if (dataLimit > 0 && processedData.length > dataLimit) {
+            processedData = processedData.slice(0, dataLimit);
+        }
+
+        // Extract labels and values
+        processedData.forEach(item => {
+            labels.push(item.label);
+            values.push(item.value);
+        });
+
+        // Handle special chart types
+        if (chartType === 'bubble') {
+            return prepareBubbleChart(labels, values, colors);
+        } else if (chartType === 'radar') {
+            return prepareRadarChart(labels, values, colors);
+        } else if (chartType === 'polarArea') {
+            return preparePolarAreaChart(labels, values, colors);
+        } else {
+            return prepareStandardChart(labels, values, colors, chartType);
+        }
+    }
+
+    // Process data with aggregation
+    function processDataForAggregation(data, xAxis, yAxis, aggregation) {
+        const processed = [];
+
+        if (aggregation === 'none') {
+            data.forEach((row, index) => {
+                processed.push({
+                    label: row[xAxis] || `Row ${index + 1}`,
+                    value: parseFloat(row[yAxis]) || 0
+                });
+            });
+        } else {
+            const aggregated = {};
+            data.forEach(row => {
+                const key = row[xAxis] || 'Unknown';
+                const value = parseFloat(row[yAxis]) || 0;
+
+                if (!aggregated[key]) {
+                    aggregated[key] = [];
+                }
+                aggregated[key].push(value);
+            });
+
+            Object.keys(aggregated).forEach(key => {
+                const values = aggregated[key];
+                let result = 0;
+
+                switch (aggregation) {
+                    case 'sum':
+                        result = values.reduce((a, b) => a + b, 0);
+                        break;
+                    case 'avg':
+                        result = values.reduce((a, b) => a + b, 0) / values.length;
+                        break;
+                    case 'count':
+                        result = values.length;
+                        break;
+                    case 'min':
+                        result = Math.min(...values);
+                        break;
+                    case 'max':
+                        result = Math.max(...values);
+                        break;
+                    case 'median':
+                        values.sort((a, b) => a - b);
+                        const mid = Math.floor(values.length / 2);
+                        result = values.length % 2 ? values[mid] : (values[mid - 1] + values[mid]) / 2;
+                        break;
+                }
+
+                processed.push({ label: key, value: result });
+            });
+        }
+
+        return processed;
+    }
+
+    // Sort processed data
+    function sortProcessedData(data, sortType) {
+        const sorted = [...data];
+
+        switch (sortType) {
+            case 'asc':
+                sorted.sort((a, b) => a.value - b.value);
+                break;
+            case 'desc':
+                sorted.sort((a, b) => b.value - a.value);
+                break;
+            case 'alpha':
+                sorted.sort((a, b) => a.label.localeCompare(b.label));
+                break;
+        }
+
+        return sorted;
+    }
+
+    // Prepare standard chart
+    function prepareStandardChart(labels, values, colors, chartType) {
+        if (chartType === 'bar') {
+            return {
+                labels: labels,
+                datasets: [{
+                    label: 'Value',
+                    data: values,
+                    backgroundColor: colors.slice(0, values.length),
+                    borderColor: colors.slice(0, values.length),
+                    borderWidth: 2,
+                    borderRadius: 8,
+                }]
+            };
+        } else if (chartType === 'line') {
+            return {
+                labels: labels,
+                datasets: [{
+                    label: 'Value',
+                    data: values,
+                    borderColor: colors[0],
+                    backgroundColor: colors[0] + '20',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: colors[0],
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                }]
+            };
+        } else if (chartType === 'pie' || chartType === 'doughnut') {
+            return {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors.slice(0, values.length),
+                    borderColor: '#2c3e50',
+                    borderWidth: 2,
+                    hoverBorderWidth: 3,
+                    hoverOffset: 15,
+                }]
+            };
+        } else if (chartType === 'scatter') {
+            return {
+                labels: labels,
+                datasets: [{
+                    label: 'Value',
+                    data: values.map((value, index) => ({ x: index, y: value })),
+                    backgroundColor: colors[0],
+                    borderColor: colors[0],
+                    borderWidth: 2,
+                    pointRadius: 8,
+                    pointHoverRadius: 10,
+                }]
+            };
+        }
+    }
+
+    // Prepare bubble chart
+    function prepareBubbleChart(labels, values, colors) {
+        return {
+            labels: labels,
+            datasets: [{
+                label: 'Bubble Chart',
+                data: values.map((value, index) => ({
+                    x: index,
+                    y: value,
+                    r: Math.max(5, Math.min(30, value / 10))
+                })),
+                backgroundColor: colors.slice(0, values.length).map(color => color + '80'),
+                borderColor: colors.slice(0, values.length),
+                borderWidth: 2,
+            }]
+        };
+    }
+
+    // Prepare radar chart
+    function prepareRadarChart(labels, values, colors) {
+        return {
+            labels: labels,
+            datasets: [{
+                label: 'Radar Chart',
+                data: values,
+                backgroundColor: colors[0] + '40',
+                borderColor: colors[0],
+                borderWidth: 2,
+                pointBackgroundColor: colors[0],
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: colors[0],
+            }]
+        };
+    }
+
+    // Prepare polar area chart
+    function preparePolarAreaChart(labels, values, colors) {
+        return {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: colors.slice(0, values.length).map(color => color + '80'),
+                borderColor: colors.slice(0, values.length),
+                borderWidth: 2,
+            }]
+        };
+    }
+
+    // Prepare column chart
+    function prepareColumnChart(labels, values, colors) {
+        return {
+            labels: labels,
+            datasets: [{
+                label: 'Column Chart',
+                data: values,
+                backgroundColor: colors.slice(0, values.length),
+                borderColor: colors.slice(0, values.length),
+                borderWidth: 2,
+                borderRadius: 4,
+            }]
+        };
+    }
+
+    // Prepare histogram
+    function prepareHistogram(labels, values, colors) {
+        const bins = createHistogramBins(values, 10);
+        return {
+            labels: bins.labels,
+            datasets: [{
+                label: 'Frequency',
+                data: bins.counts,
+                backgroundColor: colors[0] + '80',
+                borderColor: colors[0],
+                borderWidth: 2,
+            }]
+        };
+    }
+
+    // Create histogram bins
+    function createHistogramBins(values, binCount) {
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const binWidth = (max - min) / binCount;
+
+        const bins = [];
+        const counts = new Array(binCount).fill(0);
+
+        for (let i = 0; i < binCount; i++) {
+            const binStart = min + i * binWidth;
+            const binEnd = binStart + binWidth;
+            bins.push(`${binStart.toFixed(1)}-${binEnd.toFixed(1)}`);
+        }
+
+        values.forEach(value => {
+            const binIndex = Math.min(Math.floor((value - min) / binWidth), binCount - 1);
+            counts[binIndex]++;
+        });
+
+        return { labels: bins, counts: counts };
+    }
+
+    // Check if a column is numeric
+    function isNumericColumn(columnName) {
+        if (!lastResults || !lastResults.data || lastResults.data.length === 0) return false;
+
+        const sample = lastResults.data.slice(0, 10);
+        return sample.every(row => {
+            const value = row[columnName];
+            return value === null || value === '' || !isNaN(parseFloat(value));
+        });
+    }
+
+    // Export chart as image
+    function exportChart() {
+        if (!chartInstance) {
+            showToast('No chart to export', 'warning');
+            return;
+        }
+
+        const canvas = document.getElementById('visualization-canvas');
+        const url = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = 'query-visualization.png';
+        link.href = url;
+        link.click();
+
+        showToast('Chart exported successfully', 'success');
+    }
+
+    // Save query to history
+    function saveQueryToHistory(query) {
+        fetch('/query/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: query })
+        });
+    }
+
+    // localStorage functions for persisting SQL code (optimized)
+    let saveTimeout;
+
+    function saveToLocalStorage() {
+        try {
+            const content = editor.getValue();
+            localStorage.setItem('virodb_sql_editor_content', content);
+            localStorage.setItem('virodb_sql_editor_timestamp', new Date().toISOString());
+            console.log('SQL content saved to localStorage');
+        } catch (e) {
+            console.warn('Failed to save to localStorage:', e);
+        }
+    }
+
+    function debouncedSave() {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(saveToLocalStorage, 1000); // Save after 1 second of inactivity
+    }
+
+    function immediateSave() {
+        clearTimeout(saveTimeout);
+        saveToLocalStorage();
+    }
+
+    function restoreFromLocalStorage() {
+        try {
+            const savedContent = localStorage.getItem('virodb_sql_editor_content');
+            const savedTimestamp = localStorage.getItem('virodb_sql_editor_timestamp');
+
+            if (savedContent && savedContent.trim() !== '') {
+                // Only restore if no URL parameters are present
+                const urlParams = new URLSearchParams(window.location.search);
+                if (!urlParams.get('table')) {
+                    editor.setValue(savedContent);
+                    const timestamp = new Date(savedTimestamp).toLocaleString();
+                    console.log('SQL content restored from localStorage (saved:', timestamp, ')');
+
+                    // Show restoration notification
+                    showRestoreNotification(timestamp);
+
+                    // Trigger auto-execute if enabled and content is valid
+                    if (isAutoExecute && isValidQuery(savedContent)) {
+                        setTimeout(() => {
+                            executeQuery(true); // Silent execution
+                        }, 500);
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to restore from localStorage:', e);
+        }
+    }
+
+    function showRestoreNotification(timestamp) {
+        // Create a subtle notification that content was restored
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-info alert-sm position-fixed';
+        notification.style.cssText = 'top: 10px; right: 10px; z-index: 9999; opacity: 0.8;';
+        notification.innerHTML = `
+            <small>
+                <i class="bi bi-clock-history"></i> 
+                SQL code restored (saved: ${timestamp})
+                <button class="btn btn-xs btn-outline-secondary ms-2" onclick="this.parentElement.parentElement.remove()">
+                    <i class="bi bi-x"></i>
+                </button>
+            </small>
+        `;
+        document.body.appendChild(notification);
+
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+
+    // Clear localStorage function
+    function clearLocalStorage() {
+        globalConfirm(
+            'Clear saved SQL code from browser storage?',
+            'Clear Saved Code',
+            () => {
+                localStorage.removeItem('virodb_sql_editor_content');
+                localStorage.removeItem('virodb_sql_editor_timestamp');
+                showToast('Saved SQL code cleared', 'info');
+            }
+        );
+    }
+
+    // Toggle auto-execute functionality
+    function toggleAutoExecute() {
+        isAutoExecute = !isAutoExecute;
+        const btn = document.getElementById('auto-execute-btn');
+
+        if (isAutoExecute) {
+            btn.classList.add('active', 'btn-primary');
+            btn.classList.remove('btn-secondary');
+            btn.innerHTML = '<i class="bi bi-lightning-fill"></i> <span class="d-none d-sm-inline">Auto</span>';
+            showToast('Auto-execute enabled', 'success');
+
+            // Execute current query if there is one
+            const query = editor.getValue().trim();
+            if (query) {
+                debouncedAutoExecute();
+            }
+        } else {
+            btn.classList.remove('active', 'btn-primary');
+            btn.classList.add('btn-secondary');
+            btn.innerHTML = '<i class="bi bi-lightning"></i> <span class="d-none d-sm-inline">Auto</span>';
+            showToast('Auto-execute disabled', 'info');
+        }
+    }
+
+    // Debounced auto-execute function - fast response
+    function debouncedAutoExecute() {
+        if (!isAutoExecute) return;
+
+        clearTimeout(autoExecuteTimeout);
+        autoExecuteTimeout = setTimeout(() => {
+            const query = editor.getValue().trim();
+
+            // Only auto-execute if query looks complete and meaningful
+            if (query && isValidQuery(query)) {
+                executeQuery(true); // true = silent execution
+            }
+        }, 300); // Reduced to 300ms for faster response
+    }
+
+    // Check if query is valid for auto-execution
+    function isValidQuery(query) {
+        const upperQuery = query.toUpperCase().trim();
+
+        // Must contain basic SQL keywords
+        if (!upperQuery.includes('SELECT') && !upperQuery.includes('INSERT') &&
+            !upperQuery.includes('UPDATE') && !upperQuery.includes('DELETE') &&
+            !upperQuery.includes('CREATE') && !upperQuery.includes('DROP') &&
+            !upperQuery.includes('SHOW') && !upperQuery.includes('DESCRIBE') &&
+            !upperQuery.includes('PRAGMA')) {
+            return false;
+        }
+
+        // Avoid executing incomplete queries
+        if (upperQuery.endsWith('SELECT') || upperQuery.endsWith('FROM') ||
+            upperQuery.endsWith('WHERE') || upperQuery.endsWith('AND') ||
+            upperQuery.endsWith('OR') || upperQuery.endsWith('ORDER') ||
+            upperQuery.endsWith('GROUP') || upperQuery.endsWith('HAVING') ||
+            upperQuery.endsWith('INSERT') || upperQuery.endsWith('UPDATE') ||
+            upperQuery.endsWith('DELETE') || upperQuery.endsWith('CREATE') ||
+            upperQuery.endsWith('DROP') || upperQuery.endsWith('VALUES')) {
+            return false;
+        }
+
+        // Avoid very short queries
+        if (query.length < 10) {
+            return false;
+        }
+
+        return true;
+    }
+
+    // Modified executeQuery function to support silent mode
+    function executeQuery(silent = false) {
+        const query = editor.getValue().trim();
+
+        if (!query) {
+            if (!silent) {
+                showToast('Please enter a SQL query', 'warning');
+            }
+            return;
+        }
+
+        if (!silent) {
+            showLoading('Executing query...');
+            updateStatus('Executing query...', 'hourglass-split');
+        }
+
+        fetch('/query/execute', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: query })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (!silent) {
+                    hideLoading();
+                }
+
+                if (data.success) {
+                    if (data.has_results) {
+                        displayResults(data);
+                        if (!silent) {
+                            updateStatus(`Query executed successfully. ${data.row_count} rows returned.`, 'check-circle');
+                            showToast(data.message, 'success');
+                        }
+                    } else {
+                        hideResults();
+                        if (!silent) {
+                            document.getElementById('results-message').innerHTML =
+                                `<i class="bi bi-check-circle"></i> ${data.message}`;
+                            document.getElementById('results-message').className = 'alert alert-success';
+                            updateStatus(data.message, 'check-circle');
+                            showToast(data.message, 'success');
+                        }
+                    }
+
+                    // Save to history
+                    saveQueryToHistory(query);
+                } else {
+                    hideResults();
+                    if (!silent) {
+                        document.getElementById('results-message').innerHTML =
+                            `<i class="bi bi-exclamation-triangle"></i> ${data.message}`;
+                        document.getElementById('results-message').className = 'alert alert-danger';
+                        updateStatus('Query failed', 'x-circle');
+                        showToast(data.message, 'danger');
+                    }
+                }
+            })
+            .catch(error => {
+                if (!silent) {
+                    hideLoading();
+                    hideResults();
+                    document.getElementById('results-message').innerHTML =
+                        `<i class="bi bi-exclamation-triangle"></i> Error: ${error.message}`;
+                    document.getElementById('results-message').className = 'alert alert-danger';
+                    updateStatus('Query failed', 'x-circle');
+                    showToast('Error: ' + error.message, 'danger');
+                }
+            });
+    }
+
+    // Initialize draggable splitter functionality
+    function initSplitter() {
+        const splitter = document.getElementById('splitter');
+        const container = document.getElementById('split-container');
+        const editorPanel = document.getElementById('editor-panel');
+        const resultsPanel = document.getElementById('results-panel');
+
+        let isDragging = false;
+        let startX = 0;
+        let startLeftWidth = 0;
+        let startRightWidth = 0;
+
+        // Mouse down on splitter
+        splitter.addEventListener('mousedown', function (e) {
+            isDragging = true;
+            startX = e.clientX;
+
+            const containerRect = container.getBoundingClientRect();
+            const leftPanelRect = editorPanel.getBoundingClientRect();
+            const rightPanelRect = resultsPanel.getBoundingClientRect();
+
+            startLeftWidth = leftPanelRect.width;
+            startRightWidth = rightPanelRect.width;
+
+            container.classList.add('dragging');
+            e.preventDefault();
+        });
+
+        // Mouse move
+        document.addEventListener('mousemove', function (e) {
+            if (!isDragging) return;
+
+            const deltaX = e.clientX - startX;
+            const containerWidth = container.getBoundingClientRect().width;
+
+            // Calculate new widths
+            let newLeftWidth = startLeftWidth + deltaX;
+            let newRightWidth = startRightWidth - deltaX;
+
+            // Constrain to minimum and maximum widths
+            const minWidth = 200;
+            const maxWidth = containerWidth * 0.8;
+
+            newLeftWidth = Math.max(minWidth, Math.min(maxWidth, newLeftWidth));
+            newRightWidth = Math.max(minWidth, Math.min(maxWidth, newRightWidth));
+
+            // Apply new widths using flex-basis
+            const leftPercentage = (newLeftWidth / containerWidth) * 100;
+            const rightPercentage = (newRightWidth / containerWidth) * 100;
+
+            editorPanel.style.flex = `0 0 ${leftPercentage}%`;
+            resultsPanel.style.flex = `0 0 ${rightPercentage}%`;
+
+            // Refresh CodeMirror to adjust to new size
+            if (editor) {
+                setTimeout(() => {
+                    editor.refresh();
+                }, 10);
+            }
+        });
+
+        // Mouse up
+        document.addEventListener('mouseup', function () {
+            if (isDragging) {
+                isDragging = false;
+                container.classList.remove('dragging');
+
+                // Save the splitter position to localStorage
+                const leftPanel = document.getElementById('editor-panel');
+                const containerWidth = container.getBoundingClientRect().width;
+                const leftWidth = leftPanel.getBoundingClientRect().width;
+                const leftPercentage = (leftWidth / containerWidth) * 100;
+
+                localStorage.setItem('virodb_splitter_position', leftPercentage.toString());
+            }
+        });
+
+        // Restore splitter position from localStorage
+        const savedPosition = localStorage.getItem('virodb_splitter_position');
+        if (savedPosition) {
+            const leftPercentage = parseFloat(savedPosition);
+            const rightPercentage = 100 - leftPercentage;
+
+            editorPanel.style.flex = `0 0 ${leftPercentage}%`;
+            resultsPanel.style.flex = `0 0 ${rightPercentage}%`;
+        }
+
+        // Handle touch events for mobile
+        splitter.addEventListener('touchstart', function (e) {
+            isDragging = true;
+            startX = e.touches[0].clientX;
+
+            const containerRect = container.getBoundingClientRect();
+            const leftPanelRect = editorPanel.getBoundingClientRect();
+            const rightPanelRect = resultsPanel.getBoundingClientRect();
+
+            startLeftWidth = leftPanelRect.width;
+            startRightWidth = rightPanelRect.width;
+
+            container.classList.add('dragging');
+            e.preventDefault();
+        });
+
+        document.addEventListener('touchmove', function (e) {
+            if (!isDragging) return;
+
+            const deltaX = e.touches[0].clientX - startX;
+            const containerWidth = container.getBoundingClientRect().width;
+
+            let newLeftWidth = startLeftWidth + deltaX;
+            let newRightWidth = startRightWidth - deltaX;
+
+            const minWidth = 200;
+            const maxWidth = containerWidth * 0.8;
+
+            newLeftWidth = Math.max(minWidth, Math.min(maxWidth, newLeftWidth));
+            newRightWidth = Math.max(minWidth, Math.min(maxWidth, newRightWidth));
+
+            const leftPercentage = (newLeftWidth / containerWidth) * 100;
+            const rightPercentage = (newRightWidth / containerWidth) * 100;
+
+            editorPanel.style.flex = `0 0 ${leftPercentage}%`;
+            resultsPanel.style.flex = `0 0 ${rightPercentage}%`;
+
+            if (editor) {
+                setTimeout(() => {
+                    editor.refresh();
+                }, 10);
+            }
+        });
+
+        document.addEventListener('touchend', function () {
+            if (isDragging) {
+                isDragging = false;
+                container.classList.remove('dragging');
+
+                const leftPanel = document.getElementById('editor-panel');
+                const containerWidth = container.getBoundingClientRect().width;
+                const leftWidth = leftPanel.getBoundingClientRect().width;
+                const leftPercentage = (leftWidth / containerWidth) * 100;
+
+                localStorage.setItem('virodb_splitter_position', leftPercentage.toString());
+            }
+        });
+    }
+</script>
+{% endblock %}

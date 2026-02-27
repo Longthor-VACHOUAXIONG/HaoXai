@@ -1,0 +1,451 @@
+{% extends "base.html" %}
+
+{% block title %}ML Dashboard - ViroDB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ml-card {
+        background: linear-gradient(135deg, var(--darker-bg), #2a2a3e);
+        border: 1px solid #444;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 20px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .ml-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 123, 255, 0.2);
+    }
+    
+    .model-status {
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    
+    .status-trained {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+    
+    .status-not-trained {
+        background: linear-gradient(135deg, #dc3545, #fd7e14);
+        color: white;
+    }
+    
+    .prediction-result {
+        background: linear-gradient(135deg, #007bff, #6610f2);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 0.8; }
+        50% { opacity: 1; }
+        100% { opacity: 0.8; }
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+    
+    .training-progress {
+        display: none;
+        margin-top: 20px;
+    }
+    
+    .progress-bar-animated {
+        animation: progress-bar-stripes 1s linear infinite;
+    }
+    
+    .feature-input {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid #555;
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 5px 0;
+    }
+    
+    .feature-input:focus {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: var(--primary-color);
+        outline: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-brain me-2"></i>Machine Learning Dashboard
+            </h1>
+        </div>
+    </div>
+
+    <!-- Model Status -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="ml-card">
+                <h3><i class="fas fa-cogs me-2"></i>Model Status</h3>
+                <div id="model-status" class="mt-3">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Checking model status...</p>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button id="train-models-btn" class="btn btn-primary">
+                        <i class="fas fa-play me-2"></i>Train Models
+                    </button>
+                    <div id="training-progress" class="training-progress">
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <p class="mt-2 text-center">Training models...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Database Statistics -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="ml-card">
+                <h3><i class="fas fa-database me-2"></i>Database Statistics</h3>
+                <div id="db-stats" class="mt-3">
+                    <div class="text-center">
+                        <div class="spinner-border text-info" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Analyzing database...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ML Predictions -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="ml-card">
+                <h3><i class="fas fa-microscope me-2"></i>Screening Prediction</h3>
+                <p class="text-muted">Predict PanCorona test results based on other screening tests</p>
+                
+                <form id="screening-prediction-form">
+                    <div class="mb-3">
+                        <label class="form-label">PanParamyxo Result:</label>
+                        <select name="pan_paramyxo" class="form-select feature-input">
+                            <option value="0">Negative</option>
+                            <option value="1">Positive</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">PanHanta Result:</label>
+                        <select name="pan_hanta" class="form-select feature-input">
+                            <option value="0">Negative</option>
+                            <option value="1">Positive</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">PanFlavi Result:</label>
+                        <select name="pan_flavi" class="form-select feature-input">
+                            <option value="0">Negative</option>
+                            <option value="1">Positive</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="fas fa-chart-line me-2"></i>Predict PanCorona
+                    </button>
+                </form>
+                
+                <div id="screening-result"></div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="ml-card">
+                <h3><i class="fas fa-chart-bar me-2"></i>ML Insights</h3>
+                <p class="text-muted">Key insights from your virology data</p>
+                
+                <div class="alert alert-info">
+                    <h5><i class="fas fa-lightbulb me-2"></i>Current Capabilities</h5>
+                    <ul class="mb-0">
+                        <li>Screening test prediction (96% accuracy)</li>
+                        <li>Virus type classification (needs more data)</li>
+                        <li>Sequence quality prediction (needs more data)</li>
+                    </ul>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Data Requirements</h5>
+                    <p class="mb-0">To improve virus classification and quality prediction, add more sequence data with virus type information and quality scores.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Load model status
+    loadModelStatus();
+    
+    // Load database statistics
+    loadDatabaseStats();
+    
+    // Train models button
+    $('#train-models-btn').click(function() {
+        trainModels();
+    });
+    
+    // Screening prediction form
+    $('#screening-prediction-form').submit(function(e) {
+        e.preventDefault();
+        predictScreening();
+    });
+});
+
+function loadModelStatus() {
+    fetch('/ml/model-status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let html = '<div class="row">';
+                for (let [modelName, status] of Object.entries(data.models)) {
+                    let displayName = modelName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    let statusClass = status === 'trained' ? 'status-trained' : 'status-not-trained';
+                    let statusText = status === 'trained' ? 'Trained' : 'Not Trained';
+                    
+                    html += `
+                        <div class="col-md-4 mb-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>${displayName}</span>
+                                <span class="model-status ${statusClass}">${statusText}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                html += '</div>';
+                
+                if (data.total_models > 0) {
+                    html += `<div class="mt-2"><strong>Models Ready: ${data.total_models}/3</strong></div>`;
+                }
+                
+                $('#model-status').html(html);
+            } else {
+                $('#model-status').html('<div class="alert alert-danger">Failed to load model status</div>');
+            }
+        })
+        .catch(error => {
+            $('#model-status').html('<div class="alert alert-danger">Error loading model status</div>');
+        });
+}
+
+function loadDatabaseStats() {
+    fetch('/ml/analyze-database')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let html = '<div class="row">';
+                
+                // Screening stats
+                html += `
+                    <div class="col-md-4">
+                        <div class="stat-card">
+                            <h5>Screening Tests</h5>
+                            <div class="stat-number">${data.screening_stats.total_samples}</div>
+                            <div class="small">
+                                Corona+: ${data.screening_stats.corona_positive} | 
+                                Hanta+: ${data.screening_stats.hanta_positive}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Bat stats
+                html += `
+                    <div class="col-md-4">
+                        <div class="stat-card">
+                            <h5>Bat Samples</h5>
+                            <div class="stat-number">${data.bat_stats.total_bats}</div>
+                            <div class="small">
+                                ${data.bat_stats.species_count} Species | 
+                                ${data.bat_stats.province_count} Provinces
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Sequence stats
+                html += `
+                    <div class="col-md-4">
+                        <div class="stat-card">
+                            <h5>Sequences</h5>
+                            <div class="stat-number">${data.seq_stats.total_sequences || 0}</div>
+                            <div class="small">
+                                Avg Length: ${Math.round(data.seq_stats.avg_length || 0)}bp | 
+                                Quality: ${Math.round(data.seq_stats.avg_quality || 0)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                html += '</div>';
+                $('#db-stats').html(html);
+            } else {
+                $('#db-stats').html('<div class="alert alert-danger">Failed to load database statistics</div>');
+            }
+        })
+        .catch(error => {
+            $('#db-stats').html('<div class="alert alert-danger">Error loading database statistics</div>');
+        });
+}
+
+function trainModels() {
+    $('#train-models-btn').prop('disabled', true);
+    $('#training-progress').show();
+    
+    // Simulate progress
+    let progress = 0;
+    let progressInterval = setInterval(function() {
+        progress += 10;
+        $('.progress-bar').css('width', progress + '%');
+        
+        if (progress >= 90) {
+            clearInterval(progressInterval);
+        }
+    }, 500);
+    
+    fetch('/ml/train-models', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        clearInterval(progressInterval);
+        $('.progress-bar').css('width', '100%');
+        
+        setTimeout(function() {
+            $('#training-progress').hide();
+            $('#train-models-btn').prop('disabled', false);
+            $('.progress-bar').css('width', '0%');
+            
+            if (data.success) {
+                showAlert('Models trained successfully!', 'success');
+                loadModelStatus(); // Refresh status
+            } else {
+                showAlert('Training failed: ' + data.message, 'danger');
+            }
+        }, 1000);
+    })
+    .catch(error => {
+        clearInterval(progressInterval);
+        $('#training-progress').hide();
+        $('#train-models-btn').prop('disabled', false);
+        $('.progress-bar').css('width', '0%');
+        showAlert('Training error: ' + error.message, 'danger');
+    });
+}
+
+function predictScreening() {
+    const formData = new FormData(document.getElementById('screening-prediction-form'));
+    const data = {
+        pan_paramyxo: parseInt(formData.get('pan_paramyxo')),
+        pan_hanta: parseInt(formData.get('pan_hanta')),
+        pan_flavi: parseInt(formData.get('pan_flavi'))
+    };
+    
+    fetch('/ml/predict-screening', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            let html = `
+                <div class="prediction-result">
+                    <h4><i class="fas fa-virus me-2"></i>PanCorona Prediction</h4>
+                    <div class="display-4">${result.prediction}</div>
+                    <div class="mt-2">Confidence: ${result.confidence}</div>
+                    <div class="mt-3 small">
+                        Based on: ${result.features.PanParamyxo} Paramyxo, 
+                        ${result.features.PanHanta} Hanta, 
+                        ${result.features.PanFlavi} Flavi
+                    </div>
+                </div>
+            `;
+            $('#screening-result').html(html);
+        } else {
+            $('#screening-result').html(`
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Prediction failed: ${result.message}
+                </div>
+            `);
+        }
+    })
+    .catch(error => {
+        $('#screening-result').html(`
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Prediction error: ${error.message}
+            </div>
+        `);
+    });
+}
+
+function showAlert(message, type) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Insert at the top of the container
+    $('.container-fluid').prepend(alertHtml);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(function() {
+        $('.alert').fadeOut();
+    }, 5000);
+}
+</script>
+{% endblock %}

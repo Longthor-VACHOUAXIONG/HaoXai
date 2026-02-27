@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+
+{% block title %}Data Linking - ViroDB{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="bi bi-diagram-3"></i> Data Linking Manager</h2>
+            <p class="text-muted">Create relationships between specimen data, screening results, and sequences</p>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <!-- Linking Type Selection -->
+        <div class="col-md-3">
+            <div class="list-group">
+                <button class="list-group-item list-group-item-action active" data-link-type="bat-screening">
+                    <i class="bi bi-arrow-left-right"></i> Bat → Screening
+                </button>
+                <button class="list-group-item list-group-item-action" data-link-type="market-screening">
+                    <i class="bi bi-arrow-left-right"></i> Market → Screening
+                </button>
+                <button class="list-group-item list-group-item-action" data-link-type="rodent-screening">
+                    <i class="bi bi-arrow-left-right"></i> Rodent → Screening
+                </button>
+                <button class="list-group-item list-group-item-action" data-link-type="screening-sequence">
+                    <i class="bi bi-arrow-left-right"></i> Screening → Sequence
+                </button>
+                <button class="list-group-item list-group-item-action" data-link-type="freezer-sample">
+                    <i class="bi bi-arrow-left-right"></i> Freezer → Sample
+                </button>
+            </div>
+        </div>
+
+        <!-- Linking Forms -->
+        <div class="col-md-9">
+            <!-- Bat-Screening Form -->
+            <div class="card link-form" id="bat-screening-form">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="bi bi-arrow-left-right"></i> Link Bat to Screening Sample</h5>
+                </div>
+                <div class="card-body">
+                    <form id="batScreeningLinkForm">
+                        <div class="mb-3">
+                            <label class="form-label">Bat Data ID</label>
+                            <input type="number" class="form-control" name="bat_data_id" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Screening Data ID</label>
+                            <input type="number" class="form-control" name="screening_data_id" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Source ID (for matching)</label>
+                            <input type="text" class="form-control" name="source_id">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" name="notes" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-link"></i> Create Link
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Market-Screening Form -->
+            <div class="card link-form d-none" id="market-screening-form">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="bi bi-arrow-left-right"></i> Link Market to Screening Sample</h5>
+                </div>
+                <div class="card-body">
+                    <form id="marketScreeningLinkForm">
+                        <div class="mb-3">
+                            <label class="form-label">Market Data ID</label>
+                            <input type="number" class="form-control" name="market_data_id" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Screening Data ID</label>
+                            <input type="number" class="form-control" name="screening_data_id" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Source ID (for matching)</label>
+                            <input type="text" class="form-control" name="source_id">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" name="notes" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-link"></i> Create Link
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Rodent-Screening Form -->
+            <div class="card link-form d-none" id="rodent-screening-form">
+                <div class="card-header bg-warning text-dark">
+                    <h5><i class="bi bi-arrow-left-right"></i> Link Rodent to Screening Sample</h5>
+                </div>
+                <div class="card-body">
+                    <form id="rodentScreeningLinkForm">
+                        <div class="mb-3">
+                            <label class="form-label">Rodent Host ID</label>
+                            <input type="number" class="form-control" name="rodent_host_id" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Screening Data ID</label>
+                            <input type="number" class="form-control" name="screening_data_id" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Field ID (for matching)</label>
+                            <input type="text" class="form-control" name="field_id">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Source ID (for matching)</label>
+                            <input type="text" class="form-control" name="source_id">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" name="notes" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-link"></i> Create Link
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Screening-Sequence Form -->
+            <div class="card link-form d-none" id="screening-sequence-form">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="bi bi-arrow-left-right"></i> Link Screening to Sequence</h5>
+                </div>
+                <div class="card-body">
+                    <form id="screeningSequenceLinkForm">
+                        <div class="mb-3">
+                            <label class="form-label">Screening Data ID</label>
+                            <input type="number" class="form-control" name="screening_data_id" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sample ID (for matching)</label>
+                            <input type="text" class="form-control" name="sample_id" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Sequence ID</label>
+                                <input type="number" class="form-control" name="sequence_id">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Consensus ID</label>
+                                <input type="number" class="form-control" name="consensus_id">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">BLAST Result ID</label>
+                                <input type="number" class="form-control" name="blast_result_id">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Virus Type Matched</label>
+                            <select class="form-select" name="virus_type_matched">
+                                <option value="">Select...</option>
+                                <option value="PanCorona">PanCorona</option>
+                                <option value="PanHanta">PanHanta</option>
+                                <option value="PanFlavi">PanFlavi</option>
+                                <option value="PanParamyxo">PanParamyxo</option>
+                            </select>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" name="sequence_confirmed" id="seqConfirmed">
+                            <label class="form-check-label" for="seqConfirmed">Sequence Confirmed</label>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" name="notes" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-info text-white">
+                            <i class="bi bi-link"></i> Create Link
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Freezer-Sample Form -->
+            <div class="card link-form d-none" id="freezer-sample-form">
+                <div class="card-header bg-dark text-white">
+                    <h5><i class="bi bi-arrow-left-right"></i> Link Freezer to Sample</h5>
+                </div>
+                <div class="card-body">
+                    <form id="freezerSampleLinkForm">
+                        <div class="mb-3">
+                            <label class="form-label">Freezer Storage ID</label>
+                            <input type="number" class="form-control" name="freezer_storage_id" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sample Type</label>
+                            <select class="form-select" name="sample_type" required>
+                                <option value="">Select...</option>
+                                <option value="swab">Swab</option>
+                                <option value="tissue">Tissue</option>
+                                <option value="environmental">Environmental</option>
+                                <option value="market">Market</option>
+                                <option value="rodentsample">Rodent Sample</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sample Data ID</label>
+                            <input type="number" class="form-control" name="sample_id_value" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sample ID Identifier (for matching)</label>
+                            <input type="text" class="form-control" name="sample_id_identifier">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" name="notes" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-link"></i> Create Link
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Result Message -->
+            <div id="resultMessage" class="mt-3"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Switch between link types
+document.querySelectorAll('[data-link-type]').forEach(btn => {
+    btn.addEventListener('click', function() {
+        // Update active button
+        document.querySelectorAll('[data-link-type]').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Show corresponding form
+        const linkType = this.getAttribute('data-link-type');
+        document.querySelectorAll('.link-form').forEach(form => form.classList.add('d-none'));
+        document.getElementById(linkType + '-form').classList.remove('d-none');
+    });
+});
+
+// Form submission handlers
+function showMessage(message, isSuccess) {
+    const resultDiv = document.getElementById('resultMessage');
+    resultDiv.className = `alert alert-${isSuccess ? 'success' : 'danger'}`;
+    resultDiv.innerHTML = `<i class="bi bi-${isSuccess ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+    setTimeout(() => resultDiv.innerHTML = '', 5000);
+}
+
+// Bat-Screening
+document.getElementById('batScreeningLinkForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const response = await fetch('/linking/link/bat-screening', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        showMessage(result.message, result.success);
+        if (result.success) this.reset();
+    } catch (error) {
+        showMessage('Error: ' + error.message, false);
+    }
+});
+
+// Market-Screening
+document.getElementById('marketScreeningLinkForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const response = await fetch('/linking/link/market-screening', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        showMessage(result.message, result.success);
+        if (result.success) this.reset();
+    } catch (error) {
+        showMessage('Error: ' + error.message, false);
+    }
+});
+
+// Rodent-Screening
+document.getElementById('rodentScreeningLinkForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const response = await fetch('/linking/link/rodent-screening', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        showMessage(result.message, result.success);
+        if (result.success) this.reset();
+    } catch (error) {
+        showMessage('Error: ' + error.message, false);
+    }
+});
+
+// Screening-Sequence
+document.getElementById('screeningSequenceLinkForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    data.sequence_confirmed = document.getElementById('seqConfirmed').checked;
+    
+    try {
+        const response = await fetch('/linking/link/screening-sequence', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        showMessage(result.message, result.success);
+        if (result.success) this.reset();
+    } catch (error) {
+        showMessage('Error: ' + error.message, false);
+    }
+});
+
+// Freezer-Sample
+document.getElementById('freezerSampleLinkForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const response = await fetch('/linking/link/freezer-sample', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        showMessage(result.message, result.success);
+        if (result.success) this.reset();
+    } catch (error) {
+        showMessage('Error: ' + error.message, false);
+    }
+});
+</script>
+{% endblock %}

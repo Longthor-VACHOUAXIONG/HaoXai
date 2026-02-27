@@ -1,0 +1,32 @@
+<svg width="256" height="256" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+
+  <!-- Trust Shield (background, centered) -->
+  <path d="M 128 20 L 178 38 L 178 130 Q 178 200, 128 230 Q 78 200, 78 130 L 78 38 Z"
+        fill="#2C3E50" opacity="0.1"/>
+
+  <!-- Python Body Coil - Blue -->
+  <path d="M 120 118 Q 72 148, 112 185 T 160 222"
+        stroke="#3776AB" stroke-width="16" stroke-linecap="round" fill="none"/>
+
+  <!-- Python Body Coil - Yellow -->
+  <path d="M 160 222 Q 208 192, 160 155 T 120 118"
+        stroke="#FFD43B" stroke-width="12" stroke-linecap="round" fill="none"/>
+
+  <!-- Snake Head -->
+  <ellipse cx="120" cy="80" rx="46" ry="34" fill="#3776AB"/>
+
+  <!-- Eyes -->
+  <circle cx="104" cy="66" r="10" fill="#FFD43B"/>
+  <circle cx="136" cy="66" r="10" fill="#FFD43B"/>
+  <circle cx="104" cy="66" r="5"  fill="#1a1a1a"/>
+  <circle cx="136" cy="66" r="5"  fill="#1a1a1a"/>
+  <!-- Eye shine -->
+  <circle cx="107" cy="63" r="2"  fill="white"/>
+  <circle cx="139" cy="63" r="2"  fill="white"/>
+
+  <!-- Speed Lines -->
+  <line x1="174" y1="62" x2="220" y2="54" stroke="#E67E22" stroke-width="7" stroke-linecap="round"/>
+  <line x1="174" y1="82" x2="226" y2="82" stroke="#E67E22" stroke-width="7" stroke-linecap="round"/>
+  <line x1="174" y1="102" x2="220" y2="110" stroke="#E67E22" stroke-width="7" stroke-linecap="round"/>
+
+</svg>

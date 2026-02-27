@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <h1 class="page-title"><i class="bi bi-sliders me-3"></i>System Settings</h1>
+    <p class="page-subtitle">Configure security, session management and system preferences</p>
+</div>
+
+<!-- Security Settings -->
+<div class="glass-card mb-4">
+    <div class="section-title mb-4">
+        <i class="bi bi-shield-check text-primary me-2"></i>Security Settings
+    </div>
+    
+    <div class="alert mb-4" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b;">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>Note:</strong> Some settings require application restart to take effect.
+    </div>
+    
+    <form id="securitySettingsForm">
+        <div class="row g-4">
+            <div class="col-md-6">
+                <label class="form-label text-muted small text-uppercase fw-semibold">Session Timeout (minutes)</label>
+                <div class="input-group">
+                    <span class="input-group-text" style="background: rgba(99, 102, 241, 0.1); border-color: rgba(148, 163, 184, 0.2);">
+                        <i class="bi bi-clock text-primary"></i>
+                    </span>
+                    <input type="number" class="form-control" id="session-timeout" value="120" min="5" max="1440" required
+                           style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                </div>
+                <div class="form-text text-muted mt-2">User session duration before automatic logout</div>
+            </div>
+            
+            <div class="col-md-6">
+                <label class="form-label text-muted small text-uppercase fw-semibold">Max Login Attempts</label>
+                <div class="input-group">
+                    <span class="input-group-text" style="background: rgba(99, 102, 241, 0.1); border-color: rgba(148, 163, 184, 0.2);">
+                        <i class="bi bi-shield-lock text-primary"></i>
+                    </span>
+                    <input type="number" class="form-control" id="max-login-attempts" value="5" min="1" max="10" required
+                           style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                </div>
+                <div class="form-text text-muted mt-2">Maximum failed login attempts before account lockout</div>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <button type="submit" class="btn btn-gradient">
+                <i class="bi bi-save me-2"></i>Save Security Settings
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- System Information -->
+<div class="glass-card">
+    <div class="section-title mb-4">
+        <i class="bi bi-info-circle text-primary me-2"></i>System Information
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="d-flex align-items-center gap-3 p-3 rounded mb-3" style="background: rgba(99, 102, 241, 0.1);">
+                <div class="stat-icon primary">
+                    <i class="bi bi-box"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Version</div>
+                    <div class="fw-bold" id="app-version">Loading...</div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-3 p-3 rounded mb-3" style="background: rgba(16, 185, 129, 0.1);">
+                <div class="stat-icon success">
+                    <i class="bi bi-database"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Database</div>
+                    <div class="fw-bold">SQLite / MySQL</div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background: rgba(6, 182, 212, 0.1);">
+                <div class="stat-icon info">
+                    <i class="bi bi-code-slash"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Python</div>
+                    <div class="fw-bold">3.10+</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="d-flex align-items-center gap-3 p-3 rounded mb-3" style="background: rgba(139, 92, 246, 0.1);">
+                <div class="stat-icon" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Security</div>
+                    <div class="fw-bold text-success">Enabled</div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-3 p-3 rounded mb-3" style="background: rgba(236, 72, 153, 0.1);">
+                <div class="stat-icon" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">
+                    <i class="bi bi-key"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Encryption</div>
+                    <div class="fw-bold">AES-256</div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background: rgba(245, 158, 11, 0.1);">
+                <div class="stat-icon warning">
+                    <i class="bi bi-journal-text"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Audit Logging</div>
+                    <div class="fw-bold text-success">Active</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Load settings on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Set version from template variable
+    const version = "{{ version }}";
+    document.getElementById('app-version').textContent = 'HaoXai ' + version;
+    
+    loadSettings();
+    
+    document.getElementById('securitySettingsForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveSettings();
+    });
+});
+
+function loadSettings() {
+    fetch('/extraction/api/settings')
+        .then(response => response.json())
+        .then(data => {
+            if (data && !data.error) {
+                if (data.session_timeout) {
+                    document.getElementById('session-timeout').value = data.session_timeout;
+                }
+                if (data.max_login_attempts) {
+                    document.getElementById('max-login-attempts').value = data.max_login_attempts;
+                }
+            }
+        })
+        .catch(error => console.log('No saved settings found, using defaults'));
+}
+
+function saveSettings() {
+    const settings = {
+        session_timeout: parseInt(document.getElementById('session-timeout').value),
+        max_login_attempts: parseInt(document.getElementById('max-login-attempts').value)
+    };
+    
+    showLoading('Saving settings...');
+    
+    fetch('/extraction/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            showToast('Settings saved successfully', 'success');
+        } else {
+            showToast(data.message || 'Error saving settings', 'danger');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showToast('Failed to save settings', 'danger');
+    });
+}
+</script>
+{% endblock %}

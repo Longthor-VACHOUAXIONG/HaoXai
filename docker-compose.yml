@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # CAN2-LMS Flask Application
+  lms-app:
+    build: .
+    container_name: lms-app
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY:-change-this-secret-key-in-production}
+      - DB_TYPE=${DB_TYPE:-sqlite}
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=${MYSQL_USER:-lms}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-lms_password}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-lms}
+    volumes:
+      - ./uploads:/app/uploads
+      - ./flask_session:/app/flask_session
+      - ./icons:/app/icons
+      - sqlite_data:/app/data
+    depends_on:
+      - mysql
+    restart: unless-stopped
+    networks:
+      - lms-network
+
+  # MySQL Database (optional - for production use)
+  mysql:
+    image: mysql:8.0
+    container_name: lms-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_password}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-lms}
+      - MYSQL_USER=${MYSQL_USER:-lms}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-lms_password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/schema_comprehensive_mysql.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+    networks:
+      - lms-network
+    command: --default-authentication-plugin=mysql_native_password
+
+  # Redis for session storage (optional - for production scaling)
+  redis:
+    image: redis:7-alpine
+    container_name: lms-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - lms-network
+
+volumes:
+  mysql_data:
+    driver: local
+  sqlite_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  lms-network:
+    driver: bridge

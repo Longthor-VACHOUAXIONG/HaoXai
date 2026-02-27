@@ -1,0 +1,1098 @@
+{% extends "base.html" %}
+
+{% block title %}Excel Import{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="page-title"><i class="bi bi-file-earmark-arrow-up me-3"></i>Excel Import</h1>
+            <p class="page-subtitle">Import wildlife data from Excel files with automatic column mapping</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="/database/import" class="btn btn-glass">
+                <i class="bi bi-file-earmark-excel me-2"></i>Manual Import
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Step 1: Upload File -->
+    <div class="col-12">
+        <div class="glass-card">
+            <div class="section-title mb-4">
+                <span class="badge bg-primary me-2">1</span>Upload Excel File
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label text-muted small text-uppercase fw-semibold">Select File</label>
+                <div class="input-group">
+                    <input type="file" class="form-control" id="excel-file" accept=".xlsx,.xls"
+                        style="background: rgba(15, 23, 42, 0.5); border-color: rgba(148, 163, 184, 0.2);">
+                    <button class="btn btn-gradient" onclick="previewFile()" id="preview-btn" disabled>
+                        <i class="bi bi-eye me-2"></i>Preview
+                    </button>
+                </div>
+                <div class="form-text text-muted mt-2">
+                    <i class="bi bi-info-circle me-1"></i> Supports .xlsx and .xls files with multiple sheets
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 2: Preview & Import -->
+    <div class="col-12" id="preview-section" style="display: none;">
+        <div class="glass-card">
+            <div class="section-title mb-4">
+                <span class="badge bg-info me-2">2</span>Preview & Column Mapping
+            </div>
+
+            <!-- Stats Row -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center gap-3 p-3 rounded"
+                        style="background: rgba(99, 102, 241, 0.1);">
+                        <i class="bi bi-table fs-2 text-primary"></i>
+                        <div>
+                            <div class="stat-value fs-4" id="total-rows">0</div>
+                            <div class="stat-label">Total Rows</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center gap-3 p-3 rounded"
+                        style="background: rgba(16, 185, 129, 0.1);">
+                        <i class="bi bi-layout-column-split fs-2 text-success"></i>
+                        <div>
+                            <div class="stat-value fs-4 text-success" id="total-columns">0</div>
+                            <div class="stat-label">Columns Found</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import Mode -->
+            <div class="glass-card mb-4"
+                style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3);">
+                <div class="section-title mb-3" style="font-size: 14px;">
+                    <i class="bi bi-gear text-warning me-2"></i>Import Mode
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="importMode" id="updateMode" value="update"
+                                checked>
+                            <label class="form-check-label" for="updateMode">
+                                <strong class="text-light">Update Existing</strong>
+                                <small class="text-muted d-block">Updates records with new data</small>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="importMode" id="skipMode" value="skip">
+                            <label class="form-check-label" for="skipMode">
+                                <strong class="text-light">Skip Duplicates</strong>
+                                <small class="text-muted d-block">Skips existing records</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column Mapping -->
+            <div class="glass-card mb-4">
+                <div class="section-title mb-3" style="font-size: 14px;">
+                    <i class="bi bi-diagram-3 text-primary me-2"></i>Automatic Column Mapping
+                </div>
+                <div id="dynamic-tables-container" class="row g-3">
+                    <!-- Dynamic table containers -->
+                </div>
+            </div>
+
+            <!-- Preview Table -->
+            <div class="table-responsive mb-4"
+                style="max-height: 400px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.1);">
+                <table class="data-table mb-0" id="preview-table">
+                    <thead style="background: rgba(15, 23, 42, 0.8);"></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex gap-2">
+                <button class="btn btn-gradient btn-lg" onclick="executeImport()" id="import-btn">
+                    <i class="bi bi-upload me-2"></i>Import to Database
+                </button>
+                <button class="btn btn-glass" onclick="resetForm()">
+                    <i class="bi bi-arrow-counterclockwise me-2"></i>Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="col-12" id="results-section" style="display: none;">
+        <div class="glass-card" style="border-left: 4px solid var(--success);">
+            <div class="section-title mb-4">
+                <i class="bi bi-check-circle-fill text-success me-2"></i>Import Results
+            </div>
+            <div id="results-content"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // let previewData = null; // Removed to use window.previewData
+
+    // Enable preview button when file is selected
+    document.getElementById('excel-file').addEventListener('change', function () {
+        document.getElementById('preview-btn').disabled = !this.files.length;
+    });
+
+    function previewFile() {
+        const fileInput = document.getElementById('excel-file');
+        const file = fileInput.files[0];
+
+        if (!file) {
+            alert('Please select a file first');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Show loading state
+        document.getElementById('preview-btn').disabled = true;
+        document.getElementById('preview-btn').innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
+
+        fetch('/excel/import/preview?v=' + new Date().getTime() + '_' + Math.random(), {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.previewData = data;
+                    displayPreview(data);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+            })
+            .finally(() => {
+                document.getElementById('preview-btn').disabled = false;
+                document.getElementById('preview-btn').innerHTML = '<i class="bi bi-eye"></i> Preview File';
+            });
+    }
+
+    function displayPreview(data) {
+        console.log('[FRONTEND DEBUG] displayPreview called with data:', data);
+
+        // Store schema if available (passed from backend or fetched separately)
+        if (data.db_schema) {
+            window.dbSchema = data.db_schema;
+        }
+
+        // Initialize current mappings from automatic mappings
+        window.currentMappings = {};
+
+        // Handle multi-sheet vs single-sheet
+        if (data.sheets) {
+            // Multi-sheet: Aggregate mappings
+            const totalSheets = data.total_sheets;
+            const totalRows = data.total_rows_all_sheets;
+            document.getElementById('total-rows').textContent = `${totalRows} rows (${totalSheets} sheets)`;
+            document.getElementById('total-columns').textContent = 'Multi-sheet';
+
+            Object.values(data.sheets).forEach(sheet => {
+                const details = sheet.mapping_details || {};
+                Object.entries(sheet.column_mappings).forEach(([table, columns]) => {
+                    if (!window.currentMappings[table]) {
+                        window.currentMappings[table] = [];
+                    }
+                    columns.forEach(col => {
+                        const detail = (details[table] || {})[col];
+                        const excelCol = detail ? detail.excel_col : 'Auto-detected';
+                        const confidence = detail ? detail.confidence : 'unknown';
+                        if (!window.currentMappings[table].some(m => m.db_col === col)) {
+                            window.currentMappings[table].push({
+                                db_col: col,
+                                excel_col: excelCol,
+                                confidence: confidence
+                            });
+                        }
+                    });
+                });
+            });
+
+            // Display first sheet preview
+            const firstSheetName = Object.keys(data.sheets)[0];
+            const firstSheet = data.sheets[firstSheetName];
+            displayPreviewTable(firstSheet); // This sets data.columns (Excel headers)
+            window.excelHeaders = firstSheet.columns; // Capture headers for dropdowns
+
+        } else {
+            // Single sheet legacy
+            document.getElementById('total-rows').textContent = data.total_rows;
+            document.getElementById('total-columns').textContent = data.columns.length;
+            window.excelHeaders = data.columns;
+
+            const details = data.mapping_details || {};
+            Object.entries(data.column_mappings).forEach(([table, columns]) => {
+                window.currentMappings[table] = columns.map(col => {
+                    const detail = (details[table] || {})[col];
+                    return {
+                        db_col: col,
+                        excel_col: detail ? detail.excel_col : 'Auto-detected',
+                        confidence: detail ? detail.confidence : 'unknown'
+                    };
+                });
+            });
+
+            displayPreviewTable(data);
+        }
+
+        renderMappingEditor();
+    }
+
+    function renderMappingEditor() {
+        const container = document.getElementById('dynamic-tables-container');
+        container.innerHTML = '';
+
+        // If we don't have schema yet, fetch it
+        if (!window.dbSchema) {
+            fetch('/excel/tables')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        window.dbSchema = data.tables;
+                        renderMappingEditor(); // Re-render
+                    }
+                });
+            return;
+        }
+
+        const tables = Object.keys(window.currentMappings);
+
+        if (tables.length === 0) {
+            container.innerHTML = '<div class="alert alert-warning">No mappings found. Add one below.</div>';
+            // We should probably allow adding a table from scratch even if none found?
+            // For now, let's assume at least one table matches or we show a "Add Table" button (future).
+        }
+
+        tables.forEach(table => {
+            const mappings = window.currentMappings[table];
+            const card = document.createElement('div');
+            card.className = 'col-md-6 mb-4'; // Bigger cards for editing
+
+            let rowsHtml = '';
+            mappings.forEach((map, index) => {
+                const conf = map.confidence || 'unknown';
+                const confBadge = conf === 'exact' ? '<span class="badge bg-success ms-1" title="Exact match">🟢</span>'
+                    : conf === 'synonym' ? '<span class="badge bg-warning ms-1" title="Synonym match">🟡</span>'
+                        : conf === 'normalized' ? '<span class="badge bg-info ms-1" title="Normalized match">🔵</span>'
+                            : '';
+                rowsHtml += `
+                    <div class="input-group mb-2 mapping-row">
+                        <select class="form-select form-select-sm mapping-db-col" data-table="${table}" data-index="${index}" style="width: 35%">
+                            <option value="">-- Select DB Column --</option>
+                            ${window.dbSchema[table].map(s => {
+                                const colName = s.split(' ')[0];
+                                return `<option value="${colName}" ${colName === map.db_col ? 'selected' : ''}>${colName}</option>`;
+                            }).join('')}
+                        </select>
+                        <select class="form-select form-select-sm mapping-excel-col" data-table="${table}" data-index="${index}" style="width: 50%">
+                            <option value="">-- Skip Column --</option>
+                            ${(window.excelHeaders || []).map(h => 
+                                `<option value="${h}" ${h === map.excel_col ? 'selected' : ''}>${h}</option>`
+                            ).join('')}
+                        </select>
+                        <button class="btn btn-outline-danger" type="button" onclick="removeMapping('${table}', ${index})">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+                 `;
+            });
+
+            // Add New Mapping Row
+            const tableSchemaCols = window.dbSchema[table] || [];
+            // tableSchemaCols is ["col_name type", ...] string list based on `excel_import.py` logic
+            // We need to parse it or just use it. The backend returns "name type".
+
+            // Let's create the "Add" selection UI
+            // Filter out already mapped columns
+            const mappedDbCols = mappings.map(m => m.db_col);
+            const availableDbCols = tableSchemaCols.map(s => s.split(' ')[0])
+                .filter(c => !mappedDbCols.includes(c));
+
+            let dbOptions = availableDbCols.map(c => `<option value="${c}">${c}</option>`).join('');
+            let excelOptions = (window.excelHeaders || []).map(h => `<option value="${h}">${h}</option>`).join('');
+
+            const addRowHtml = `
+                <div class="card-footer bg-light">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-5">
+                            <select class="form-select form-select-sm" id="new-db-${table}">
+                                <option value="">Select DB Column...</option>
+                                ${dbOptions}
+                            </select>
+                        </div>
+                        <div class="col-5">
+                             <select class="form-select form-select-sm" id="new-excel-${table}">
+                                <option value="">Select Excel Header...</option>
+                                ${excelOptions}
+                            </select>
+                        </div>
+                        <div class="col-2">
+                            <button class="btn btn-sm btn-success w-100" onclick="addMapping('${table}')">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+             `;
+
+            card.innerHTML = `
+                <div class="card h-100 border-primary">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 text-white">${table.charAt(0).toUpperCase() + table.slice(1)}</h6>
+                        <span class="badge bg-white text-primary">${mappings.length} mappings</span>
+                    </div>
+                    <div class="card-body p-2" style="max-height: 300px; overflow-y: auto;">
+                        ${rowsHtml.length ? rowsHtml : '<div class="text-center text-muted p-3">No columns mapped</div>'}
+                    </div>
+                    ${addRowHtml}
+                </div>
+             `;
+
+            container.appendChild(card);
+        });
+
+        // Add event listeners for all mapping dropdowns
+        document.querySelectorAll('.mapping-excel-col').forEach(dropdown => {
+            dropdown.addEventListener('change', function() {
+                const table = this.dataset.table;
+                const index = parseInt(this.dataset.index);
+                const newExcelCol = this.value;
+                
+                if (window.currentMappings[table] && window.currentMappings[table][index]) {
+                    window.currentMappings[table][index].excel_col = newExcelCol;
+                    console.log(`[FRONTEND DEBUG] Updated Excel mapping: ${table}[${index}] -> ${newExcelCol}`);
+                }
+            });
+        });
+
+        // Add event listeners for DB column dropdowns
+        document.querySelectorAll('.mapping-db-col').forEach(dropdown => {
+            dropdown.addEventListener('change', function() {
+                const table = this.dataset.table;
+                const index = parseInt(this.dataset.index);
+                const newDbCol = this.value;
+                
+                if (window.currentMappings[table] && window.currentMappings[table][index]) {
+                    const oldDbCol = window.currentMappings[table][index].db_col;
+                    window.currentMappings[table][index].db_col = newDbCol;
+                    console.log(`[FRONTEND DEBUG] Updated DB mapping: ${table}[${index}] ${oldDbCol} -> ${newDbCol}`);
+                }
+            });
+        });
+    }
+
+    function removeMapping(table, index) {
+        if (window.currentMappings[table]) {
+            window.currentMappings[table].splice(index, 1);
+            renderMappingEditor();
+        }
+    }
+
+    function addMapping(table) {
+        const dbSelect = document.getElementById(`new-db-${table}`);
+        const excelSelect = document.getElementById(`new-excel-${table}`);
+
+        const dbCol = dbSelect.value;
+        const excelCol = excelSelect.value;
+
+        if (dbCol && excelCol) {
+            window.currentMappings[table].push({
+                db_col: dbCol,
+                excel_col: excelCol
+            });
+            renderMappingEditor();
+        }
+    }
+
+
+    function displayPreviewTable(data) {
+        console.log('[FRONTEND DEBUG] displayPreviewTable called with data:', data);
+
+        // Validate input data
+        if (!data) {
+            console.error('[FRONTEND ERROR] displayPreviewTable called with null/undefined data');
+            alert('Error: No preview data available. Please try uploading the file again.');
+            return;
+        }
+
+        if (!data.columns) {
+            console.error('[FRONTEND ERROR] displayPreviewTable called without columns property:', data);
+            alert('Error: Preview data is missing column information. Please check the Excel file format.');
+            return;
+        }
+
+        if (!data.preview_data) {
+            console.error('[FRONTEND ERROR] displayPreviewTable called without preview_data property:', data);
+            alert('Error: No preview data available. Please try uploading the file again.');
+            return;
+        }
+
+        const table = document.getElementById('preview-table');
+        const thead = table.querySelector('thead');
+        const tbody = table.querySelector('tbody');
+
+        // Clear existing content
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
+
+        // Create header row
+        const headerRow = document.createElement('tr');
+        data.columns.forEach(col => {
+            const th = document.createElement('th');
+            th.textContent = col;
+            headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+
+        // Create data rows
+        data.preview_data.forEach(row => {
+            const tr = document.createElement('tr');
+            data.columns.forEach(col => {
+                const td = document.createElement('td');
+                td.textContent = row[col] || '';
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
+
+        // Show preview section
+        document.getElementById('preview-section').style.display = 'block';
+    }
+
+    function displayColumnMappings(mappings) {
+        console.log('[FRONTEND DEBUG] displayColumnMappings called with:', mappings);
+        const container = document.getElementById('dynamic-tables-container');
+
+        // Check if container exists
+        if (!container) {
+            console.error('[FRONTEND ERROR] dynamic-tables-container not found!');
+            return;
+        }
+
+        const tables = Object.keys(mappings);
+        console.log('[FRONTEND DEBUG] Tables detected:', tables);
+
+        // Filter only tables with matches
+        const tablesWithMatches = tables.filter(table => mappings[table].length > 0);
+
+        // Clear existing content
+        container.innerHTML = '';
+
+        // Add dynamic summary header
+        const summaryDiv = document.createElement('div');
+        summaryDiv.className = 'alert alert-info mb-3';
+        summaryDiv.innerHTML = `
+            <h5><i class="bi bi-diagram-3"></i> Dynamic Column Mapping Results</h5>
+            <p><strong>${tablesWithMatches.length} tables with matches</strong> found from your database schema</p>
+            <div class="row">
+                <div class="col-md-4">
+                    <small class="text-muted">Total columns matched:</small> 
+                    <strong>${Object.values(mappings).reduce((sum, cols) => sum + cols.length, 0)}</strong>
+                </div>
+                <div class="col-md-4">
+                    <small class="text-muted">Database schema:</small> 
+                    <strong>Dynamic</strong>
+                </div>
+                <div class="col-md-4">
+                    <small class="text-muted">Ready to import:</small> 
+                    <strong class="text-success">Yes</strong>
+                </div>
+            </div>
+        `;
+        container.appendChild(summaryDiv);
+
+        // Sort tables by column count (most columns first)
+        const sortedTables = tablesWithMatches.sort((a, b) => mappings[b].length - mappings[a].length);
+
+        // If no tables have matches, show message
+        if (sortedTables.length === 0) {
+            container.innerHTML = `
+                <div class="alert alert-warning">
+                    <h5><i class="bi bi-exclamation-triangle"></i> No Matching Columns Found</h5>
+                    <p>No database columns could be matched with your Excel file columns.</p>
+                    <p><small>Please check your Excel file column names and ensure they match database field names.</small></p>
+                </div>
+            `;
+            return;
+        }
+
+        // Create dynamic grid layout
+        const gridContainer = document.createElement('div');
+        gridContainer.className = 'row';
+
+        sortedTables.forEach((table, index) => {
+            const columns = mappings[table] || [];
+
+            console.log(`[FRONTEND DEBUG] Processing table: ${table} with ${columns.length} columns`);
+
+            // Dynamic column sizing based on data
+            let colClass = 'col-md-3';
+            if (columns.length > 20) colClass = 'col-md-6';  // Large tables get more space
+            else if (columns.length > 10) colClass = 'col-md-4';  // Medium tables
+            else if (columns.length < 5) colClass = 'col-md-2';   // Small tables get less space
+
+            // Create table card with success styling (only showing matched tables)
+            const tableCard = document.createElement('div');
+            tableCard.className = `${colClass} mb-3`;
+
+            tableCard.innerHTML = `
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white py-2">
+                        <h6 class="mb-0">
+                            <i class="bi bi-check-circle"></i>
+                            ${table.charAt(0).toUpperCase() + table.slice(1)}
+                            <span class="badge bg-light text-success float-end">${columns.length} cols</span>
+                        </h6>
+                    </div>
+                    <div class="card-body p-2">
+                        <div id="${table}-columns" class="column-container">
+                            ${columns.map(col =>
+                `<span class="badge bg-primary me-1 mb-1" style="font-size: 0.75em;">${col}</span>`
+            ).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            gridContainer.appendChild(tableCard);
+        });
+
+        container.appendChild(gridContainer);
+
+        console.log('[FRONTEND DEBUG] displayColumnMappings completed with dynamic layout');
+    }
+
+    function executeImport() {
+        if (!window.previewData) {
+            alert('Please preview the file first');
+            return;
+        }
+
+        const fileInput = document.getElementById('excel-file');
+        const file = fileInput.files[0];
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Add import mode
+        // Add import mode
+        const importMode = document.querySelector('input[name="importMode"]:checked').value;
+        formData.append('import_mode', importMode);
+
+        // Add custom mappings
+        // Format: { table: { db_col: excel_col, ... } }
+        // Note: For "Auto-detected" (from initial load), strictly speaking we should probably NOT send them 
+        // if we want to rely on backend logic, OR we send them all and force the backend to use them.
+        // Sending ALL is safer to ensure WYSIWYG. 
+        // However, "Auto-detected" isn't a real column name. 
+        // If the user hasn't changed it, we might want to let backend re-detect?
+        // But if they removed one, we need to know.
+
+        // Simpler strategy: Send "Explicit Overrides" and "Exclusions".
+        // But the new backend plan is: "ImportExcelFile" takes `custom_mappings`.
+        // If we send a full map, the backend can just use it.
+        // But we need to resolve the "Auto-detected" placeholder.
+        // If it says "Auto-detected", we assume the backend should use its default logic for that column 
+        // OR we just don't include it in the custom map?
+
+        // Let's filter:
+        // If excel_col == 'Auto-detected', skip it (let backend find it).
+        // If excel_col != 'Auto-detected' (user manually added/changed), include it.
+        // But what about REMOVALS?
+
+        // If I removed "collection_date" from the UI list, it won't be in `currentMappings`.
+        // If I skip sending it, the backend will just find it again automatically! 
+        // WE NEED A WAY TO SAY "EXCLUDE THIS COLUMN".
+
+        // New Plan for Data Structure:
+        // `custom_mappings`: { table: { db_col: excel_col } }
+        // `excluded_columns`: { table: [db_col] }
+
+        // We need to compare `currentMappings` against the original `auto-detected` set?
+        // No, let's keep it simple.
+        // If a column is in `currentMappings`, we try to map it.
+        // If it's NOT in `currentMappings`, we definitely DON't want to import it?
+        // Wait, if it's not in the list, we probably don't want it.
+
+        // So:
+        // 1. Build `effective_mappings` object.
+        // 2. Iterate over `currentMappings`.
+        // 3. If excel_col is 'Auto-detected', we explicitly map it to the "Default Auto Name"? 
+        //    We don't know the default auto name here easily without logic.
+
+        // Alternative: 
+        // Just send `custom_mappings` (for explicit new ones) AND `excluded_columns` (for removals).
+        // UI logic:
+        // - Initial Load: Store `originalAutoMappedCols = { table: [col1, col2] }`
+        // - Save:
+        //   - `custom_mappings`: Any entry where excel_col != 'Auto-detected'
+        //   - `excluded_columns`: Any col in `originalAutoMappedCols` that is NOT in `currentMappings`.
+
+        const finalCustomMappings = {};
+        const excludedColumns = {};
+
+        Object.keys(window.currentMappings).forEach(table => {
+            finalCustomMappings[table] = {};
+            excludedColumns[table] = [];
+
+            // Get currently active columns in UI
+            const activeDbCols = window.currentMappings[table].map(m => m.db_col);
+            const activeMappings = window.currentMappings[table];
+
+            // Check for added/custom mappings
+            activeMappings.forEach(m => {
+                if (m.excel_col !== 'Auto-detected') {
+                    finalCustomMappings[table][m.db_col] = m.excel_col;
+                }
+            });
+
+            // Check for removals (if we have reference to original)
+            // If we don't track original, we accept that backend will re-discover them 
+            // UNLESS we tell it not to.
+            // Let's blindly trust the UI? 
+            // If I delete "collection_date", I want it gone.
+            // If I don't send it in "excluded", backend finds it.
+            // So we MUST send "excluded".
+
+            // Hack: We can infer "originally found" from the previous `previewData` response if we saved it globally.
+            // We have `previewData` in global scope (line 129).
+
+            if (window.previewData && window.previewData.sheets) {
+                // Multi-sheet aggregation for finding originals
+                let originalCols = new Set();
+                Object.values(window.previewData.sheets).forEach(sheet => {
+                    if (sheet.column_mappings && sheet.column_mappings[table]) {
+                        sheet.column_mappings[table].forEach(col => originalCols.add(col));
+                    }
+                });
+
+                originalCols.forEach(origCol => {
+                    if (!activeDbCols.includes(origCol)) {
+                        excludedColumns[table].push(origCol);
+                    }
+                });
+
+            } else if (window.previewData && window.previewData.column_mappings) {
+                // Single sheet
+                const originalCols = window.previewData.column_mappings[table] || [];
+                originalCols.forEach(origCol => {
+                    if (!activeDbCols.includes(origCol)) {
+                        excludedColumns[table].push(origCol);
+                    }
+                });
+            }
+        });
+
+        formData.append('custom_mappings', JSON.stringify(finalCustomMappings));
+        formData.append('excluded_columns', JSON.stringify(excludedColumns));
+
+        console.log(`[FRONTEND DEBUG] Import mode: ${importMode}`);
+        console.log('[FRONTEND DEBUG] Custom Mappings:', finalCustomMappings);
+        console.log('[FRONTEND DEBUG] Excluded Columns:', excludedColumns);
+
+        // Show loading state
+        document.getElementById('import-btn').disabled = true;
+        document.getElementById('import-btn').innerHTML = '<i class="bi bi-hourglass-split"></i> Importing...';
+
+        fetch('/excel/import/execute?v=' + new Date().getTime() + '_' + Math.random(), {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('[FRONTEND DEBUG] Import response:', data);
+
+                if (data.success) {
+                    displayResults(data);
+                    // Clear file input
+                    document.getElementById('excel-file').value = '';
+                    // Clear preview
+                    document.getElementById('preview-section').style.display = 'none';
+                    document.getElementById('dynamic-tables-container').innerHTML = '';
+                } else {
+                    // Check for specific permission denied error
+                    if (data.error && data.error.includes('Access denied') && data.error.includes('does not have import permissions')) {
+                        alert('🚫 Permission Denied\n\n' + data.error + '\n\nPlease contact your administrator if you need import access.');
+                    } else {
+                        alert('Import Error: ' + data.error);
+                    }
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+            })
+            .finally(() => {
+                document.getElementById('import-btn').disabled = false;
+                document.getElementById('import-btn').innerHTML = '<i class="bi bi-upload"></i> Import to Database';
+            });
+    }
+
+    function displayResults(data) {
+        console.log('[FRONTEND DEBUG] displayResults called with data:', data);
+        const resultsContent = document.getElementById('results-content');
+
+        // Create dynamic results based on actual data
+        let resultsCards = '';
+
+        // Always show rows processed
+        resultsCards += `
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-primary">${data.rows_processed || 0}</h3>
+                        <p class="mb-0">Rows Processed</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Dynamic table creation results
+        const tableResults = [];
+
+        // Check for hosts_created
+        if (data.hosts_created !== undefined) {
+            tableResults.push({
+                count: data.hosts_created,
+                label: 'Hosts Created',
+                color: 'success'
+            });
+        }
+
+        // Check for samples_created
+        if (data.samples_created !== undefined) {
+            tableResults.push({
+                count: data.samples_created,
+                label: 'Samples Created',
+                color: 'info'
+            });
+        }
+
+        // Check for samples_updated (if available)
+        if (data.samples_updated !== undefined && data.samples_updated > 0) {
+            tableResults.push({
+                count: data.samples_updated,
+                label: 'Samples Updated',
+                color: 'warning'
+            });
+        }
+
+        // Check for projects_created
+        if (data.projects_created !== undefined) {
+            tableResults.push({
+                count: data.projects_created,
+                label: 'Projects Created',
+                color: 'warning'
+            });
+        }
+
+        // Add dynamic table results
+        tableResults.forEach(result => {
+            resultsCards += `
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-${result.color}">${result.count}</h3>
+                            <p class="mb-0">${result.label}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        // Show tables updated count
+        const tablesUpdated = data.column_mappings ? Object.keys(data.column_mappings).length : 0;
+        resultsCards += `
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-secondary">${tablesUpdated}</h3>
+                        <p class="mb-0">Tables Updated</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        let html = `
+            <div class="alert alert-success">
+                <h5><i class="bi bi-check-circle"></i> Import Successful!</h5>
+                <p><strong>${data.message}</strong></p>
+                <div class="row">
+                    ${resultsCards}
+                </div>
+            </div>
+        `;
+
+        // Add dynamic table changes section
+        if (data.modified_tables) {
+            const modifiedTablesList = Object.entries(data.modified_tables)
+                .filter(([table, info]) => info.modified || info.created > 0);
+
+            if (modifiedTablesList.length > 0) {
+                html += `
+                    <div class="alert alert-info mt-3">
+                        <h6><i class="bi bi-arrow-clockwise"></i> Table Changes Detected</h6>
+                        <div class="row">
+                `;
+
+                modifiedTablesList.forEach(([table, info]) => {
+                    const changeIcon = info.modified ? 'arrow-clockwise' : 'plus-circle';
+                    const changeColor = info.modified ? 'warning' : 'success';
+                    const changeText = info.modified ? 'Modified' : 'Created';
+
+                    html += `
+                        <div class="col-md-4 mb-2">
+                            <div class="card border-${changeColor}">
+                                <div class="card-body p-2">
+                                    <h6 class="mb-1">
+                                        <i class="bi bi-${changeIcon} text-${changeColor}"></i>
+                                        ${table.charAt(0).toUpperCase() + table.slice(1)}
+                                    </h6>
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <small class="text-muted">Before:</small>
+                                            <strong>${info.total_before}</strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">After:</small>
+                                            <strong>${info.total_after}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="text-center mt-2">
+                                        <span class="badge bg-${changeColor}">
+                                            ${changeText}: ${info.created}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Add validation results if available
+        if (data.validation_results) {
+            const validationSummary = Object.entries(data.validation_results)
+                .filter(([table, result]) => result.status === 'success')
+                .length;
+
+            html += `
+                <div class="alert alert-info mt-3">
+                    <h6><i class="bi bi-info-circle"></i> Validation Summary</h6>
+                    <p><strong>${validationSummary}</strong> tables passed validation successfully</p>
+                </div>
+            `;
+        }
+        document.getElementById('excel-file').value = '';
+        // Clear preview
+        document.getElementById('preview-section').style.display = 'none';
+        document.getElementById('dynamic-tables-container').innerHTML = '';
+    }
+
+    function displayResults(data) {
+        console.log('[FRONTEND DEBUG] displayResults called with data:', data);
+        const resultsContent = document.getElementById('results-content');
+
+        // Create dynamic results based on actual data
+        let resultsCards = '';
+
+        // Always show rows processed
+        resultsCards += `
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">${data.rows_processed || 0}</h3>
+                    <p class="mb-0">Rows Processed</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+        // Dynamic table creation results
+        const tableResults = [];
+
+        // Check for hosts_created
+        if (data.hosts_created !== undefined) {
+            tableResults.push({
+                count: data.hosts_created,
+                label: 'Hosts Created',
+                color: 'success'
+            });
+        }
+
+        // Check for samples_created
+        if (data.samples_created !== undefined) {
+            tableResults.push({
+                count: data.samples_created,
+                label: 'Samples Created',
+                color: 'info'
+            });
+        }
+
+        // Check for samples_updated (if available)
+        if (data.samples_updated !== undefined && data.samples_updated > 0) {
+            tableResults.push({
+                count: data.samples_updated,
+                label: 'Samples Updated',
+                color: 'warning'
+            });
+        }
+
+        // Check for projects_created
+        if (data.projects_created !== undefined) {
+            tableResults.push({
+                count: data.projects_created,
+                label: 'Projects Created',
+                color: 'warning'
+            });
+        }
+
+        // Add dynamic table results
+        tableResults.forEach(result => {
+            resultsCards += `
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-${result.color}">${result.count}</h3>
+                        <p class="mb-0">${result.label}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        });
+
+        // Show tables updated count
+        const tablesUpdated = data.column_mappings ? Object.keys(data.column_mappings).length : 0;
+        resultsCards += `
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-secondary">${tablesUpdated}</h3>
+                    <p class="mb-0">Tables Updated</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+        let html = `
+        <div class="alert alert-success">
+            <h5><i class="bi bi-check-circle"></i> Import Successful!</h5>
+            <p><strong>${data.message}</strong></p>
+            <div class="row">
+                ${resultsCards}
+            </div>
+        </div>
+    `;
+
+        // Add dynamic table changes section
+        if (data.modified_tables) {
+            const modifiedTablesList = Object.entries(data.modified_tables)
+                .filter(([table, info]) => info.modified || info.created > 0);
+
+            if (modifiedTablesList.length > 0) {
+                html += `
+                <div class="alert alert-info mt-3">
+                    <h6><i class="bi bi-arrow-clockwise"></i> Table Changes Detected</h6>
+                    <div class="row">
+            `;
+
+                modifiedTablesList.forEach(([table, info]) => {
+                    const changeIcon = info.modified ? 'arrow-clockwise' : 'plus-circle';
+                    const changeColor = info.modified ? 'warning' : 'success';
+                    const changeText = info.modified ? 'Modified' : 'Created';
+
+                    html += `
+                    <div class="col-md-4 mb-2">
+                        <div class="card border-${changeColor}">
+                            <div class="card-body p-2">
+                                <h6 class="mb-1">
+                                    <i class="bi bi-${changeIcon} text-${changeColor}"></i>
+                                    ${table.charAt(0).toUpperCase() + table.slice(1)}
+                                </h6>
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <small class="text-muted">Before:</small>
+                                        <strong>${info.total_before}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">After:</small>
+                                        <strong>${info.total_after}</strong>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-2">
+                                    <span class="badge bg-${changeColor}">
+                                        ${changeText}: ${info.created}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                });
+
+                html += `
+                    </div>
+                </div>
+            `;
+            }
+        }
+
+        // Add validation results if available
+        if (data.validation_results) {
+            const validationSummary = Object.entries(data.validation_results)
+                .filter(([table, result]) => result.status === 'success')
+                .length;
+
+            html += `
+            <div class="alert alert-info mt-3">
+                <h6><i class="bi bi-info-circle"></i> Validation Summary</h6>
+                <p><strong>${validationSummary}</strong> tables passed validation successfully</p>
+            </div>
+        `;
+        }
+
+        resultsContent.innerHTML = html;
+        document.getElementById('results-section').style.display = 'block';
+
+        // Hide preview section
+        document.getElementById('preview-section').style.display = 'none';
+
+        console.log('[FRONTEND DEBUG] displayResults completed with dynamic results');
+    }
+
+    function resetForm() {
+        document.getElementById('excel-file').value = '';
+        document.getElementById('preview-section').style.display = 'none';
+        document.getElementById('results-section').style.display = 'none';
+        document.getElementById('preview-btn').disabled = true;
+        window.previewData = null;
+    }
+</script>
+{% endblock %}

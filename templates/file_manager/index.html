@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+
+{% block title %}File Manager Extraction{% endblock %}
+
+{% block extra_css %}
+<style>
+    .fm-card {
+        background: rgba(15, 23, 42, 0.7);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        margin-bottom: 20px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    .folder-input { display: flex; gap: 10px; margin-bottom: 20px; }
+    .folder-input input {
+        flex: 1;
+        padding: 15px;
+        border: 2px solid rgba(148, 163, 184, 0.2);
+        border-radius: 10px;
+        font-size: 1rem;
+        background: rgba(15, 23, 42, 0.5);
+        color: var(--text-primary);
+    }
+    .fm-btn {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 10px;
+        cursor: pointer;
+    }
+    .fm-btn-secondary { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; }
+    .form-group input, .form-group select {
+        width: 100%; padding: 12px 15px;
+        border: 2px solid rgba(148, 163, 184, 0.2);
+        border-radius: 10px;
+        background: rgba(15, 23, 42, 0.5);
+        color: var(--text-primary);
+    }
+    .preview-table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+    .preview-table th { background: var(--gradient-primary); color: white; padding: 15px; }
+    .preview-table td { padding: 12px 15px; border-bottom: 1px solid rgba(148, 163, 184, 0.1); }
+    .changed { color: var(--primary); font-weight: 600; }
+    .unchanged { color: var(--text-muted); }
+    .hidden { display: none; }
+    .option-inputs { display: none; }
+    .option-inputs.active { display: block; }
+    .folder-path {
+        background: rgba(99, 102, 241, 0.1);
+        padding: 15px; border-radius: 10px;
+        border-left: 4px solid var(--primary);
+        margin: 10px 0; font-family: monospace;
+    }
+    .table-container { max-height: 500px; overflow-y: auto; border-radius: 10px; }
+    .fm-modal { display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
+    .fm-modal.show { display: flex; align-items: center; justify-content: center; }
+    .fm-modal-content { background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title"><i class="bi bi-folder2-open me-3"></i>File Manager Extraction</h1>
+    <p class="page-subtitle">Rename, Copy, Move & Delete files with filter</p>
+</div>
+
+<div class="fm-card">
+    <h5 class="mb-4"><i class="bi bi-folder me-2"></i>Select Source Folder</h5>
+    <div class="folder-input">
+        <input type="text" id="folderPath" placeholder="Click Browse or enter path">
+        <button class="fm-btn fm-btn-secondary" onclick="browseFolder()">Browse</button>
+        <button class="fm-btn" onclick="loadFolder()">Load Files</button>
+    </div>
+    <div class="alert" style="background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); color: #e2e8f0;">
+        <i class="bi bi-info-circle me-2"></i>Click Browse to select a folder, or type the path manually
+    </div>
+    <div id="currentFolder" class="hidden">
+        <div class="folder-path"><strong>Current Folder:</strong> <span id="currentPath"></span></div>
+        <span class="badge bg-primary" id="fileCount">0 files</span>
+    </div>
+</div>
+
+<div id="optionsSection" class="fm-card hidden">
+    <h5 class="mb-4"><i class="bi bi-gear me-2"></i>Operation</h5>
+    <div class="form-group">
+        <label>File Filter (optional)</label>
+        <input type="text" id="filter" placeholder="*.ab1 or *.txt" value="*.*">
+    </div>
+    <div class="form-group">
+        <label>Choose Operation</label>
+        <select id="pattern">
+            <option value="find_replace">Find and Replace</option>
+            <option value="prefix_suffix">Add Prefix/Suffix</option>
+            <option value="sequential">Sequential Numbering</option>
+            <option value="remove">Remove Pattern</option>
+            <option value="lowercase">Convert to Lowercase</option>
+            <option value="uppercase">Convert to Uppercase</option>
+            <option value="copy_files">Copy Files (with filter)</option>
+            <option value="move_files">Move Files (with filter)</option>
+            <option value="delete_files">Delete Files (with filter)</option>
+        </select>
+    </div>
+
+    <div id="findReplaceInputs" class="option-inputs active">
+        <div class="options-grid">
+            <div class="form-group"><label>Find Text</label><input type="text" id="findText"></div>
+            <div class="form-group"><label>Replace With</label><input type="text" id="replaceText"></div>
+        </div>
+    </div>
+    <div id="prefixSuffixInputs" class="option-inputs">
+        <div class="options-grid">
+            <div class="form-group"><label>Prefix</label><input type="text" id="prefix"></div>
+            <div class="form-group"><label>Suffix</label><input type="text" id="suffix"></div>
+        </div>
+    </div>
+    <div id="sequentialInputs" class="option-inputs">
+        <div class="options-grid">
+            <div class="form-group"><label>Prefix</label><input type="text" id="seqPrefix" value="File"></div>
+            <div class="form-group"><label>Start Number</label><input type="number" id="startNum" value="1"></div>
+        </div>
+    </div>
+    <div id="removeInputs" class="option-inputs">
+        <div class="form-group"><label>Text to Remove</label><input type="text" id="removeText"></div>
+    </div>
+    <div id="copyMoveInputs" class="option-inputs">
+        <div class="form-group"><label>Contains Text (filter)</label><input type="text" id="copyFilter"></div>
+        <div class="form-group"><label>Destination Folder</label>
+            <div class="folder-input"><input type="text" id="destFolder"><button class="fm-btn fm-btn-secondary" onclick="browseDestFolder()">Browse</button></div>
+        </div>
+    </div>
+    <div id="deleteInputs" class="option-inputs">
+        <div class="form-group"><label>Contains Text (filter)</label><input type="text" id="deleteFilter"></div>
+        <p class="text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Warning: Files will be permanently deleted!</p>
+    </div>
+
+    <div class="mt-4">
+        <button class="fm-btn me-2" onclick="previewRename()">Preview Changes</button>
+        <button class="fm-btn fm-btn-secondary" onclick="loadFolder()">Refresh Files</button>
+    </div>
+</div>
+
+<div id="previewSection" class="fm-card hidden">
+    <h5 class="mb-4"><i class="bi bi-eye me-2"></i>Preview Changes</h5>
+    <div class="table-container">
+        <table class="preview-table">
+            <thead><tr id="previewHeader"><th>Original Name</th><th>New Name / Action</th></tr></thead>
+            <tbody id="previewBody"></tbody>
+        </table>
+    </div>
+    <div class="mt-4">
+        <button class="fm-btn me-2" onclick="executeOperation()">Execute Now</button>
+        <button class="fm-btn fm-btn-secondary" onclick="previewRename()">Refresh Preview</button>
+    </div>
+</div>
+
+<div id="modal" class="fm-modal">
+    <div class="fm-modal-content">
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <span id="modalIcon" style="font-size: 2rem;">ℹ️</span>
+            <h5 class="m-0" id="modalTitle">Information</h5>
+        </div>
+        <div id="modalBody" class="mb-4"></div>
+        <div id="modalFooter" class="d-flex gap-2 justify-content-end"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentFiles = [], currentFolder = '';
+function showModal(o) {
+    const m = document.getElementById('modal'), f = document.getElementById('modalFooter');
+    document.getElementById('modalIcon').textContent = o.icon || 'ℹ️';
+    document.getElementById('modalTitle').textContent = o.title || 'Information';
+    document.getElementById('modalBody').innerHTML = o.message || '';
+    f.innerHTML = '';
+    if (o.type === 'confirm') {
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn btn-secondary';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.onclick = () => {
+            closeModal();
+            if (o.onCancel) o.onCancel();
+        };
+        
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'btn btn-danger';
+        confirmBtn.textContent = o.confirmText || 'Confirm';
+        confirmBtn.onclick = () => {
+            closeModal();
+            if (o.onConfirm) o.onConfirm();
+        };
+        
+        f.appendChild(cancelBtn);
+        f.appendChild(confirmBtn);
+    } else {
+        const okBtn = document.createElement('button');
+        okBtn.className = 'btn btn-primary';
+        okBtn.textContent = 'OK';
+        okBtn.onclick = () => {
+            closeModal();
+            if (o.onOk) o.onOk();
+        };
+        f.appendChild(okBtn);
+    }
+    m.classList.add('show');
+}
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+async function browseFolder() {
+    try {
+        const r = await fetch('/file_manager/browse_folder'), d = await r.json();
+        if (d.folder) document.getElementById('folderPath').value = d.folder;
+        else if (d.error) showModal({icon: '❌', title: 'Error', message: d.error});
+    } catch { showModal({icon: '⚠️', title: 'Browser Not Available', message: 'Please type the path manually.'}); }
+}
+
+async function browseDestFolder() {
+    try {
+        const r = await fetch('/file_manager/select_dest_folder'), d = await r.json();
+        if (d.folder) document.getElementById('destFolder').value = d.folder;
+        else if (d.error) showModal({icon: '❌', title: 'Error', message: d.error});
+    } catch { showModal({icon: '⚠️', title: 'Browser Not Available', message: 'Please type the path manually.'}); }
+}
+
+document.getElementById('pattern').addEventListener('change', function() {
+    document.querySelectorAll('.option-inputs').forEach(el => el.classList.remove('active'));
+    const p = this.value;
+    if (p === 'find_replace') document.getElementById('findReplaceInputs').classList.add('active');
+    else if (p === 'prefix_suffix') document.getElementById('prefixSuffixInputs').classList.add('active');
+    else if (p === 'sequential') document.getElementById('sequentialInputs').classList.add('active');
+    else if (p === 'remove') document.getElementById('removeInputs').classList.add('active');
+    else if (p === 'copy_files' || p === 'move_files') document.getElementById('copyMoveInputs').classList.add('active');
+    else if (p === 'delete_files') document.getElementById('deleteInputs').classList.add('active');
+    if (currentFiles.length) previewRename();
+});
+
+['findText','replaceText','prefix','suffix','seqPrefix','startNum','removeText','copyFilter','deleteFilter','destFolder'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => { if (currentFiles.length) previewRename(); });
+});
+
+async function loadFolder() {
+    const path = document.getElementById('folderPath').value.trim();
+    if (!path) return showModal({icon: '⚠️', title: 'No Folder', message: 'Please select a folder.'});
+    const filter = document.getElementById('filter').value.trim() || '*.*';
+    try {
+        const r = await fetch('/file_manager/list_files', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({folder: path, filter})
+        });
+        const d = await r.json();
+        if (d.error) return showModal({icon: '❌', title: 'Error', message: d.error});
+        currentFiles = d.files; currentFolder = d.folder;
+        document.getElementById('currentPath').textContent = currentFolder;
+        document.getElementById('fileCount').textContent = `${currentFiles.length} file(s)`;
+        document.getElementById('currentFolder').classList.remove('hidden');
+        document.getElementById('optionsSection').classList.remove('hidden');
+        if (currentFiles.length) previewRename();
+        else showModal({icon: 'ℹ️', title: 'No Files', message: 'No files match the current filter.'});
+    } catch (e) { showModal({icon: '❌', title: 'Error', message: e.message}); }
+}
+
+async function previewRename() {
+    if (!currentFiles.length) return;
+    const pattern = document.getElementById('pattern').value;
+    const data = { folder: currentFolder, files: currentFiles, pattern };
+    if (pattern === 'find_replace') { data.find = document.getElementById('findText').value; data.replace = document.getElementById('replaceText').value; }
+    else if (pattern === 'prefix_suffix') { data.prefix = document.getElementById('prefix').value; data.suffix = document.getElementById('suffix').value; }
+    else if (pattern === 'sequential') { data.prefix = document.getElementById('seqPrefix').value; data.startNum = document.getElementById('startNum').value; }
+    else if (pattern === 'remove') data.find = document.getElementById('removeText').value;
+    else if (pattern === 'copy_files' || pattern === 'move_files') { data.filter = document.getElementById('copyFilter').value.trim(); data.dest_folder = document.getElementById('destFolder').value.trim(); }
+    else if (pattern === 'delete_files') data.filter = document.getElementById('deleteFilter').value.trim();
+    try {
+        const r = await fetch('/file_manager/preview', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+        const result = await r.json();
+        displayPreview(result.preview, pattern);
+    } catch (e) { showModal({icon: '❌', title: 'Preview Error', message: e.message}); }
+}
+
+function displayPreview(preview, pattern) {
+    const tbody = document.getElementById('previewBody'), header = document.getElementById('previewHeader');
+    tbody.innerHTML = '';
+    let actionHeader = 'New Name';
+    if (pattern === 'copy_files') actionHeader = 'Will be copied to';
+    else if (pattern === 'move_files') actionHeader = 'Will be moved to';
+    else if (pattern === 'delete_files') actionHeader = 'Will be deleted';
+    header.innerHTML = `<th>Original Name</th><th>${actionHeader}</th>`;
+    preview.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${item.original}</td><td class="${item.changed ? 'changed' : 'unchanged'}">${item.action || item.new}</td>`;
+        tbody.appendChild(tr);
+    });
+    document.getElementById('previewSection').classList.remove('hidden');
+}
+
+async function executeOperation() {
+    const pattern = document.getElementById('pattern').value;
+    let confirmMsg = '', confirmText = 'Execute';
+    if (pattern === 'copy_files') {
+        const dest = document.getElementById('destFolder').value.trim();
+        if (!dest) return showModal({icon: '⚠️', title: 'Missing Destination', message: 'Please select a destination folder.'});
+        confirmMsg = `Copy filtered files to:<br><br><strong>${dest}</strong>`; confirmText = 'Copy Files';
+    } else if (pattern === 'move_files') {
+        const dest = document.getElementById('destFolder').value.trim();
+        if (!dest) return showModal({icon: '⚠️', title: 'Missing Destination', message: 'Please select a destination folder.'});
+        confirmMsg = `Move filtered files to:<br><br><strong>${dest}</strong>`; confirmText = 'Move Files';
+    } else if (pattern === 'delete_files') {
+        confirmMsg = `Delete filtered files permanently!<br><br>This action cannot be undone.`; confirmText = 'Delete Files';
+    } else {
+        confirmMsg = `Rename files in:<br><br><strong>${currentFolder}</strong>`; confirmText = 'Rename Now';
+    }
+    showModal({icon: '⚠️', title: 'Confirm Operation', message: confirmMsg, type: 'confirm', confirmText,
+        onConfirm: function() {
+            if (pattern === 'copy_files') performCopy();
+            else if (pattern === 'move_files') performMove();
+            else if (pattern === 'delete_files') performDelete();
+            else performRename();
+        }
+    });
+}
+
+async function performRename() {
+    const pattern = document.getElementById('pattern').value;
+    const data = { folder: currentFolder, files: currentFiles, pattern };
+    if (pattern === 'find_replace') { data.find = document.getElementById('findText').value; data.replace = document.getElementById('replaceText').value; }
+    else if (pattern === 'prefix_suffix') { data.prefix = document.getElementById('prefix').value; data.suffix = document.getElementById('suffix').value; }
+    else if (pattern === 'sequential') { data.prefix = document.getElementById('seqPrefix').value; data.startNum = document.getElementById('startNum').value; }
+    else if (pattern === 'remove') data.find = document.getElementById('removeText').value;
+    try {
+        const r = await fetch('/file_manager/rename', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+        const result = await r.json();
+        let msg = result.success > 0 ? `✅ Renamed ${result.success} file(s)!` : 'No changes made.';
+        if (result.errors.length) msg += `<br><br>❌ Errors:<br>${result.errors.join('<br>')}`;
+        showModal({icon: result.success > 0 ? '✅' : '❌', title: result.success > 0 ? 'Success' : 'Error', message: msg, onOk: loadFolder});
+    } catch (e) { showModal({icon: '❌', title: 'Error', message: 'Rename failed: ' + e.message}); }
+}
+
+async function performCopy() {
+    const data = { folder: currentFolder, files: currentFiles, dest_folder: document.getElementById('destFolder').value.trim(), filter: document.getElementById('copyFilter').value.trim(), pattern: 'copy_files' };
+    try {
+        const r = await fetch('/file_manager/copy_files', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+        const result = await r.json();
+        let msg = result.message || ''; if (result.errors.length) msg += `<br><br>Errors:<br>${result.errors.join('<br>')}`;
+        showModal({icon: result.success > 0 ? '✅' : '❌', title: result.success > 0 ? 'Success' : 'Error', message: msg, onOk: loadFolder});
+    } catch (e) { showModal({icon: '❌', title: 'Error', message: 'Copy failed: ' + e.message}); }
+}
+
+async function performMove() {
+    const data = { folder: currentFolder, files: currentFiles, dest_folder: document.getElementById('destFolder').value.trim(), filter: document.getElementById('copyFilter').value.trim(), pattern: 'move_files' };
+    try {
+        const r = await fetch('/file_manager/move_files', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+        const result = await r.json();
+        let msg = result.message || ''; if (result.errors.length) msg += `<br><br>Errors:<br>${result.errors.join('<br>')}`;
+        showModal({icon: result.success > 0 ? '✅' : '❌', title: result.success > 0 ? 'Success' : 'Error', message: msg, onOk: loadFolder});
+    } catch (e) { showModal({icon: '❌', title: 'Error', message: 'Move failed: ' + e.message}); }
+}
+
+async function performDelete() {
+    const data = { folder: currentFolder, files: currentFiles, filter: document.getElementById('deleteFilter').value.trim(), pattern: 'delete_files' };
+    try {
+        const r = await fetch('/file_manager/delete_files', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+        const result = await r.json();
+        let msg = result.message || ''; if (result.errors.length) msg += `<br><br>Errors:<br>${result.errors.join('<br>')}`;
+        showModal({icon: result.success > 0 ? '✅' : '❌', title: result.success > 0 ? 'Success' : 'Error', message: msg, onOk: loadFolder});
+    } catch (e) { showModal({icon: '❌', title: 'Error', message: 'Delete failed: ' + e.message}); }
+}
+</script>
+{% endblock %}
