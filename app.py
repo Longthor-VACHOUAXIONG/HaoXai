@@ -50,6 +50,31 @@ def create_app(config_class=Config):
     # Initialize database
     init_db(app)
     
+    # Auto-connect to default database if not connected
+    def auto_connect_database():
+        """Automatically connect to default database if available"""
+        if not session.get('db_connected') and app.config.get('DATABASE_PATH'):
+            db_path = app.config['DATABASE_PATH']
+            if os.path.exists(db_path):
+                try:
+                    # Test connection
+                    conn = DatabaseManagerFlask.get_connection(db_path, 'sqlite')
+                    if conn:
+                        session['db_path'] = db_path
+                        session['db_type'] = 'sqlite'
+                        session['db_name'] = os.path.basename(db_path)
+                        session['db_connected'] = True
+                        session['app_instance_id'] = app.config['APP_INSTANCE_ID']
+                        session['remember_connection'] = True  # Auto-remember
+                        print(f"[AUTO-CONNECT] Connected to default database: {db_path}")
+                        conn.close()
+                except Exception as e:
+                    print(f"[AUTO-CONNECT] Failed to connect to default database: {e}")
+    
+    # Apply auto-connection in a request context to access session
+    with app.test_request_context():
+        auto_connect_database()
+    
     # Set socketio instance for the database manager
     DatabaseManagerFlask.set_socketio(socketio)
     
