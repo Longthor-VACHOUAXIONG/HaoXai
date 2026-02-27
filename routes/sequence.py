@@ -2188,9 +2188,9 @@ def save_to_database():
                 'message': 'Failed to establish database connection for save operation'
             }), 500
         
-        # Update the sequence database manager to use the fresh connection
-        seq_db = SequenceDBManager(db_conn, db_type)
-        seq_db.set_connection(fresh_conn)  # Add this method if it doesn't exist
+        # Override the SequenceDBManager's connection method to use our fresh connection
+        original_get_connection = seq_db._get_connection
+        seq_db._get_connection = lambda: fresh_conn
         
         project_name = data.get('project_name', 'Default')
         uploaded_by = session.get('username', 'Anonymous')
@@ -2494,13 +2494,18 @@ def save_to_database():
         return jsonify({'error': str(e)}), 500
     
     finally:
-        # Ensure connection is properly closed
+        # Ensure connection is properly closed and restore original method
         try:
             if 'fresh_conn' in locals() and fresh_conn:
                 fresh_conn.close()
                 print("[DEBUG] Database connection closed")
+            
+            # Restore original get_connection method
+            if 'seq_db' in locals() and 'original_get_connection' in locals():
+                seq_db._get_connection = original_get_connection
+                print("[DEBUG] Restored original connection method")
         except Exception as e:
-            print(f"[DEBUG] Error closing connection: {e}")
+            print(f"[DEBUG] Error during cleanup: {e}")
 
 
 def background_cleanup(session_id, upload_folder, socketio):
