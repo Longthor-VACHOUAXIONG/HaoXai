@@ -1,4 +1,4 @@
-# ViroDB - Virus Database Management System
+# HaoXai - Virus Database Management System
 
 A comprehensive web-based database management system for virology research data, including bat sample tracking, environmental monitoring, and market sample analysis.
 
@@ -32,8 +32,8 @@ A comprehensive web-based database management system for virology research data,
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/ViroDB.git
-   cd ViroDB
+   git clone https://github.com/yourusername/HaoXai.git
+   cd HaoXai
    ```
 
 2. **Install dependencies**
@@ -98,7 +98,7 @@ For AI chat functionality:
 ## Project Structure
 
 ```
-ViroDB/
+HaoXai/
 ├── app.py                 # Main Flask application
 ├── config.py             # Application configuration
 ├── requirements.txt      # Python dependencies
