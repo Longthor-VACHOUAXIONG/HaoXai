@@ -2211,13 +2211,17 @@ def save_to_database():
             direct_conn.execute("PRAGMA foreign_keys = ON")
             direct_conn.execute("PRAGMA journal_mode=WAL")
             seq_db = SequenceDBManager(db_conn, db_type)
-            # Override with direct connection
+            # Override both SequenceDBManager and its SampleManager with direct connection
             seq_db._get_connection = lambda: direct_conn
+            if hasattr(seq_db, 'sample_manager') and seq_db.sample_manager:
+                seq_db.sample_manager._get_connection = lambda: direct_conn
             fresh_conn = direct_conn  # Use this for cleanup
         else:
             # For MySQL, use the fresh connection as is
             seq_db = SequenceDBManager(db_conn, db_type)
             seq_db._get_connection = lambda: fresh_conn
+            if hasattr(seq_db, 'sample_manager') and seq_db.sample_manager:
+                seq_db.sample_manager._get_connection = lambda: fresh_conn
         
         project_name = data.get('project_name', 'Default')
         uploaded_by = session.get('username', 'Anonymous')
