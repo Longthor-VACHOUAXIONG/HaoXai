@@ -1588,16 +1588,20 @@ def execute_r():
 # R Code Execution
 {code}
 
-# Check if any plotting devices are active and capture the plot
+# Ensure any ggplot objects are printed
+if (exists(".Last.value") && inherits(.Last.value, "ggplot")) {{
+    print(.Last.value)
+}}
+
+# Force plot rendering and capture
 if (length(dev.list()) > 0) {{
-    # Try to save the current plot
+    # Save the current plot
     tryCatch({{
-        # Create a new PNG device and copy the plot
         temp_file <- tempfile(fileext = ".png")
         png(temp_file, width = 800, height = 600, res = 150)
-        # Replay the plot by printing the last object
+        # Copy the current plot device
         dev.off()
-        # Move to workspace with a simple name
+        # Move to workspace
         final_file <- paste0(getwd(), "/r_plot.png")
         file.rename(temp_file, final_file)
         cat("PLOT_SAVED:r_plot.png\\n")
