@@ -134,6 +134,8 @@ dmypy.json
 *.db-wal
 *.sqlite
 *.sqlite3
+*backup*.db
+*-Copy*.db
 
 # Excel files (data files - keep templates only)
 DataExcel/
