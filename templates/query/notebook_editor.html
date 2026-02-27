@@ -1492,6 +1492,8 @@
             let result;
             if (cell.type === 'sql') {
                 result = await executeSQL(cell.content);
+            } else if (cell.type === 'r') {
+                result = await executeR(cell.content);
             } else {
                 result = await executePython(cell.content);
             }
@@ -1712,6 +1714,89 @@
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 try {
                     return await executePython(code);
+                } catch (retryError) {
+                    return '<div class="output-error"><i class="fas fa-exclamation-circle"></i> Communication error: ' + retryError.message + '</div>';
+                }
+            }
+            if (error.message && error.message.includes('Failed to fetch')) {
+                return '<div class="output-error"><i class="fas fa-server"></i> Server connection failed. Please check if the server is running.</div>';
+            }
+            return '<div class="output-error"><i class="fas fa-exclamation-circle"></i> ' + error.message + '</div>';
+        }
+    }
+
+    async function executeR(code) {
+        try {
+            // Check if we have a valid connection first
+            if (!navigator.onLine) {
+                return '<div class="output-error"><i class="fas fa-wifi"></i> No internet connection</div>';
+            }
+            
+            // Get R path from localStorage
+            const rPath = localStorage.getItem('rscript_path') || '';
+            if (!rPath) {
+                return '<div class="output-error"><i class="fas fa-cog"></i> Please configure Rscript path in Package Manager</div>';
+            }
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+            
+            const response = await fetch('/query/execute-r', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: code || '', r_path: rPath }),
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                
+                // Try to parse error details from server
+                try {
+                    const errorData = JSON.parse(errorText);
+                    if (errorData.message) {
+                        errorMessage = errorData.message;
+                    }
+                } catch (e) {
+                    // If JSON parsing fails, use the error text
+                    errorMessage = errorText || errorMessage;
+                }
+                
+                return '<div class="output-error"><i class="fas fa-exclamation-circle"></i> ' + errorMessage + '</div>';
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                if (result.output_type === 'text') {
+                    return '<div class="output-content"><div class="output-success">' + 
+                           (result.output || 'R code executed successfully (no output)') + '</div></div>';
+                } else if (result.output_type === 'plot') {
+                    return '<div class="output-content"><div class="output-success">Plot generated successfully</div>' +
+                           '<img src="data:image/png;base64,' + result.image_data + '" style="max-width: 100%; height: auto;">' +
+                           '</div>';
+                } else {
+                    return '<div class="output-content"><div class="output-success">' + result.output + '</div></div>';
+                }
+            } else {
+                return '<div class="output-error"><i class="fas fa-exclamation-circle"></i> ' + 
+                       (result.message || 'R execution failed') + '</div>';
+            }
+            
+        } catch (error) {
+            console.error('R execution error:', error);
+            if (error.name === 'AbortError') {
+                return '<div class="output-error"><i class="fas fa-clock"></i> R execution timed out after 30 seconds</div>';
+            }
+            if (error.message && error.message.includes('message port')) {
+                console.warn('Message port error detected in R execution, retrying...');
+                // Retry once after a short delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                try {
+                    return await executeR(code);
                 } catch (retryError) {
                     return '<div class="output-error"><i class="fas fa-exclamation-circle"></i> Communication error: ' + retryError.message + '</div>';
                 }

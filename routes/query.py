@@ -1532,3 +1532,128 @@ def execute_python():
             'success': False, 
             'message': f"Server error: {str(e)}"
         }), 500
+
+
+@query_bp.route('/execute-r', methods=['POST'])
+def execute_r():
+    """Execute R code with safety restrictions"""
+    try:
+        print("DEBUG: R execute endpoint called")
+        
+        # Get request data
+        if not request.is_json:
+            return jsonify({
+                'success': False, 
+                'message': 'Request must be JSON format. Please check your Content-Type header.'
+            }), 400
+            
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False, 
+                'message': 'No data received in request. Please send valid JSON.'
+            }), 400
+            
+        code = data.get('code', '').strip()
+        print(f"DEBUG: Received R code: {code[:100]}...")
+        
+        if not code:
+            return jsonify({
+                'success': False, 
+                'message': 'No R code provided. Please include code in your request.'
+            }), 400
+        
+        # Get R path from request
+        r_path = data.get('r_path', '').strip()
+        if not r_path:
+            return jsonify({
+                'success': False, 
+                'message': 'Rscript path not provided. Please configure R path in package manager.'
+            }), 400
+        
+        # Check if Rscript exists
+        if not os.path.exists(r_path):
+            return jsonify({
+                'success': False, 
+                'message': f'Rscript not found at: {r_path}'
+            }), 400
+        
+        # Get workspace directory
+        workspace = get_notebook_workspace()
+        
+        # Create temporary R script file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.R', delete=False) as f:
+            # Wrap user code in proper R script
+            r_script = f'''
+# R Code Execution
+sink(tempfile(fileext = ".txt"), type = "output")
+
+# User code starts here
+{code}
+
+# User code ends here
+sink()
+'''
+            f.write(r_script)
+            script_path = f.name
+        
+        try:
+            # Change to workspace directory
+            original_cwd = os.getcwd()
+            os.chdir(workspace)
+            
+            # Execute R script
+            result = subprocess.run(
+                [r_path, script_path],
+                capture_output=True,
+                text=True,
+                timeout=30,  # 30 second timeout
+                cwd=workspace
+            )
+            
+            # Restore original directory
+            os.chdir(original_cwd)
+            
+            stdout_output = result.stdout
+            stderr_output = result.stderr
+            
+            print(f"DEBUG: R execution completed. stdout: {stdout_output[:100]}, stderr: {stderr_output[:100]}")
+            
+            if result.returncode == 0:
+                return jsonify({
+                    'success': True,
+                    'output_type': 'text',
+                    'output': stdout_output.strip() or 'R code executed successfully (no output)'
+                })
+            else:
+                error_msg = f"R execution error: {stderr_output or stdout_output}"
+                print(f"DEBUG: R execution failed: {error_msg[:500]}")
+                return jsonify({
+                    'success': False,
+                    'message': error_msg
+                }), 400
+                
+        except subprocess.TimeoutExpired:
+            # Restore original directory on timeout
+            try:
+                os.chdir(original_cwd)
+            except:
+                pass
+            return jsonify({
+                'success': False, 
+                'message': 'R execution timed out after 30 seconds'
+            }), 408
+        finally:
+            # Clean up temporary script file
+            try:
+                os.unlink(script_path)
+            except:
+                pass
+            
+    except Exception as e:
+        print(f"ERROR: Unexpected error in execute-r: {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            'success': False, 
+            'message': f"Server error: {str(e)}"
+        }), 500
