@@ -12,7 +12,6 @@ import uuid
 from config import Config
 from routes import register_blueprints
 from database.db_manager_flask import init_db, DatabaseManagerFlask
-from auto_session_cleanup import start_auto_cleanup, stop_auto_cleanup
 
 # Application version
 __version__ = "1.0.0"
@@ -21,7 +20,6 @@ __version__ = "1.0.0"
 def signal_handler(sig, frame):
     """Handle Ctrl+C gracefully"""
     print('\n=== Shutting down HaoXai server gracefully... ===')
-    stop_auto_cleanup()
     sys.exit(0)
 
 
@@ -122,10 +120,6 @@ if __name__ == '__main__':
     app, socketio = create_app()
     print('\n=== HaoXai Server Starting ===')
     print(f'HaoXai System v{__version__} with real-time updates enabled')
-    
-    # Start automatic session cleanup
-    print('Starting automatic session cleanup...')
-    start_auto_cleanup(session_folder='flask_session', cleanup_interval_hours=4, max_age_hours=2)
     
     # Auto-open browser in a separate thread
     def open_browser():
