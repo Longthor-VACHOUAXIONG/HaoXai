@@ -387,7 +387,7 @@ def read_file_content():
 
 
 @query_bp.route('/notebook/file/rename', methods=['POST'])
-def rename_file():
+def rename_file_item():
     """Rename a file or folder"""
     try:
         data = request.get_json()
@@ -434,7 +434,7 @@ def rename_file():
 
 
 @query_bp.route('/notebook/file/delete', methods=['POST'])
-def delete_file():
+def delete_file_item():
     """Delete a file or folder"""
     try:
         data = request.get_json()
@@ -475,7 +475,7 @@ def delete_file():
 
 
 @query_bp.route('/notebook/file/move', methods=['POST'])
-def move_file():
+def move_file_item():
     """Move a file or folder to a new location"""
     try:
         data = request.get_json()
@@ -530,7 +530,7 @@ def move_file():
 
 
 @query_bp.route('/notebook/file/copy', methods=['POST'])
-def copy_file():
+def copy_file_item():
     """Copy a file or folder to a new location"""
     try:
         data = request.get_json()
