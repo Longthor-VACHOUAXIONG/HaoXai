@@ -1,6 +1,0 @@
-source_id,host_type,province,district,village,scientific_name,sex,collection_date,sample_code,sample_type,test_type,test_result,freezer_name
-BAT001,bat,Vientiane,Xaythany,Ban Naxay,Rhinolophus affinis,Male,2024-01-15,SAL001,saliva,PanCorona,Positive,Freezer-14
-BAT002,bat,Vientiane,Xaythany,Ban Naxay,Rhinolophus affinis,Female,2024-01-15,BLD001,blood,PanCorona,Negative,Freezer-14
-BAT003,bat,Luang Prabang,Luang Prabang,Ban Xieng,Cynopterus sphinx,Male,2024-01-16,TIS001,tissue,PanHanta,Positive,Freezer-80
-ROD001,rodent,Vientiane,Saysettha,Ban Donnoun,Rattus rattus,Female,2024-01-17,SAL002,saliva,PanParamyxo,Inconclusive,Freezer-14
-ENV001,other,Champasak,Pakse,Ban Kok,Environmental sample,,2024-01-18,WAT001,environmental,PanFlavi,Negative,Freezer-14
