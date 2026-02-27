@@ -582,6 +582,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/sql/sql.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/r/r.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/sql-hint.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/python-hint.min.js"></script>
@@ -1056,9 +1057,109 @@
         };
     });
 
+    // R Autocomplete
+    CodeMirror.registerHelper('hint', 'text/x-rsrc', function(editor, options) {
+        const cursor = editor.getCursor();
+        const line = editor.getLine(cursor.line);
+        const start = cursor.ch;
+        const end = cursor.ch;
+        
+        // Better word detection - handle different word boundaries and partial keywords
+        const textBeforeCursor = line.substring(0, start);
+        const wordMatch = textBeforeCursor.match(/\w*$/);
+        const word = wordMatch ? wordMatch[0] : '';
+        
+        // Get context for better suggestions
+        const context = textBeforeCursor.toLowerCase();
+        
+        const rKeywords = [
+            // Control structures
+            'if', 'else', 'for', 'in', 'while', 'repeat', 'next', 'break',
+            // Functions
+            'function', 'return', 'library', 'require', 'source',
+            // Logical
+            'TRUE', 'FALSE', 'NULL', 'NA', 'NaN', 'Inf',
+            // Data types
+            'numeric', 'integer', 'double', 'character', 'factor', 'logical',
+            'matrix', 'array', 'data.frame', 'list', 'vector',
+            // Basic functions
+            'c', 'length', 'dim', 'str', 'summary', 'head', 'tail',
+            'mean', 'median', 'sd', 'var', 'min', 'max', 'sum', 'prod',
+            'sort', 'order', 'rank', 'unique', 'duplicated',
+            // Data manipulation
+            'subset', 'transform', 'merge', 'rbind', 'cbind',
+            'apply', 'lapply', 'sapply', 'tapply', 'mapply',
+            // Statistical functions
+            'lm', 'glm', 'aov', 'anova', 'cor', 'cov', 't.test',
+            'chisq.test', 'prop.test', 'wilcox.test',
+            // Plotting
+            'plot', 'hist', 'boxplot', 'barplot', 'pie', 'pairs',
+            'abline', 'lines', 'points', 'text', 'title', 'legend',
+            // Packages
+            'dplyr', 'ggplot2', 'tidyr', 'readr', 'readxl', 'writexl',
+            'lubridate', 'stringr', 'forcats', 'purrr', 'tibble',
+            // Dplyr functions
+            'filter', 'select', 'mutate', 'arrange', 'group_by', 'summarise',
+            'left_join', 'right_join', 'inner_join', 'full_join',
+            // Ggplot2 functions
+            'ggplot', 'aes', 'geom_point', 'geom_line', 'geom_bar', 'geom_boxplot',
+            'geom_histogram', 'labs', 'theme', 'scale_x_continuous', 'scale_y_continuous'
+        ];
+        
+        const rFunctions = [
+            'print()', 'cat()', 'paste()', 'paste0()', 'sprintf()',
+            'read.csv()', 'read.table()', 'write.csv()', 'write.table()',
+            'data.frame()', 'matrix()', 'array()', 'list()',
+            'as.numeric()', 'as.character()', 'as.factor()', 'as.data.frame()',
+            'is.na()', 'is.null()', 'is.numeric()', 'is.character()',
+            'which()', 'which.max()', 'which.min()',
+            'round()', 'ceiling()', 'floor()', 'trunc()',
+            'abs()', 'sqrt()', 'log()', 'exp()', 'sin()', 'cos()', 'tan()'
+        ];
+        
+        let suggestions = [
+            ...rKeywords.map(k => ({text: k, displayText: k + ' (keyword)', type: 'keyword'})),
+            ...rFunctions.map(f => ({text: f, displayText: f + ' (function)', type: 'function'}))
+        ];
+        
+        // Context-aware filtering
+        if (context.includes('library(') || context.includes('require(')) {
+            // After library or require, suggest package names
+            suggestions = suggestions.filter(s => 
+                ['dplyr', 'ggplot2', 'tidyr', 'readr', 'readxl', 'writexl', 'lubridate', 'stringr', 'forcats', 'purrr', 'tibble'].includes(s.text)
+            );
+        } else if (context.includes('ggplot(') || context.includes('aes(')) {
+            // After ggplot or aes, suggest ggplot functions
+            suggestions = suggestions.filter(s => 
+                ['geom_point', 'geom_line', 'geom_bar', 'geom_boxplot', 'geom_histogram', 'labs', 'theme'].includes(s.text)
+            );
+        } else if (context.includes('dplyr::') || context.includes('%>%')) {
+            // After dplyr:: or pipe operator, suggest dplyr functions
+            suggestions = suggestions.filter(s => 
+                ['filter', 'select', 'mutate', 'arrange', 'group_by', 'summarise', 'left_join', 'right_join', 'inner_join', 'full_join'].includes(s.text)
+            );
+        }
+        
+        // Better filtering - match anywhere in the word
+        const filtered = suggestions.filter(s => 
+            word.length === 0 || s.text.toLowerCase().includes(word.toLowerCase())
+        );
+        
+        return {
+            list: filtered.slice(0, 20), // Limit to 20 suggestions
+            from: CodeMirror.Pos(cursor.line, start - word.length),
+            to: CodeMirror.Pos(cursor.line, end)
+        };
+    });
+
     // Register hint for text/x-python mode
     CodeMirror.registerHelper('hint', 'text/x-python', function(editor, options) {
         return CodeMirror.hint.python(editor, options);
+    });
+
+    // Register hint for text/x-rsrc mode
+    CodeMirror.registerHelper('hint', 'text/x-rsrc', function(editor, options) {
+        return CodeMirror.hint.r(editor, options);
     });
 
     // Initialize
@@ -1120,6 +1221,7 @@
                     <div class="cell-type-selector">
                         <button class="cell-type-btn ${cell.type === 'sql' ? 'active' : ''}" onclick="setCellType('${cell.id}', 'sql')">SQL</button>
                         <button class="cell-type-btn ${cell.type === 'python' ? 'active' : ''}" onclick="setCellType('${cell.id}', 'python')">Python</button>
+                        <button class="cell-type-btn ${cell.type === 'r' ? 'active' : ''}" onclick="setCellType('${cell.id}', 'r')">R</button>
                     </div>
                     <span style="font-size: 11px; color: var(--text-muted);">Cell ${cells.indexOf(cell) + 1}</span>
                 </div>
@@ -1151,7 +1253,7 @@
         // Initialize CodeMirror
         setTimeout(() => {
             const editor = CodeMirror(document.getElementById(cell.id + '-editor'), {
-                mode: cell.type === 'python' ? 'text/x-python' : 'text/x-sql',
+                mode: cell.type === 'python' ? 'text/x-python' : cell.type === 'r' ? 'text/x-rsrc' : 'text/x-sql',
                 theme: 'material-darker',
                 lineNumbers: true,
                 lineWrapping: true,
@@ -1259,7 +1361,7 @@
         
         cell.type = type;
         if (cell.editor) {
-            cell.editor.setOption('mode', type === 'python' ? 'text/x-python' : 'text/x-sql');
+            cell.editor.setOption('mode', type === 'python' ? 'text/x-python' : type === 'r' ? 'text/x-rsrc' : 'text/x-sql');
         }
         
         // Update UI
