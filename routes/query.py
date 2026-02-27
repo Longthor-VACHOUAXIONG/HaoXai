@@ -386,6 +386,204 @@ def read_file_content():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
+@query_bp.route('/notebook/file/rename', methods=['POST'])
+def rename_file():
+    """Rename a file or folder"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'No data provided'}), 400
+        
+        old_path = data.get('old_path', '').strip()
+        new_name = data.get('new_name', '').strip()
+        
+        if not old_path or not new_name:
+            return jsonify({'success': False, 'message': 'Old path and new name are required'}), 400
+        
+        # Security: Ensure path is within workspace
+        workspace = get_user_workspace()
+        old_path_abs = os.path.abspath(os.path.join(workspace, old_path))
+        workspace_abs = os.path.abspath(workspace)
+        
+        if not old_path_abs.startswith(workspace_abs):
+            return jsonify({'success': False, 'message': 'Access denied: Path outside workspace'}), 403
+        
+        if not os.path.exists(old_path_abs):
+            return jsonify({'success': False, 'message': 'File or folder does not exist'}), 404
+        
+        # Construct new path
+        parent_dir = os.path.dirname(old_path_abs)
+        new_path_abs = os.path.join(parent_dir, new_name)
+        
+        # Check if new name already exists
+        if os.path.exists(new_path_abs):
+            return jsonify({'success': False, 'message': 'A file or folder with this name already exists'}), 400
+        
+        # Rename
+        os.rename(old_path_abs, new_path_abs)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully renamed to {new_name}',
+            'old_path': old_path,
+            'new_path': os.path.relpath(new_path_abs, workspace)
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@query_bp.route('/notebook/file/delete', methods=['POST'])
+def delete_file():
+    """Delete a file or folder"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'No data provided'}), 400
+        
+        path = data.get('path', '').strip()
+        
+        if not path:
+            return jsonify({'success': False, 'message': 'Path is required'}), 400
+        
+        # Security: Ensure path is within workspace
+        workspace = get_user_workspace()
+        path_abs = os.path.abspath(os.path.join(workspace, path))
+        workspace_abs = os.path.abspath(workspace)
+        
+        if not path_abs.startswith(workspace_abs):
+            return jsonify({'success': False, 'message': 'Access denied: Path outside workspace'}), 403
+        
+        if not os.path.exists(path_abs):
+            return jsonify({'success': False, 'message': 'File or folder does not exist'}), 404
+        
+        # Delete
+        if os.path.isdir(path_abs):
+            import shutil
+            shutil.rmtree(path_abs)
+        else:
+            os.remove(path_abs)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully deleted {path}',
+            'deleted_path': path
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@query_bp.route('/notebook/file/move', methods=['POST'])
+def move_file():
+    """Move a file or folder to a new location"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'No data provided'}), 400
+        
+        source_path = data.get('source_path', '').strip()
+        target_dir = data.get('target_dir', '').strip()
+        
+        if not source_path or not target_dir:
+            return jsonify({'success': False, 'message': 'Source path and target directory are required'}), 400
+        
+        # Security: Ensure paths are within workspace
+        workspace = get_user_workspace()
+        source_abs = os.path.abspath(os.path.join(workspace, source_path))
+        target_abs = os.path.abspath(os.path.join(workspace, target_dir))
+        workspace_abs = os.path.abspath(workspace)
+        
+        if not source_abs.startswith(workspace_abs) or not target_abs.startswith(workspace_abs):
+            return jsonify({'success': False, 'message': 'Access denied: Path outside workspace'}), 403
+        
+        if not os.path.exists(source_abs):
+            return jsonify({'success': False, 'message': 'Source file or folder does not exist'}), 404
+        
+        if not os.path.isdir(target_abs):
+            return jsonify({'success': False, 'message': 'Target directory does not exist'}), 404
+        
+        # Get the filename/dirname
+        name = os.path.basename(source_abs)
+        new_path_abs = os.path.join(target_abs, name)
+        
+        # Check if target already exists
+        if os.path.exists(new_path_abs):
+            return jsonify({'success': False, 'message': 'A file or folder with this name already exists in target directory'}), 400
+        
+        # Move
+        import shutil
+        if os.path.isdir(source_abs):
+            shutil.move(source_abs, new_path_abs)
+        else:
+            shutil.move(source_abs, new_path_abs)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully moved to {target_dir}',
+            'old_path': source_path,
+            'new_path': os.path.relpath(new_path_abs, workspace)
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@query_bp.route('/notebook/file/copy', methods=['POST'])
+def copy_file():
+    """Copy a file or folder to a new location"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'No data provided'}), 400
+        
+        source_path = data.get('source_path', '').strip()
+        target_dir = data.get('target_dir', '').strip()
+        
+        if not source_path or not target_dir:
+            return jsonify({'success': False, 'message': 'Source path and target directory are required'}), 400
+        
+        # Security: Ensure paths are within workspace
+        workspace = get_user_workspace()
+        source_abs = os.path.abspath(os.path.join(workspace, source_path))
+        target_abs = os.path.abspath(os.path.join(workspace, target_dir))
+        workspace_abs = os.path.abspath(workspace)
+        
+        if not source_abs.startswith(workspace_abs) or not target_abs.startswith(workspace_abs):
+            return jsonify({'success': False, 'message': 'Access denied: Path outside workspace'}), 403
+        
+        if not os.path.exists(source_abs):
+            return jsonify({'success': False, 'message': 'Source file or folder does not exist'}), 404
+        
+        if not os.path.isdir(target_abs):
+            return jsonify({'success': False, 'message': 'Target directory does not exist'}), 404
+        
+        # Get the filename/dirname
+        name = os.path.basename(source_abs)
+        new_path_abs = os.path.join(target_abs, name)
+        
+        # Check if target already exists
+        if os.path.exists(new_path_abs):
+            return jsonify({'success': False, 'message': 'A file or folder with this name already exists in target directory'}), 400
+        
+        # Copy
+        import shutil
+        if os.path.isdir(source_abs):
+            shutil.copytree(source_abs, new_path_abs)
+        else:
+            shutil.copy2(source_abs, new_path_abs)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully copied to {target_dir}',
+            'source_path': source_path,
+            'new_path': os.path.relpath(new_path_abs, workspace)
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 @query_bp.route('/notebook/workspace-info', methods=['GET'])
 def get_workspace_info():
     """Get workspace information"""
