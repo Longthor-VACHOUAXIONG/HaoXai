@@ -50,9 +50,20 @@ def create_app(config_class=Config):
     # Initialize database
     init_db(app)
     
-    # Auto-connect to default database if not connected
-    def auto_connect_database():
-        """Automatically connect to default database if available"""
+    # Set socketio instance for the database manager
+    DatabaseManagerFlask.set_socketio(socketio)
+    
+    # Register blueprints
+    register_blueprints(app)
+    
+    # Store socketio instance in app for access in routes
+    app.socketio = socketio
+    
+    # Session instance validation
+    @app.before_request
+    def validate_session_instance():
+        """Ensure connection session is reset if program was restarted and 'remember' wasn't set"""
+        # Auto-connect to default database if not connected
         if not session.get('db_connected') and app.config.get('DATABASE_PATH'):
             db_path = app.config['DATABASE_PATH']
             if os.path.exists(db_path):
@@ -70,24 +81,7 @@ def create_app(config_class=Config):
                         conn.close()
                 except Exception as e:
                     print(f"[AUTO-CONNECT] Failed to connect to default database: {e}")
-    
-    # Apply auto-connection in a request context to access session
-    with app.test_request_context():
-        auto_connect_database()
-    
-    # Set socketio instance for the database manager
-    DatabaseManagerFlask.set_socketio(socketio)
-    
-    # Register blueprints
-    register_blueprints(app)
-    
-    # Store socketio instance in app for access in routes
-    app.socketio = socketio
-    
-    # Session instance validation
-    @app.before_request
-    def validate_session_instance():
-        """Ensure connection session is reset if program was restarted and 'remember' wasn't set"""
+        
         # We only care about this if a database connection is active
         if session.get('db_connected'):
             session_instance = session.get('app_instance_id')
