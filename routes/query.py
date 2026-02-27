@@ -405,17 +405,28 @@ def delete_file():
 
 
 @query_bp.route('/notebook/files/mkdir', methods=['POST'])
-def create_directory():
+def create_directory_legacy():
+    # Legacy route, kept for backwards compatibility if needed
+    pass
+
+@query_bp.route('/notebook/files/create_folder', methods=['POST'])
+def create_folder():
     """Create new directory in notebook workspace"""
     try:
         workspace = get_user_workspace()
-        data = request.get_json()
         
-        if not data:
-            return jsonify({'success': False, 'message': 'No data received'}), 400
+        # Check both form data and json for compatibility with different fetch methods
+        path = ''
+        name = ''
         
-        path = data.get('path', '')
-        name = data.get('name', '').strip()
+        if request.is_json:
+            data = request.get_json()
+            if data:
+                path = data.get('path', '')
+                name = data.get('folder_name', data.get('name', '')).strip()
+        else:
+            path = request.form.get('path', '')
+            name = request.form.get('folder_name', request.form.get('name', '')).strip()
         
         if not name:
             return jsonify({'success': False, 'message': 'Directory name required'}), 400
@@ -427,14 +438,17 @@ def create_directory():
         target_path = os.path.normpath(os.path.join(workspace, path, name))
         
         # Security check
-        if not target_path.startswith(workspace):
+        if not target_path.startswith(os.path.normpath(workspace)):
             return jsonify({'success': False, 'message': 'Invalid path'}), 400
         
+        if os.path.exists(target_path):
+             return jsonify({'success': False, 'message': f'A folder or file named "{name}" already exists'}), 400
+             
         os.makedirs(target_path, exist_ok=True)
         
         return jsonify({
             'success': True,
-            'message': f'Directory created: {name}',
+            'message': f'Folder created: {name}',
             'directory': {
                 'name': name,
                 'path': os.path.relpath(target_path, workspace),
@@ -443,6 +457,7 @@ def create_directory():
         })
         
     except Exception as e:
+        print(f"Error creating folder: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
