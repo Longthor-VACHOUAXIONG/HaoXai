@@ -39,7 +39,6 @@ def editor():
     return render_template('query/editor.html')
 
 
-import os
 import subprocess
 import tempfile
 import shutil
@@ -182,8 +181,6 @@ tryCatch({{
 '''
         
         # Write R script to temporary file
-        import tempfile
-        import os
         with tempfile.NamedTemporaryFile(mode='w', suffix='.R', delete=False) as f:
             f.write(r_script)
             script_path = f.name
