@@ -8,6 +8,7 @@ import pandas as pd
 import re
 import json
 import sys
+import os
 import io
 import contextlib
 import traceback
@@ -17,7 +18,6 @@ import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 import subprocess
 import tempfile
 import shutil
