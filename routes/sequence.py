@@ -2181,6 +2181,7 @@ def save_to_database():
         seq_db = SequenceDBManager(db_conn, db_type)
         
         # Get a fresh connection for this operation
+        print(f"[DEBUG] Getting fresh connection for: {db_conn}")
         fresh_conn = DatabaseManagerFlask.get_connection(db_conn, db_type)
         if not fresh_conn:
             return jsonify({
@@ -2188,9 +2189,35 @@ def save_to_database():
                 'message': 'Failed to establish database connection for save operation'
             }), 500
         
-        # Override the SequenceDBManager's connection method to use our fresh connection
-        original_get_connection = seq_db._get_connection
-        seq_db._get_connection = lambda: fresh_conn
+        # Test if the connection is actually open
+        try:
+            cursor = fresh_conn.cursor()
+            cursor.execute("SELECT 1")
+            result = cursor.fetchone()
+            print(f"[DEBUG] Connection test result: {result}")
+            cursor.close()
+        except Exception as test_error:
+            print(f"[DEBUG] Connection test failed: {test_error}")
+            return jsonify({
+                'success': False,
+                'message': f'Database connection is not working: {str(test_error)}'
+            }), 500
+        
+        # Create a new SequenceDBManager that will use our fresh connection
+        # We'll bypass the connection pooling by creating a direct connection
+        if db_type == 'sqlite':
+            import sqlite3
+            direct_conn = sqlite3.connect(db_conn, check_same_thread=False)
+            direct_conn.execute("PRAGMA foreign_keys = ON")
+            direct_conn.execute("PRAGMA journal_mode=WAL")
+            seq_db = SequenceDBManager(db_conn, db_type)
+            # Override with direct connection
+            seq_db._get_connection = lambda: direct_conn
+            fresh_conn = direct_conn  # Use this for cleanup
+        else:
+            # For MySQL, use the fresh connection as is
+            seq_db = SequenceDBManager(db_conn, db_type)
+            seq_db._get_connection = lambda: fresh_conn
         
         project_name = data.get('project_name', 'Default')
         uploaded_by = session.get('username', 'Anonymous')
@@ -2494,16 +2521,11 @@ def save_to_database():
         return jsonify({'error': str(e)}), 500
     
     finally:
-        # Ensure connection is properly closed and restore original method
+        # Ensure connection is properly closed
         try:
             if 'fresh_conn' in locals() and fresh_conn:
                 fresh_conn.close()
                 print("[DEBUG] Database connection closed")
-            
-            # Restore original get_connection method
-            if 'seq_db' in locals() and 'original_get_connection' in locals():
-                seq_db._get_connection = original_get_connection
-                print("[DEBUG] Restored original connection method")
         except Exception as e:
             print(f"[DEBUG] Error during cleanup: {e}")
 
