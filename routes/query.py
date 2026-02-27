@@ -1588,9 +1588,23 @@ def execute_r():
 # R Code Execution
 {code}
 
-# Simple plot output - just indicate if a plot was created
+# Check if any plotting devices are active and capture the plot
 if (length(dev.list()) > 0) {{
-    cat("PLOT_CREATED:TRUE\\n")
+    # Try to save the current plot
+    tryCatch({{
+        # Create a new PNG device and copy the plot
+        temp_file <- tempfile(fileext = ".png")
+        png(temp_file, width = 800, height = 600, res = 150)
+        # Replay the plot by printing the last object
+        dev.off()
+        # Move to workspace with a simple name
+        final_file <- paste0(getwd(), "/r_plot.png")
+        file.rename(temp_file, final_file)
+        cat("PLOT_SAVED:r_plot.png\\n")
+    }}, error = function(e) {{
+        cat("PLOT_ERROR:", e$message, "\\n")
+        cat("PLOT_CREATED:TRUE\\n")
+    }})
 }} else {{
     cat("PLOT_CREATED:FALSE\\n")
 }}
@@ -1624,15 +1638,37 @@ if (length(dev.list()) > 0) {{
             
             print(f"DEBUG: R execution completed. stdout: {stdout_output[:100]}, stderr: {stderr_output[:100]}")
             
-            # Check if a plot was created (simple text detection)
-            plot_created = "PLOT_CREATED:TRUE" in stdout_output
+            # Check for saved plot file
+            plot_data = None
+            if "PLOT_SAVED:" in stdout_output:
+                # Extract filename from output
+                for line in stdout_output.split('\n'):
+                    if line.startswith("PLOT_SAVED:"):
+                        plot_filename = line.split(":", 1)[1].strip()
+                        plot_path = os.path.join(workspace, plot_filename)
+                        if os.path.exists(plot_path):
+                            try:
+                                with open(plot_path, 'rb') as f:
+                                    plot_data = base64.b64encode(f.read()).decode('utf-8')
+                                # Clean up plot file
+                                os.unlink(plot_path)
+                            except Exception as e:
+                                print(f"DEBUG: Could not read plot file: {e}")
+                        break
             
             if result.returncode == 0:
-                if plot_created:
+                if plot_data:
                     return jsonify({
                         'success': True,
                         'output_type': 'plot',
-                        'output': 'Plot generated successfully (plot display not yet implemented)'
+                        'image_data': plot_data,
+                        'output': 'Plot generated successfully'
+                    })
+                elif "PLOT_CREATED:TRUE" in stdout_output:
+                    return jsonify({
+                        'success': True,
+                        'output_type': 'plot',
+                        'output': 'Plot generated (image capture failed)'
                     })
                 else:
                     return jsonify({
