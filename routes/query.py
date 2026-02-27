@@ -128,6 +128,92 @@ def pip_install():
         }), 500
 
 
+@query_bp.route('/notebook/r-install', methods=['POST'])
+def r_install():
+    """Install R packages via install.packages()"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'No data received'}), 400
+        
+        package = data.get('package', '').strip()
+        if not package:
+            return jsonify({'success': False, 'message': 'No package specified'}), 400
+        
+        # Security: Validate package name (basic check)
+        dangerous_patterns = [';', '&', '|', '>', '<', '`', '$', '&&', '||']
+        for pattern in dangerous_patterns:
+            if pattern in package:
+                return jsonify({
+                    'success': False, 
+                    'message': f'Package name contains invalid characters: {pattern}'
+                }), 400
+        
+        # Create R script to install package
+        r_script = f'''
+# Install R package
+tryCatch({{
+    if (!require({package}, character.only = TRUE)) {{
+        install.packages("{package}", repos = "https://cran.rstudio.com/")
+        cat("Successfully installed {package}\\n")
+    }} else {{
+        cat("Package {package} is already installed\\n")
+    }}
+}}, error = function(e) {{
+    cat("Error installing package:", e$message, "\\n")
+    quit(status = 1)
+}})
+'''
+        
+        # Write R script to temporary file
+        import tempfile
+        import os
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.R', delete=False) as f:
+            f.write(r_script)
+            script_path = f.name
+        
+        try:
+            # Run R script
+            import subprocess
+            result = subprocess.run(
+                ['Rscript', script_path],
+                capture_output=True,
+                text=True,
+                timeout=300  # 5 minute timeout for R packages
+            )
+            
+            if result.returncode == 0:
+                return jsonify({
+                    'success': True,
+                    'message': f'Successfully installed {package}',
+                    'output': result.stdout
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': f'Failed to install {package}',
+                    'error': result.stderr or result.stdout
+                }), 400
+                
+        except subprocess.TimeoutExpired:
+            return jsonify({
+                'success': False, 
+                'message': 'Installation timed out after 5 minutes'
+            }), 408
+        finally:
+            # Clean up temporary file
+            try:
+                os.unlink(script_path)
+            except:
+                pass
+                
+    except Exception as e:
+        return jsonify({
+            'success': False, 
+            'message': f'Installation error: {str(e)}'
+        }), 500
+
+
 @query_bp.route('/notebook/files', methods=['GET'])
 def list_files():
     """List files in the notebook workspace"""

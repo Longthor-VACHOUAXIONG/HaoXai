@@ -352,6 +352,31 @@
         max-height: 120px;
         overflow: auto;
     }
+    .package-language-selector {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 12px;
+    }
+    .package-lang-btn {
+        flex: 1;
+        padding: 8px 12px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        cursor: pointer;
+        border-radius: 4px;
+        font-size: 12px;
+        transition: all 0.2s ease;
+    }
+    .package-lang-btn:hover {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+    }
+    .package-lang-btn.active {
+        background: var(--accent-primary);
+        color: white;
+        border-color: var(--accent-primary);
+    }
 
     /* Add Cell Button */
     .add-cell-container { display: flex; justify-content: center; padding: 12px 0; }
@@ -508,6 +533,10 @@
         <div id="sidebar-packages" class="sidebar-view" style="display: none;">
             <div class="sidebar-header"><span>Package Manager</span></div>
             <div class="sidebar-content package-panel">
+                <div class="package-language-selector">
+                    <button class="package-lang-btn active" onclick="setPackageLanguage('python')" data-lang="python">Python</button>
+                    <button class="package-lang-btn" onclick="setPackageLanguage('r')" data-lang="r">R</button>
+                </div>
                 <div class="package-input-group">
                     <input type="text" class="package-input" id="pip-package-input" placeholder="numpy, pandas...">
                     <button class="toolbar-btn primary" onclick="installPackage()">
@@ -2054,6 +2083,31 @@
         });
     }
 
+    // Package Manager Variables
+    let currentPackageLanguage = 'python';
+
+    function setPackageLanguage(lang) {
+        currentPackageLanguage = lang;
+        
+        // Update button states
+        document.querySelectorAll('.package-lang-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.lang === lang);
+        });
+        
+        // Update placeholder
+        const input = document.getElementById('pip-package-input');
+        if (lang === 'r') {
+            input.placeholder = 'dplyr, ggplot2, tidyr...';
+        } else {
+            input.placeholder = 'numpy, pandas, scipy...';
+        }
+        
+        // Clear previous output
+        const output = document.getElementById('pip-output');
+        output.style.display = 'none';
+        output.textContent = '';
+    }
+
     // Pip Install Functions
     async function installPackage() {
         const input = document.getElementById('pip-package-input');
@@ -2067,13 +2121,25 @@
         
         output.style.display = 'block';
         output.className = 'pip-output';
-        output.textContent = `Installing ${package}...`;
+        
+        const installText = currentPackageLanguage === 'r' ? `Installing R package ${package}...` : `Installing Python package ${package}...`;
+        output.textContent = installText;
         
         try {
-            const response = await fetch('/query/notebook/pip-install', {
+            let endpoint, payload;
+            
+            if (currentPackageLanguage === 'r') {
+                endpoint = '/query/notebook/r-install';
+                payload = { package };
+            } else {
+                endpoint = '/query/notebook/pip-install';
+                payload = { package };
+            }
+            
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ package })
+                body: JSON.stringify(payload)
             });
             
             const result = safeJSONParse(await response.text(), "installPackage");
