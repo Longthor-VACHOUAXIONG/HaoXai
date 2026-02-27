@@ -2176,48 +2176,41 @@ def save_to_database():
                 'timestamp': datetime.datetime.now().isoformat()
             })
         
-        # Initialize database manager and get fresh connection
-        print(f"[DEBUG] Initializing SequenceDBManager with type: {db_type}")
-        seq_db = SequenceDBManager(db_conn, db_type)
-        
-        # Get a fresh connection for this operation
-        print(f"[DEBUG] Getting fresh connection for: {db_conn}")
-        fresh_conn = DatabaseManagerFlask.get_connection(db_conn, db_type)
-        if not fresh_conn:
-            return jsonify({
-                'success': False,
-                'message': 'Failed to establish database connection for save operation'
-            }), 500
-        
-        # Test if the connection is actually open
-        try:
-            cursor = fresh_conn.cursor()
-            cursor.execute("SELECT 1")
-            result = cursor.fetchone()
-            print(f"[DEBUG] Connection test result: {result}")
-            cursor.close()
-        except Exception as test_error:
-            print(f"[DEBUG] Connection test failed: {test_error}")
-            return jsonify({
-                'success': False,
-                'message': f'Database connection is not working: {str(test_error)}'
-            }), 500
-        
-        # Create a new SequenceDBManager that will use our fresh connection
-        # We'll bypass the connection pooling by creating a direct connection
+        # Create a fresh connection first, then create managers with it
         if db_type == 'sqlite':
             import sqlite3
             direct_conn = sqlite3.connect(db_conn, check_same_thread=False)
             direct_conn.execute("PRAGMA foreign_keys = ON")
             direct_conn.execute("PRAGMA journal_mode=WAL")
-            seq_db = SequenceDBManager(db_conn, db_type)
-            # Override both SequenceDBManager and its SampleManager with direct connection
-            seq_db._get_connection = lambda: direct_conn
-            if hasattr(seq_db, 'sample_manager') and seq_db.sample_manager:
-                seq_db.sample_manager._get_connection = lambda: direct_conn
-            fresh_conn = direct_conn  # Use this for cleanup
+            
+            # Test the connection
+            cursor = direct_conn.cursor()
+            cursor.execute("SELECT 1")
+            result = cursor.fetchone()
+            print(f"[DEBUG] Direct connection test result: {result}")
+            cursor.close()
+            
+            # Temporarily patch the DatabaseManager to return our connection
+            from database import db_manager
+            original_get_connection = db_manager.DatabaseManager.get_connection
+            db_manager.DatabaseManager.get_connection = lambda path, conn_type: direct_conn
+            
+            try:
+                # Now create SequenceDBManager - it will use our patched connection
+                seq_db = SequenceDBManager(db_conn, db_type)
+                fresh_conn = direct_conn
+            finally:
+                # Restore original method
+                db_manager.DatabaseManager.get_connection = original_get_connection
         else:
             # For MySQL, use the fresh connection as is
+            fresh_conn = DatabaseManagerFlask.get_connection(db_conn, db_type)
+            if not fresh_conn:
+                return jsonify({
+                    'success': False,
+                    'message': 'Failed to establish database connection for save operation'
+                }), 500
+            
             seq_db = SequenceDBManager(db_conn, db_type)
             seq_db._get_connection = lambda: fresh_conn
             if hasattr(seq_db, 'sample_manager') and seq_db.sample_manager:
