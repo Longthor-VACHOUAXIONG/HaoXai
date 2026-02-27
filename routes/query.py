@@ -1588,13 +1588,11 @@ def execute_r():
 # R Code Execution
 {code}
 
-# Capture any plots if they exist
+# Simple plot output - just indicate if a plot was created
 if (length(dev.list()) > 0) {{
-    # Save the last plot to workspace
-    plot_file <- paste0(getwd(), "/r_plot_", Sys.time(), ".png")
-    dev.copy(png, filename = plot_file, width = 800, height = 600, res = 150)
-    dev.off()
-    cat("PLOT_SAVED:", plot_file, "\\n")
+    cat("PLOT_CREATED:TRUE\\n")
+}} else {{
+    cat("PLOT_CREATED:FALSE\\n")
 }}
 '''
             f.write(r_script)
@@ -1626,28 +1624,15 @@ if (length(dev.list()) > 0) {{
             
             print(f"DEBUG: R execution completed. stdout: {stdout_output[:100]}, stderr: {stderr_output[:100]}")
             
-            # Check for plot files in workspace
-            plot_data = None
-            plot_files = [f for f in os.listdir(workspace) if f.startswith('r_plot_') and f.endswith('.png')]
-            if plot_files:
-                # Get the most recent plot file
-                latest_plot = max(plot_files, key=lambda f: os.path.getmtime(os.path.join(workspace, f)))
-                plot_path = os.path.join(workspace, latest_plot)
-                try:
-                    with open(plot_path, 'rb') as f:
-                        plot_data = base64.b64encode(f.read()).decode('utf-8')
-                    # Clean up plot file
-                    os.unlink(plot_path)
-                except Exception as e:
-                    print(f"DEBUG: Could not read plot file: {e}")
+            # Check if a plot was created (simple text detection)
+            plot_created = "PLOT_CREATED:TRUE" in stdout_output
             
             if result.returncode == 0:
-                if plot_data:
+                if plot_created:
                     return jsonify({
                         'success': True,
                         'output_type': 'plot',
-                        'image_data': plot_data,
-                        'output': stdout_output.strip() or 'Plot generated successfully'
+                        'output': 'Plot generated successfully (plot display not yet implemented)'
                     })
                 else:
                     return jsonify({
