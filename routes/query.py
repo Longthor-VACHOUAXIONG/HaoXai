@@ -173,10 +173,11 @@ tryCatch({{
             script_path = f.name
         
         try:
-            # Run R script
+            # Run R script with full path
             import subprocess
+            rscript_path = r"C:\Users\l.vachouaxiong\AppData\Local\Programs\R\R-4.5.2\bin\x64\Rscript.exe"
             result = subprocess.run(
-                ['Rscript', script_path],
+                [rscript_path, script_path],
                 capture_output=True,
                 text=True,
                 timeout=300  # 5 minute timeout for R packages
