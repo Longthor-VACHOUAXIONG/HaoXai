@@ -1823,12 +1823,20 @@
             const icon = item.type === 'directory' ? 'fa-folder' : getFileIcon(item.extension);
             div.innerHTML = `<i class="fas ${icon}"></i><span>${item.name}</span>`;
             
+            // Store file data for context menu
+            div.dataset.filePath = item.path;
+            div.dataset.fileName = item.name;
+            div.dataset.fileType = item.type;
+            
             if (item.type === 'directory') {
                 div.onclick = () => navigateToFolder(item.path);
             } else {
                 div.onclick = () => insertFilePath(item.path);
                 div.title = 'Click to insert path in cell';
             }
+            
+            // Add context menu
+            div.oncontextmenu = (e) => showFileContextMenu(e, item);
             
             container.appendChild(div);
         });
@@ -2099,5 +2107,222 @@
         loadFileBrowser();
         loadWorkspaceInfo();
     });
+</script>
+
+<!-- File Context Menu -->
+<div id="file-context-menu" class="context-menu" style="display: none;">
+    <div class="context-menu-item" onclick="renameFile()">
+        <i class="fas fa-edit"></i> Rename
+    </div>
+    <div class="context-menu-item" onclick="copyFile()">
+        <i class="fas fa-copy"></i> Copy
+    </div>
+    <div class="context-menu-item" onclick="moveFile()">
+        <i class="fas fa-arrows-alt"></i> Move
+    </div>
+    <div class="context-menu-separator"></div>
+    <div class="context-menu-item danger" onclick="deleteFile()">
+        <i class="fas fa-trash"></i> Delete
+    </div>
+</div>
+
+<style>
+.context-menu {
+    position: fixed;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 4px 0;
+    min-width: 150px;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.context-menu-item {
+    padding: 8px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-primary);
+    font-size: 12px;
+}
+
+.context-menu-item:hover {
+    background: var(--bg-hover);
+}
+
+.context-menu-item.danger {
+    color: var(--accent-danger);
+}
+
+.context-menu-separator {
+    height: 1px;
+    background: var(--border-color);
+    margin: 4px 0;
+}
+</style>
+
+<script>
+let selectedFile = null;
+let selectedFilePath = '';
+
+function showFileContextMenu(event, file) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    selectedFile = file;
+    selectedFilePath = file.path;
+    
+    const menu = document.getElementById('file-context-menu');
+    menu.style.display = 'block';
+    menu.style.left = event.pageX + 'px';
+    menu.style.top = event.pageY + 'px';
+    
+    // Hide menu when clicking elsewhere
+    document.addEventListener('click', hideContextMenu);
+}
+
+function hideContextMenu() {
+    const menu = document.getElementById('file-context-menu');
+    menu.style.display = 'none';
+    document.removeEventListener('click', hideContextMenu);
+}
+
+async function renameFile() {
+    if (!selectedFile) return;
+    
+    const newName = prompt('Enter new name:', selectedFile.name);
+    if (!newName || newName === selectedFile.name) {
+        hideContextMenu();
+        return;
+    }
+    
+    try {
+        const response = await fetch('/query/notebook/file/rename', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                old_path: selectedFilePath,
+                new_name: newName
+            })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            updateStatus(`Renamed to ${newName}`);
+            await refreshFileBrowser();
+        } else {
+            alert(`Error: ${result.message}`);
+        }
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    }
+    
+    hideContextMenu();
+}
+
+async function deleteFile() {
+    if (!selectedFile) return;
+    
+    if (!confirm(`Are you sure you want to delete "${selectedFile.name}"?`)) {
+        hideContextMenu();
+        return;
+    }
+    
+    try {
+        const response = await fetch('/query/notebook/file/delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                path: selectedFilePath
+            })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            updateStatus(`Deleted ${selectedFile.name}`);
+            await refreshFileBrowser();
+        } else {
+            alert(`Error: ${result.message}`);
+        }
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    }
+    
+    hideContextMenu();
+}
+
+async function copyFile() {
+    if (!selectedFile) return;
+    
+    // For now, we'll implement a simple copy to current directory
+    // In a full implementation, you'd show a dialog to select target directory
+    try {
+        const response = await fetch('/query/notebook/file/copy', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                source_path: selectedFilePath,
+                target_dir: currentPath || '.'
+            })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            updateStatus(`Copied ${selectedFile.name}`);
+            await refreshFileBrowser();
+        } else {
+            alert(`Error: ${result.message}`);
+        }
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    }
+    
+    hideContextMenu();
+}
+
+async function moveFile() {
+    if (!selectedFile) return;
+    
+    // For now, we'll implement a simple move within current directory
+    // In a full implementation, you'd show a dialog to select target directory
+    const newName = prompt('Enter new location (relative to current directory):', selectedFile.name);
+    if (!newName) {
+        hideContextMenu();
+        return;
+    }
+    
+    try {
+        const response = await fetch('/query/notebook/file/move', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                source_path: selectedFilePath,
+                target_dir: currentPath || '.'
+            })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            updateStatus(`Moved ${selectedFile.name}`);
+            await refreshFileBrowser();
+        } else {
+            alert(`Error: ${result.message}`);
+        }
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    }
+    
+    hideContextMenu();
+}
 </script>
 {% endblock %}
