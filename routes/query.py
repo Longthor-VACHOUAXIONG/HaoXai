@@ -1583,13 +1583,26 @@ def execute_r():
         
         # Create temporary R script file
         with tempfile.NamedTemporaryFile(mode='w', suffix='.R', delete=False) as f:
-            # Simple R script execution - let R handle output naturally
+            # R script with plot capture
             r_script = f'''
 # R Code Execution
 {code}
+
+# Capture any plots if they exist
+if (length(dev.list()) > 0) {{
+    # Save the last plot to workspace
+    plot_file <- paste0(getwd(), "/r_plot_", Sys.time(), ".png")
+    dev.copy(png, filename = plot_file, width = 800, height = 600, res = 150)
+    dev.off()
+    cat("PLOT_SAVED:", plot_file, "\\n")
+}}
 '''
             f.write(r_script)
             script_path = f.name
+        
+        # Create temporary file for plot output
+        plot_file = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
+        plot_file.close()
         
         try:
             # Change to workspace directory
@@ -1613,12 +1626,35 @@ def execute_r():
             
             print(f"DEBUG: R execution completed. stdout: {stdout_output[:100]}, stderr: {stderr_output[:100]}")
             
+            # Check for plot files in workspace
+            plot_data = None
+            plot_files = [f for f in os.listdir(workspace) if f.startswith('r_plot_') and f.endswith('.png')]
+            if plot_files:
+                # Get the most recent plot file
+                latest_plot = max(plot_files, key=lambda f: os.path.getmtime(os.path.join(workspace, f)))
+                plot_path = os.path.join(workspace, latest_plot)
+                try:
+                    with open(plot_path, 'rb') as f:
+                        plot_data = base64.b64encode(f.read()).decode('utf-8')
+                    # Clean up plot file
+                    os.unlink(plot_path)
+                except Exception as e:
+                    print(f"DEBUG: Could not read plot file: {e}")
+            
             if result.returncode == 0:
-                return jsonify({
-                    'success': True,
-                    'output_type': 'text',
-                    'output': stdout_output.strip() or 'R code executed successfully (no output)'
-                })
+                if plot_data:
+                    return jsonify({
+                        'success': True,
+                        'output_type': 'plot',
+                        'image_data': plot_data,
+                        'output': stdout_output.strip() or 'Plot generated successfully'
+                    })
+                else:
+                    return jsonify({
+                        'success': True,
+                        'output_type': 'text',
+                        'output': stdout_output.strip() or 'R code executed successfully (no output)'
+                    })
             else:
                 error_msg = f"R execution error: {stderr_output or stdout_output}"
                 print(f"DEBUG: R execution failed: {error_msg[:500]}")
