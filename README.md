@@ -1,6 +1,6 @@
 # <img src="static/logo-icon.svg" width="40" height="40" style="vertical-align: middle; margin-right: 10px;"> HaoXai Intelligence
 
-A specialized research and data management system designed for scientific workflows, laboratory tracking, and AI-accelerated data analysis.
+A specialized research and data management system designed for scientific workflows, laboratory tracking, and advanced data intelligence.
 
 ---
 
@@ -8,7 +8,7 @@ A specialized research and data management system designed for scientific workfl
 
 ### 1. Intelligence Notebook & Smart Fix
 - **Multi-Runtime Execution**: Run **SQL**, **Python**, and **R** code blocks in a unified notebook interface.
-- **AI-Powered Troubleshooting**: Automatically detects execution errors (e.g., `NameError`, `SyntaxError`) and provides specific code fix suggestions in the sidebar.
+- **Automated Troubleshooting**: Automatically detects execution errors (e.g., `NameError`, `SyntaxError`) and provides specific code fix suggestions in the sidebar.
 - **Universal Search**: Integrated search bar that indexes local files, notebook cells, and database schemas, with direct research links to Google and Stack Overflow.
 
 ### 2. Scientific ML & Identification
@@ -25,8 +25,8 @@ A specialized research and data management system designed for scientific workfl
 - **Auto-Linking Engine**: Bulk-link related tables using ID-date matching and metadata patterns to fix fragmented records.
 - **Excel Power-Tools**: specialized import/export logic for large scientific spreadsheets, including data merging and validation.
 
-### 5. AI Data Assistant
-- **Smart Local Chat**: A chat interface that combines rule-based logic and ML models to query local databases using natural language.
+### 5. Research Data Intelligence
+- **Intelligent Hub**: A system interface that combines rule-based logic and analytical models to query local databases using natural language.
 - **Recursive Profiling**: Automatically traverses foreign key relationships to pull a complete history for any specific sample ID or record.
 
 ### 6. Real-time Infrastructure

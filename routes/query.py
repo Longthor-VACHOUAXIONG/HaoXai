@@ -145,7 +145,7 @@ def explain_code():
         is_python = not is_sql and not is_r
 
         explanation = []
-        explanation.append(f"### 💡 Code Insight ({context})")
+        explanation.append(f"### 💡 Analysis Detail ({context})")
         
         # 2. Add Type Info
         if is_sql: explanation.append("**Type:** SQL Query")
@@ -166,7 +166,7 @@ def explain_code():
 
         if error_msg:
             explanation.append(f"\n#### ⚠️ Execution Error Detected\n`{error_msg}`")
-            explanation.append("\n**Smart Fix Suggestion:**")
+            explanation.append("\n**Auto-Diagnostic Suggestion:**")
             
             # Troubleshooting logic
             if "name '" in error_msg and "' is not defined" in error_msg:

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block head %}
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -3320,7 +3320,7 @@
                         <button class="back-btn" onclick="restoreSearchResults()" style="background: none; border: 1px solid var(--border-color); color: var(--text-muted); padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; margin-bottom: 8px;">
                             <i class="fas fa-arrow-left"></i> Back to Results
                         </button>
-                        <div class="explanation-title" style="font-size: 14px; font-weight: 600; color: var(--accent-info);">${title} Insight</div>
+                        <div class="explanation-title" style="font-size: 14px; font-weight: 600; color: var(--accent-info);">${title} Analysis</div>
                     </div>
                     <div class="explanation-content" style="background: var(--bg-tertiary); padding: 12px; border-radius: 4px; font-size: 12px; line-height: 1.6; color: var(--text-secondary);">
                         ${result.explanation.replace(/\n/g, '<br>').replace(/### (.*?)<br>/g, '<h4 style="color: var(--accent-info); margin: 10px 0 5px 0;">$1</h4>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
