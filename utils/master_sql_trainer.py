@@ -716,5 +716,6 @@ def train_master_sql(db_config, db_type='sqlite'):
         return False
 
 if __name__ == '__main__':
-    db_path = 'd:/MyFiles/Program_Last_version/ViroDB_structure_latest_V - Copy/DataExcel/CAN2-With-Referent-Key.db'
+    db_path = 'd:/MyFiles/Program_Last_version/HaoXai_structure_latest_V - Copy/DataExcel/CAN2-With-Referent-Key.db'
     train_master_sql(db_path, 'sqlite')
+

@@ -1,5 +1,5 @@
 """
-Real-time updates helper for ViroDB
+Real-time updates helper for HaoXai
 Provides easy methods to send real-time updates via SocketIO
 """
 
@@ -58,3 +58,4 @@ def notify_database_stats(socketio, stats):
 
 # Import datetime for timestamp generation
 import datetime
+

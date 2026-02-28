@@ -1,11 +1,11 @@
-# ViroDB System Design Document
+# HaoXai System Design Document
 
 ---
 
 ## 1. System Overview
 
 ### 1.1 Purpose
-ViroDB serves as a centralized platform for virology research data management, supporting:
+HaoXai serves as a centralized platform for virology research data management, supporting:
 - Specimen collection tracking (bats, rodents, environmental samples)
 - Laboratory screening result management
 - Sample storage and inventory management
@@ -26,7 +26,7 @@ ViroDB serves as a centralized platform for virology research data management, s
 
 ### 2.1 Application Structure
 ```
-ViroDB/
+HaoXai/
 ├── app.py                    # Main Flask application entry point
 ├── config.py                 # Configuration management
 ├── requirements.txt          # Python dependencies
@@ -363,4 +363,5 @@ Database Change → Event Trigger → SocketIO → Client Update
 ---
 
 **Document Version**: 1.0  
+
 

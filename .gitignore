@@ -144,7 +144,7 @@ DataExcel_Clean/
 DataCSV/
 *.xlsx
 *.xls
-!ViroDB_Import_Template.xlsx
+!HaoXai_Import_Template.xlsx
 !DataTemplate.xlsx
 
 # Backup files
@@ -216,7 +216,7 @@ check_*.py
 *_README.md
 !README.md
 !DATABASE_ER_DIAGRAM.md
-!VIRODB_DESIGN_DOCUMENT.md
+!HaoXai_DESIGN_DOCUMENT.md
 
 # Spec files
 *.spec
@@ -242,7 +242,7 @@ sample_settings.json
 # Empty files
 =
 database.db
-viroDB.db
+HaoXai.db
 
 # Multiple versions of same file
 *-Copy.*
@@ -300,8 +300,8 @@ docker-compose.dev.yml
 
 # Large data files
 *.csv
-!ViroDB_Import_Template.csv
-!ViroDB_Import_Template_Simple.csv
+!HaoXai_Import_Template.csv
+!HaoXai_Import_Template_Simple.csv
 
 # Analysis notebooks
 *.ipynb
@@ -331,3 +331,4 @@ CAN2Database*.db.backup*
 CAN2Database*.db-shm
 CAN2Database*.db-wal
 today.db
+

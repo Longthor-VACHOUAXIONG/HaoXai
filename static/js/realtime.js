@@ -1,9 +1,9 @@
 /**
- * Real-time updates client for ViroDB
+ * Real-time updates client for HaoXai
  * Handles WebSocket connections and real-time data updates
  */
 
-class ViroDBRealtime {
+class HaoXaiRealtime {
     constructor() {
         this.socket = null;
         this.isConnected = false;
@@ -23,7 +23,7 @@ class ViroDBRealtime {
         
         this.socket.on('connect', () => {
             this.isConnected = true;
-            console.log('Connected to ViroDB real-time updates');
+            console.log('Connected to HaoXai real-time updates');
             
             // Subscribe to general updates
             this.subscribe('all');
@@ -51,7 +51,7 @@ class ViroDBRealtime {
         });
 
         this.socket.on('reconnect', (attemptNumber) => {
-            console.log(`Reconnected to ViroDB after ${attemptNumber} attempts`);
+            console.log(`Reconnected to HaoXai after ${attemptNumber} attempts`);
             this.showNotification('Reconnected to real-time updates', 'success', 3000);
             this.clearConnectionErrorNotification();
         });
@@ -679,9 +679,10 @@ document.head.appendChild(style);
 // Initialize real-time client when page loads
 let realtimeClient;
 document.addEventListener('DOMContentLoaded', () => {
-    realtimeClient = new ViroDBRealtime();
+    realtimeClient = new HaoXaiRealtime();
 });
 
 // Make it globally available
-window.ViroDBRealtime = ViroDBRealtime;
+window.HaoXaiRealtime = HaoXaiRealtime;
 window.realtimeClient = realtimeClient;
+

@@ -1,4 +1,4 @@
-// Excel upload functionality for ViroDB chat
+// Excel upload functionality for HaoXai chat
 let currentResults = [];
 
 function uploadSampleList() {
@@ -116,3 +116,4 @@ function getCurrentTime() {
     const now = new Date();
     return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
+

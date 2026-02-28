@@ -97,7 +97,7 @@ class DatabaseManagerFlask:
             # Create connection pool if it doesn't exist
             if not cls._mariadb_pool:
                 try:
-                    pool_name = "virodb_pool"
+                    pool_name = "HaoXai_pool"
                     # Try to create pool, but be prepared if it already exists globally
                     try:
                         cls._mariadb_pool = mariadb.ConnectionPool(
@@ -131,7 +131,7 @@ class DatabaseManagerFlask:
                     conn = cls._mariadb_pool.get_connection()
                 else:
                     # Fallback if pool exists but our reference is lost (unlikely but possible during reloads)
-                    conn = mariadb.connect(pool_name="virodb_pool")
+                    conn = mariadb.connect(pool_name="HaoXai_pool")
                 
                 # Store connection type info
                 conn_key = f"mysql_{id(conn)}"
@@ -705,3 +705,4 @@ def init_db(app):
     # Ensure upload folder exists
     with app.app_context():
         os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+

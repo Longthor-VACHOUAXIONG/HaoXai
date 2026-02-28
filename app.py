@@ -95,13 +95,13 @@ def create_app(config_class=Config):
     # Favicon route
     @app.route('/favicon.ico')
     def favicon():
-        return send_from_directory('icons', 'virodb_new.ico', mimetype='image/x-icon')
+        return send_from_directory('icons', 'HaoXai_new.ico', mimetype='image/x-icon')
     
     # SocketIO event handlers
     @socketio.on('connect')
     def handle_connect():
         """Handle client connection"""
-        emit('status', {'msg': 'Connected to ViroDB real-time updates'})
+        emit('status', {'msg': 'Connected to HaoXai real-time updates'})
     
     @socketio.on('disconnect')
     def handle_disconnect(*args):
@@ -133,3 +133,4 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print('\n=== HaoXai server stopped by user ===')
         sys.exit(0)
+

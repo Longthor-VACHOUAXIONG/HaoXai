@@ -1,5 +1,5 @@
 """
-ML Routes for ViroDB
+ML Routes for HaoXai
 Machine Learning prediction endpoints and UI
 """
 from flask import Blueprint, render_template, request, jsonify, session
@@ -674,3 +674,4 @@ def train_chat_model():
             'success': False,
             'message': f'Training failed: {str(e)}'
         }), 500
+

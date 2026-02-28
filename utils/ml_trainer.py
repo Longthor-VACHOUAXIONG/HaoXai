@@ -1,5 +1,5 @@
 """
-ML Model Training Module for ViroDB AI Chat
+ML Model Training Module for HaoXai AI Chat
 Enables training custom models on database data for improved AI responses
 """
 import os
@@ -758,3 +758,4 @@ class DatabaseTrainer:
                 info['models_available'].append(model_name)
         
         return info
+

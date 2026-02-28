@@ -1,4 +1,4 @@
-# Multi-stage build for ViroDB Flask application
+# Multi-stage build for HaoXai Flask application
 FROM python:3.11-slim as builder
 
 # Set environment variables
@@ -41,20 +41,20 @@ RUN apt-get update && apt-get install -y \
 COPY --from=builder /opt/venv /opt/venv
 
 # Create non-root user
-RUN useradd --create-home --shell /bin/bash virodb
+RUN useradd --create-home --shell /bin/bash HaoXai
 
 # Set working directory
 WORKDIR /app
 
 # Copy application files
-COPY --chown=virodb:virodb . .
+COPY --chown=HaoXai:HaoXai . .
 
 # Create necessary directories and set permissions
 RUN mkdir -p /app/uploads /app/flask_session /app/icons && \
-    chown -R virodb:virodb /app
+    chown -R HaoXai:HaoXai /app
 
 # Switch to non-root user
-USER virodb
+USER HaoXai
 
 # Expose port
 EXPOSE 5000
@@ -65,3 +65,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Run the application
 CMD ["python", "app.py"]
+

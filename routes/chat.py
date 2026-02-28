@@ -1,5 +1,5 @@
 """
-AI Chat Interface for ViroDB
+AI Chat Interface for HaoXai
 Natural language queries about virology data
 """
 import sqlite3
@@ -5570,3 +5570,4 @@ def delete_version(version_id):
             'success': False,
             'error': f'Error deleting version: {str(e)}'
         }), 500
+

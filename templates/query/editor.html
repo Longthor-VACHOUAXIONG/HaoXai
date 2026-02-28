@@ -2536,8 +2536,8 @@
     function saveToLocalStorage() {
         try {
             const content = editor.getValue();
-            localStorage.setItem('virodb_sql_editor_content', content);
-            localStorage.setItem('virodb_sql_editor_timestamp', new Date().toISOString());
+            localStorage.setItem('HaoXai_sql_editor_content', content);
+            localStorage.setItem('HaoXai_sql_editor_timestamp', new Date().toISOString());
             console.log('SQL content saved to localStorage');
         } catch (e) {
             console.warn('Failed to save to localStorage:', e);
@@ -2556,8 +2556,8 @@
 
     function restoreFromLocalStorage() {
         try {
-            const savedContent = localStorage.getItem('virodb_sql_editor_content');
-            const savedTimestamp = localStorage.getItem('virodb_sql_editor_timestamp');
+            const savedContent = localStorage.getItem('HaoXai_sql_editor_content');
+            const savedTimestamp = localStorage.getItem('HaoXai_sql_editor_timestamp');
 
             if (savedContent && savedContent.trim() !== '') {
                 // Only restore if no URL parameters are present
@@ -2613,8 +2613,8 @@
             'Clear saved SQL code from browser storage?',
             'Clear Saved Code',
             () => {
-                localStorage.removeItem('virodb_sql_editor_content');
-                localStorage.removeItem('virodb_sql_editor_timestamp');
+                localStorage.removeItem('HaoXai_sql_editor_content');
+                localStorage.removeItem('HaoXai_sql_editor_timestamp');
                 showToast('Saved SQL code cleared', 'info');
             }
         );
@@ -2837,12 +2837,12 @@
                 const leftWidth = leftPanel.getBoundingClientRect().width;
                 const leftPercentage = (leftWidth / containerWidth) * 100;
 
-                localStorage.setItem('virodb_splitter_position', leftPercentage.toString());
+                localStorage.setItem('HaoXai_splitter_position', leftPercentage.toString());
             }
         });
 
         // Restore splitter position from localStorage
-        const savedPosition = localStorage.getItem('virodb_splitter_position');
+        const savedPosition = localStorage.getItem('HaoXai_splitter_position');
         if (savedPosition) {
             const leftPercentage = parseFloat(savedPosition);
             const rightPercentage = 100 - leftPercentage;
@@ -2905,7 +2905,7 @@
                 const leftWidth = leftPanel.getBoundingClientRect().width;
                 const leftPercentage = (leftWidth / containerWidth) * 100;
 
-                localStorage.setItem('virodb_splitter_position', leftPercentage.toString());
+                localStorage.setItem('HaoXai_splitter_position', leftPercentage.toString());
             }
         });
     }
