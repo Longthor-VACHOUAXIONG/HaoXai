@@ -699,19 +699,27 @@
 
     .config-input-group {
         display: flex;
-        gap: 8px;
-        align-items: center;
-        margin-bottom: 8px;
+        flex-direction: column;
+        gap: 6px;
+        align-items: flex-start;
+        margin-bottom: 12px;
     }
 
     .config-input-group label {
         font-size: 11px;
         color: var(--text-secondary);
-        min-width: 80px;
+    }
+
+    .config-input-wrapper {
+        display: flex;
+        width: 100%;
+        gap: 8px;
+        align-items: center;
     }
 
     .config-input {
-        flex: 1;
+        width: 100%;
+        min-width: 0;
         background: var(--bg-primary);
         border: 1px solid var(--border-color);
         color: var(--text-primary);
@@ -1015,11 +1023,13 @@
                     </div>
                     <div class="config-input-group">
                         <label for="r-path-input">Rscript Path:</label>
-                        <input type="text" id="r-path-input" class="config-input"
-                            placeholder="C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" value="">
-                        <button class="config-btn" onclick="saveRPath()">
-                            <i class="fas fa-save"></i>
-                        </button>
+                        <div class="config-input-wrapper">
+                            <input type="text" id="r-path-input" class="config-input"
+                                placeholder="C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" value="">
+                            <button class="config-btn" onclick="saveRPath()">
+                                <i class="fas fa-save"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="config-help">
                         <small>Path to Rscript.exe (usually in R\bin\x64 folder)</small>
