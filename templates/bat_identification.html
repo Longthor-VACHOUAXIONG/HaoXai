@@ -4,529 +4,598 @@
 
 {% block extra_css %}
 <style>
-.bat-identification-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 16px;
-}
-
-.bat-header {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 4px;
-    padding: 16px;
-    margin-bottom: 16px;
-}
-
-.bat-header h1 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.bat-header p {
-    margin: 4px 0 0;
-    color: var(--text-muted);
-    font-size: 12px;
-}
-
-.bat-content {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-    margin-bottom: 30px;
-}
-
-.bat-form-section, .bat-results-section {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 4px;
-    padding: 16px;
-}
-
-.section-title {
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 16px;
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.section-title i {
-    color: var(--accent-primary);
-    font-size: 12px;
-}
-
-.form-group {
-    margin-bottom: 16px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 6px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.form-control {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid var(--border-primary);
-    border-radius: 4px;
-    background: var(--bg-input);
-    color: var(--text-primary);
-    font-size: 13px;
-    font-family: var(--font-ui);
-    transition: border-color 0.15s;
-}
-
-.form-control:focus {
-    outline: none;
-    border-color: var(--accent-primary);
-}
-
-.form-select {
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='%23808080' viewBox='0 0 20 20'%3e%3cpath stroke='%23808080' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-    background-position: right 8px center;
-    background-repeat: no-repeat;
-    background-size: 12px;
-    padding-right: 32px;
-}
-
-.prediction-result {
-    background: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    border-radius: 4px;
-    padding: 16px;
-    margin-bottom: 16px;
-}
-
-.prediction-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border-primary);
-}
-
-.prediction-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-primary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.confidence-badge {
-    background: var(--accent-success);
-    color: var(--text-bright);
-    padding: 2px 8px;
-    border-radius: 2px;
-    font-size: 11px;
-    font-weight: 500;
-    font-family: var(--font-mono);
-}
-
-.prediction-value {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--accent-primary);
-    margin: 8px 0;
-    font-family: var(--font-mono);
-}
-
-.alternative-predictions {
-    margin-top: 12px;
-}
-
-.alt-prediction {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 6px 8px;
-    background: var(--bg-secondary);
-    border-radius: 2px;
-    margin-bottom: 4px;
-    border-left: 2px solid transparent;
-}
-
-.alt-prediction:hover {
-    border-left-color: var(--accent-primary);
-}
-
-.alt-prediction-name {
-    font-weight: 500;
-    color: var(--text-secondary);
-    font-size: 12px;
-}
-
-.alt-prediction-confidence {
-    font-size: 11px;
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-}
-
-.model-status {
-    background: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    border-radius: 4px;
-    padding: 16px;
-    margin-bottom: 16px;
-}
-
-.status-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 6px 0;
-    border-bottom: 1px solid var(--border-primary);
-    font-size: 12px;
-}
-
-.status-item:last-child {
-    border-bottom: none;
-}
-
-.status-label {
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: 500;
-}
-
-.status-value {
-    color: var(--text-primary);
-    font-family: var(--font-mono);
-    font-weight: 500;
-}
-
-@media (max-width: 768px) {
-    .bat-content {
-        grid-template-columns: 1fr;
-        gap: 20px;
+    .bat-identification-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 16px;
     }
-    
+
+    .bat-header {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: 4px;
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
     .bat-header h1 {
-        font-size: 2rem;
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
-    
-    .prediction-results {
-        grid-template-columns: 1fr;
+
+    .bat-header p {
+        margin: 4px 0 0;
+        color: var(--text-muted);
+        font-size: 12px;
     }
-    
-    .prediction-card {
-        padding: 15px;
+
+    .bat-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
     }
-    
+
+    .bat-form-section,
+    .bat-results-section {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: 4px;
+        padding: 16px;
+    }
+
+    .section-title {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .section-title i {
+        color: var(--accent-primary);
+        font-size: 12px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid var(--border-primary);
+        border-radius: 4px;
+        background: var(--bg-input);
+        color: var(--text-primary);
+        font-size: 13px;
+        font-family: var(--font-ui);
+        transition: border-color 0.15s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+    }
+
+    .form-select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='%23808080' viewBox='0 0 20 20'%3e%3cpath stroke='%23808080' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 8px center;
+        background-repeat: no-repeat;
+        background-size: 12px;
+        padding-right: 32px;
+    }
+
+    .prediction-result {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-primary);
+        border-radius: 4px;
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .prediction-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border-primary);
+    }
+
+    .prediction-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-primary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .confidence-badge {
+        background: var(--accent-success);
+        color: var(--text-bright);
+        padding: 2px 8px;
+        border-radius: 2px;
+        font-size: 11px;
+        font-weight: 500;
+        font-family: var(--font-mono);
+    }
+
     .prediction-value {
-        font-size: 1.5rem;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--accent-primary);
+        margin: 8px 0;
+        font-family: var(--font-mono);
     }
-    
-    .taxonomy-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
+
+    .alternative-predictions {
+        margin-top: 12px;
     }
-    
+
+    .alt-prediction {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 8px;
+        background: var(--bg-secondary);
+        border-radius: 2px;
+        margin-bottom: 4px;
+        border-left: 2px solid transparent;
+    }
+
+    .alt-prediction:hover {
+        border-left-color: var(--accent-primary);
+    }
+
+    .alt-prediction-name {
+        font-weight: 500;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .alt-prediction-confidence {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-family: var(--font-mono);
+    }
+
+    .model-status {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-primary);
+        border-radius: 4px;
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .status-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        border-bottom: 1px solid var(--border-primary);
+        font-size: 12px;
+    }
+
+    .status-item:last-child {
+        border-bottom: none;
+    }
+
+    .status-label {
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 500;
+    }
+
+    .status-value {
+        color: var(--text-primary);
+        font-family: var(--font-mono);
+        font-weight: 500;
+    }
+
+    @media (max-width: 768px) {
+        .bat-content {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .bat-header h1 {
+            font-size: 2rem;
+        }
+
+        .prediction-results {
+            grid-template-columns: 1fr;
+        }
+
+        .prediction-card {
+            padding: 15px;
+        }
+
+        .prediction-value {
+            font-size: 1.5rem;
+        }
+
+        .taxonomy-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+        }
+
+        .batch-controls {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .batch-actions {
+            flex-direction: column;
+        }
+
+        .results-stats {
+            flex-direction: column;
+            gap: 10px;
+        }
+    }
+
+    /* Batch Processing Styles */
+    .batch-processing-section {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: 8px;
+        padding: 25px;
+        margin-top: 30px;
+        max-width: 100%;
+        overflow: hidden;
+    }
+
     .batch-controls {
-        grid-template-columns: 1fr;
-        gap: 15px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 20px;
+        align-items: end;
+        margin-bottom: 20px;
     }
-    
+
+    .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .control-label {
+        font-weight: 500;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .control-hint {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+    }
+
     .batch-actions {
-        flex-direction: column;
-    }
-    
-    .results-stats {
-        flex-direction: column;
+        display: flex;
         gap: 10px;
     }
-}
 
-/* Batch Processing Styles */
-.batch-processing-section {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 8px;
-    padding: 25px;
-    margin-top: 30px;
-    max-width: 100%;
-    overflow: hidden;
-}
+    .batch-progress {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-primary);
+        border-radius: 6px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
 
-.batch-controls {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 20px;
-    align-items: end;
-    margin-bottom: 20px;
-}
+    .progress-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
 
-.control-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
+    .progress-header h4 {
+        margin: 0;
+        color: var(--text-primary);
+        font-size: 1rem;
+        font-weight: 500;
+    }
 
-.control-label {
-    font-weight: 500;
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
+    .progress-bar-container {
+        background: var(--bg-secondary);
+        border-radius: 4px;
+        height: 8px;
+        overflow: hidden;
+        margin-bottom: 10px;
+    }
 
-.control-hint {
-    color: var(--text-muted);
-    font-size: 0.85rem;
-}
+    .progress-bar-fill {
+        height: 100%;
+        background: var(--accent-primary);
+        width: 0%;
+        transition: width 0.3s ease;
+    }
 
-.batch-actions {
-    display: flex;
-    gap: 10px;
-}
+    .progress-details {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+    }
 
-.batch-progress {
-    background: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    border-radius: 6px;
-    padding: 20px;
-    margin-bottom: 20px;
-}
+    .batch-results {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-primary);
+        border-radius: 6px;
+        padding: 20px;
+        overflow-x: hidden;
+    }
 
-.progress-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
+    .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--border-primary);
+    }
 
-.progress-header h4 {
-    margin: 0;
-    color: var(--text-primary);
-    font-size: 1rem;
-    font-weight: 500;
-}
+    .results-header h4 {
+        margin: 0;
+        color: var(--text-primary);
+        font-size: 1rem;
+        font-weight: 500;
+    }
 
-.progress-bar-container {
-    background: var(--bg-secondary);
-    border-radius: 4px;
-    height: 8px;
-    overflow: hidden;
-    margin-bottom: 10px;
-}
+    .results-stats {
+        display: flex;
+        gap: 20px;
+    }
 
-.progress-bar-fill {
-    height: 100%;
-    background: var(--accent-primary);
-    width: 0%;
-    transition: width 0.3s ease;
-}
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
 
-.progress-details {
-    color: var(--text-muted);
-    font-size: 0.85rem;
-}
+    .text-success {
+        color: var(--accent-success) !important;
+    }
 
-.batch-results {
-    background: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    border-radius: 6px;
-    padding: 20px;
-    overflow-x: hidden;
-}
+    .text-warning {
+        color: var(--accent-warning) !important;
+    }
 
-.results-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid var(--border-primary);
-}
+    .text-danger {
+        color: var(--accent-error) !important;
+    }
 
-.results-header h4 {
-    margin: 0;
-    color: var(--text-primary);
-    font-size: 1rem;
-    font-weight: 500;
-}
+    .results-table-container {
+        overflow-x: auto;
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid var(--border-secondary);
+        border-radius: 4px;
+        background: var(--bg-primary);
+    }
 
-.results-stats {
-    display: flex;
-    gap: 20px;
-}
+    .results-table {
+        width: 100%;
+        min-width: 1400px;
+        border-collapse: collapse;
+        font-size: 0.8rem;
+        table-layout: fixed;
+    }
 
-.stat-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-}
+    .results-table th {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        padding: 8px 6px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-primary);
+        font-weight: 500;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
-.text-success {
-    color: var(--accent-success) !important;
-}
+    .results-table td {
+        padding: 6px;
+        border-bottom: 1px solid var(--border-secondary);
+        color: var(--text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 120px;
+    }
 
-.text-warning {
-    color: var(--accent-warning) !important;
-}
+    .results-table th:nth-child(1),
+    .results-table td:nth-child(1) {
+        width: 40px;
+    }
 
-.text-danger {
-    color: var(--accent-error) !important;
-}
+    /* Row */
+    .results-table th:nth-child(2),
+    .results-table td:nth-child(2) {
+        width: 80px;
+    }
 
-.results-table-container {
-    overflow-x: auto;
-    max-height: 400px;
-    overflow-y: auto;
-    border: 1px solid var(--border-secondary);
-    border-radius: 4px;
-    background: var(--bg-primary);
-}
+    /* Status */
+    .results-table th:nth-child(3),
+    .results-table td:nth-child(3) {
+        width: 40px;
+    }
 
-.results-table {
-    width: 100%;
-    min-width: 1400px;
-    border-collapse: collapse;
-    font-size: 0.8rem;
-    table-layout: fixed;
-}
+    /* Sex */
+    .results-table th:nth-child(4),
+    .results-table td:nth-child(4) {
+        width: 50px;
+    }
 
-.results-table th {
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    padding: 8px 6px;
-    text-align: left;
-    border-bottom: 1px solid var(--border-primary);
-    font-weight: 500;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+    /* Status */
+    .results-table th:nth-child(5),
+    .results-table td:nth-child(5) {
+        width: 60px;
+    }
 
-.results-table td {
-    padding: 6px;
-    border-bottom: 1px solid var(--border-secondary);
-    color: var(--text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 120px;
-}
+    /* FA */
+    .results-table th:nth-child(6),
+    .results-table td:nth-child(6) {
+        width: 60px;
+    }
 
-.results-table th:nth-child(1),
-.results-table td:nth-child(1) { width: 40px; } /* Row */
-.results-table th:nth-child(2),
-.results-table td:nth-child(2) { width: 80px; } /* Status */
-.results-table th:nth-child(3),
-.results-table td:nth-child(3) { width: 40px; } /* Sex */
-.results-table th:nth-child(4),
-.results-table td:nth-child(4) { width: 50px; } /* Status */
-.results-table th:nth-child(5),
-.results-table td:nth-child(5) { width: 60px; } /* FA */
-.results-table th:nth-child(6),
-.results-table td:nth-child(6) { width: 60px; } /* TIB */
-.results-table th:nth-child(7),
-.results-table td:nth-child(7) { width: 50px; } /* W */
-.results-table th:nth-child(8),
-.results-table td:nth-child(8) { width: 70px; } /* Kingdom */
-.results-table th:nth-child(9),
-.results-table td:nth-child(9) { width: 70px; } /* Phylum */
-.results-table th:nth-child(10),
-.results-table td:nth-child(10) { width: 60px; } /* Class */
-.results-table th:nth-child(11),
-.results-table td:nth-child(11) { width: 60px; } /* Order */
-.results-table th:nth-child(12),
-.results-table td:nth-child(12) { width: 80px; } /* Family */
-.results-table th:nth-child(13),
-.results-table td:nth-child(13) { width: 80px; } /* Genus */
-.results-table th:nth-child(14),
-.results-table td:nth-child(14) { width: 80px; } /* Species */
-.results-table th:nth-child(15),
-.results-table td:nth-child(15) { width: 120px; } /* Scientific Name */
-.results-table th:nth-child(16),
-.results-table td:nth-child(16) { width: 70px; } /* Confidence */
-.results-table th:nth-child(17),
-.results-table td:nth-child(17) { width: 200px; } /* Notes */
+    /* TIB */
+    .results-table th:nth-child(7),
+    .results-table td:nth-child(7) {
+        width: 50px;
+    }
 
-.results-table td:nth-child(17) {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    max-width: 200px;
-    word-break: break-word;
-    white-space: normal;
-    line-height: 1.3;
-}
+    /* W */
+    .results-table th:nth-child(8),
+    .results-table td:nth-child(8) {
+        width: 70px;
+    }
 
-.results-table tr:hover {
-    background: var(--bg-hover);
-}
+    /* Kingdom */
+    .results-table th:nth-child(9),
+    .results-table td:nth-child(9) {
+        width: 70px;
+    }
 
-.results-table td:hover {
-    background: var(--bg-secondary);
-    cursor: help;
-}
+    /* Phylum */
+    .results-table th:nth-child(10),
+    .results-table td:nth-child(10) {
+        width: 60px;
+    }
 
-.status-indicator {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 500;
-}
+    /* Class */
+    .results-table th:nth-child(11),
+    .results-table td:nth-child(11) {
+        width: 60px;
+    }
 
-.status-success {
-    background: rgba(78, 201, 176, 0.1);
-    color: var(--accent-success);
-    border: 1px solid rgba(78, 201, 176, 0.3);
-}
+    /* Order */
+    .results-table th:nth-child(12),
+    .results-table td:nth-child(12) {
+        width: 80px;
+    }
 
-.status-warning {
-    background: rgba(204, 167, 0, 0.1);
-    color: var(--accent-warning);
-    border: 1px solid rgba(204, 167, 0, 0.3);
-}
+    /* Family */
+    .results-table th:nth-child(13),
+    .results-table td:nth-child(13) {
+        width: 80px;
+    }
 
-.status-error {
-    background: rgba(244, 67, 54, 0.1);
-    color: var(--accent-error);
-    border: 1px solid rgba(244, 67, 54, 0.3);
-}
+    /* Genus */
+    .results-table th:nth-child(14),
+    .results-table td:nth-child(14) {
+        width: 80px;
+    }
 
-.confidence-high {
-    color: var(--accent-success);
-    font-weight: 500;
-}
+    /* Species */
+    .results-table th:nth-child(15),
+    .results-table td:nth-child(15) {
+        width: 120px;
+    }
 
-.confidence-medium {
-    color: var(--accent-warning);
-    font-weight: 500;
-}
+    /* Scientific Name */
+    .results-table th:nth-child(16),
+    .results-table td:nth-child(16) {
+        width: 70px;
+    }
 
-.confidence-low {
-    color: var(--accent-error);
-    font-weight: 500;
-}
+    /* Confidence */
+    .results-table th:nth-child(17),
+    .results-table td:nth-child(17) {
+        width: 200px;
+    }
+
+    /* Notes */
+
+    .results-table td:nth-child(17) {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        max-width: 200px;
+        word-break: break-word;
+        white-space: normal;
+        line-height: 1.3;
+    }
+
+    .results-table tr:hover {
+        background: var(--bg-hover);
+    }
+
+    .results-table td:hover {
+        background: var(--bg-secondary);
+        cursor: help;
+    }
+
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .status-success {
+        background: rgba(78, 201, 176, 0.1);
+        color: var(--accent-success);
+        border: 1px solid rgba(78, 201, 176, 0.3);
+    }
+
+    .status-warning {
+        background: rgba(204, 167, 0, 0.1);
+        color: var(--accent-warning);
+        border: 1px solid rgba(204, 167, 0, 0.3);
+    }
+
+    .status-error {
+        background: rgba(244, 67, 54, 0.1);
+        color: var(--accent-error);
+        border: 1px solid rgba(244, 67, 54, 0.3);
+    }
+
+    .confidence-high {
+        color: var(--accent-success);
+        font-weight: 500;
+    }
+
+    .confidence-medium {
+        color: var(--accent-warning);
+        font-weight: 500;
+    }
+
+    .confidence-low {
+        color: var(--accent-error);
+        font-weight: 500;
+    }
 </style>
 {% endblock %}
 
@@ -594,20 +663,20 @@
 
                 <div class="form-group">
                     <label for="fa">Forearm Length (FA) - mm</label>
-                    <input type="number" id="fa" name="FA" class="form-control" 
-                           step="0.1" placeholder="e.g., 45.5" required>
+                    <input type="number" id="fa" name="FA" class="form-control" step="0.1" placeholder="e.g., 45.5"
+                        required>
                 </div>
 
                 <div class="form-group">
                     <label for="tib">Tibia Length (TIB) - mm</label>
-                    <input type="number" id="tib" name="TIB" class="form-control" 
-                           step="0.1" placeholder="e.g., 20.5" required>
+                    <input type="number" id="tib" name="TIB" class="form-control" step="0.1" placeholder="e.g., 20.5"
+                        required>
                 </div>
 
                 <div class="form-group">
                     <label for="weight">Weight (W) - grams</label>
-                    <input type="text" id="weight" name="W" class="form-control" 
-                           placeholder="e.g., 25.5 or 25-30" required>
+                    <input type="text" id="weight" name="W" class="form-control" placeholder="e.g., 25.5 or 25-30"
+                        required>
                     <small style="color: var(--text-muted);">Use single value (25.5) or range (25-30)</small>
                 </div>
 
@@ -711,7 +780,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="prediction-card">
                             <h6><i class="bi bi-info-circle"></i> Model Information</h6>
                             <div id="modelInfo">
@@ -721,377 +790,385 @@
                     </div>
                 </div>
 
-            <div id="noResults" style="text-align: center; padding: 40px; color: var(--text-muted);">
-                <i class="bi bi-cursor-text" style="font-size: 3rem; margin-bottom: 15px; display: block;"></i>
-                <p>Enter bat measurements to identify species</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Excel Batch Processing Section -->
-    <div class="batch-processing-section">
-        <div class="section-title">
-            <i class="bi bi-file-earmark-spreadsheet"></i>
-            Excel Batch Processing
-        </div>
-        
-        <div class="batch-controls">
-            <div class="control-group">
-                <label for="excelFile" class="control-label">
-                    <i class="bi bi-upload"></i>
-                    Upload Excel File
-                </label>
-                <input type="file" id="excelFile" accept=".xlsx,.xls" class="form-control">
-                <small class="control-hint">Upload Excel file with bat measurements (Sex, Status, FA, TIB, W)</small>
-            </div>
-            
-            <div class="batch-actions">
-                <button id="processBatch" class="btn-bat" disabled>
-                    <i class="bi bi-play-circle"></i>
-                    Process Batch
-                </button>
-                <button id="downloadResults" class="btn-train" disabled>
-                    <i class="bi bi-download"></i>
-                    Download Results
-                </button>
-            </div>
-        </div>
-
-        <!-- Batch Progress Indicator -->
-        <div id="batchProgress" class="batch-progress" style="display: none;">
-            <div class="progress-header">
-                <h4>Processing Progress</h4>
-                <span id="progressText">0%</span>
-            </div>
-            <div class="progress-bar-container">
-                <div id="progressBar" class="progress-bar-fill"></div>
-            </div>
-            <div class="progress-details">
-                <span id="processedCount">0</span> / <span id="totalCount">0</span> records processed
-            </div>
-        </div>
-
-        <!-- Batch Results Table -->
-        <div id="batchResults" class="batch-results" style="display: none;">
-            <div class="results-header">
-                <h4>Batch Results Review</h4>
-                <div class="results-stats">
-                    <span class="stat-item">
-                        <i class="bi bi-check-circle text-success"></i>
-                        <span id="successCount">0</span> Success
-                    </span>
-                    <span class="stat-item">
-                        <i class="bi bi-exclamation-triangle text-warning"></i>
-                        <span id="warningCount">0</span> Warnings
-                    </span>
-                    <span class="stat-item">
-                        <i class="bi bi-x-circle text-danger"></i>
-                        <span id="errorCount">0</span> Errors
-                    </span>
+                <div id="noResults" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                    <i class="bi bi-cursor-text" style="font-size: 3rem; margin-bottom: 15px; display: block;"></i>
+                    <p>Enter bat measurements to identify species</p>
                 </div>
             </div>
-            
-            <div class="results-table-container">
-                <table id="resultsTable" class="results-table">
-                    <thead>
-                        <tr>
-                            <th>Row</th>
-                            <th>Status</th>
-                            <th>Sex</th>
-                            <th>Status</th>
-                            <th>FA (mm)</th>
-                            <th>TIB (mm)</th>
-                            <th>W (g)</th>
-                            <th>Kingdom</th>
-                            <th>Phylum</th>
-                            <th>Class</th>
-                            <th>Order</th>
-                            <th>Family</th>
-                            <th>Genus</th>
-                            <th>Species</th>
-                            <th>Scientific Name</th>
-                            <th>Confidence</th>
-                            <th>Notes</th>
-                        </tr>
-                    </thead>
-                    <tbody id="resultsTableBody">
-                        <!-- Results will be populated here -->
-                    </tbody>
-                </table>
+        </div>
+
+        <!-- Excel Batch Processing Section -->
+        <div class="batch-processing-section">
+            <div class="section-title">
+                <i class="bi bi-file-earmark-spreadsheet"></i>
+                Excel Batch Processing
+            </div>
+
+            <div class="batch-controls">
+                <div class="control-group">
+                    <label for="excelFile" class="control-label">
+                        <i class="bi bi-upload"></i>
+                        Upload Excel File
+                    </label>
+                    <input type="file" id="excelFile" accept=".xlsx,.xls" class="form-control">
+                    <small class="control-hint">Upload Excel file with bat measurements (Sex, Status, FA, TIB,
+                        W)</small>
+                </div>
+
+                <div class="batch-actions">
+                    <button id="processBatch" class="btn-bat" disabled>
+                        <i class="bi bi-play-circle"></i>
+                        Process Batch
+                    </button>
+                    <button id="downloadResults" class="btn-train" disabled>
+                        <i class="bi bi-download"></i>
+                        Download Results
+                    </button>
+                </div>
+            </div>
+
+            <!-- Batch Progress Indicator -->
+            <div id="batchProgress" class="batch-progress" style="display: none;">
+                <div class="progress-header">
+                    <h4>Processing Progress</h4>
+                    <span id="progressText">0%</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div id="progressBar" class="progress-bar-fill"></div>
+                </div>
+                <div class="progress-details">
+                    <span id="processedCount">0</span> / <span id="totalCount">0</span> records processed
+                </div>
+            </div>
+
+            <!-- Batch Results Table -->
+            <div id="batchResults" class="batch-results" style="display: none;">
+                <div class="results-header">
+                    <h4>Batch Results Review</h4>
+                    <div class="results-stats">
+                        <span class="stat-item">
+                            <i class="bi bi-check-circle text-success"></i>
+                            <span id="successCount">0</span> Success
+                        </span>
+                        <span class="stat-item">
+                            <i class="bi bi-exclamation-triangle text-warning"></i>
+                            <span id="warningCount">0</span> Warnings
+                        </span>
+                        <span class="stat-item">
+                            <i class="bi bi-x-circle text-danger"></i>
+                            <span id="errorCount">0</span> Errors
+                        </span>
+                    </div>
+                </div>
+
+                <div class="results-table-container">
+                    <table id="resultsTable" class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Row</th>
+                                <th>Status</th>
+                                <th>Sex</th>
+                                <th>Status</th>
+                                <th>FA (mm)</th>
+                                <th>TIB (mm)</th>
+                                <th>W (g)</th>
+                                <th>Kingdom</th>
+                                <th>Phylum</th>
+                                <th>Class</th>
+                                <th>Order</th>
+                                <th>Family</th>
+                                <th>Genus</th>
+                                <th>Species</th>
+                                <th>Scientific Name</th>
+                                <th>Confidence</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody">
+                            <!-- Results will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
+    {% endblock %}
 
-{% block extra_js %}
-<script>
-let modelTrained = false;
+    {% block extra_js %}
+    <script>
+        let modelTrained = false;
 
-// Check model status on page load
-document.addEventListener('DOMContentLoaded', function() {
-    checkModelStatus();
-    
-    // Form submission
-    document.getElementById('batPredictionForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        if (modelTrained) {
-            predictBatSpecies();
-        }
-    });
-});
+        // Check model status on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            checkModelStatus();
 
-function checkModelStatus() {
-    fetch('/bat-ml/bat-model-status')
-        .then(response => response.json())
-        .then(data => {
-            updateModelStatus(data);
-        })
-        .catch(error => {
-            console.error('Error checking model status:', error);
-        });
-}
-
-function updateModelStatus(status) {
-    console.log('DEBUG: Updating model status:', status);
-    
-    const statusText = document.getElementById('statusText');
-    const statusDetails = document.getElementById('statusDetails');
-    const predictBtn = document.getElementById('predictBtn');
-    const trainBtn = document.getElementById('trainBtn');
-    
-    if (!statusText || !statusDetails || !predictBtn || !trainBtn) {
-        console.warn('Some status elements not found');
-        return;
-    }
-    
-    if (status.trained) {
-        statusText.textContent = 'Models Ready';
-        statusText.className = 'status-value status-trained';
-        
-        // Update accuracy values
-        const genusAccuracyEl = document.getElementById('genusAccuracy');
-        const speciesAccuracyEl = document.getElementById('speciesAccuracy');
-        
-        if (genusAccuracyEl) genusAccuracyEl.textContent = status.genus_accuracy.toFixed(1) + '%';
-        if (speciesAccuracyEl) speciesAccuracyEl.textContent = status.species_accuracy.toFixed(1) + '%';
-        
-        statusDetails.style.display = 'block';
-        predictBtn.disabled = false;
-        trainBtn.innerHTML = '<i class="bi bi-check-circle"></i> Models Loaded';
-        trainBtn.disabled = true;
-        
-        modelTrained = true;
-    } else {
-        statusText.textContent = 'Not Loaded';
-        statusText.className = 'status-value status-not-trained';
-        statusDetails.style.display = 'none';
-        predictBtn.disabled = true;
-        trainBtn.innerHTML = '<i class="bi bi-cpu"></i> Load Models';
-        trainBtn.disabled = false;
-        
-        modelTrained = false;
-    }
-}
-
-async function trainModel() {
-    try {
-        const trainBtn = document.getElementById('trainBtn');
-        trainBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Loading Models...';
-        trainBtn.disabled = true;
-        
-        console.log('DEBUG: Starting model loading/training...');
-        
-        const response = await fetch('/bat-ml/train-bat-model', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-        
-        const data = await response.json();
-        console.log('DEBUG: Model response:', data);
-        
-        if (data.success) {
-            if (data.pre_trained) {
-                showAlert('success', '✅ Pre-trained models loaded successfully!');
-            } else {
-                showAlert('success', '✅ New models trained and saved successfully!');
-            }
-            
-            // Update model status
-            updateModelStatus({
-                trained: true,
-                genus_accuracy: data.genus_accuracy,
-                species_accuracy: data.species_accuracy,
-                sample_count: data.sample_count
+            // Form submission
+            document.getElementById('batPredictionForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+                if (modelTrained) {
+                    predictBatSpecies();
+                }
             });
-            
-            // Show feature importance
-            if (data.feature_importance) {
-                showFeatureImportance(data.feature_importance);
+        });
+
+        function checkModelStatus() {
+            fetch('/bat-ml/bat-model-status')
+                .then(response => response.json())
+                .then(data => {
+                    updateModelStatus(data);
+                })
+                .catch(error => {
+                    console.error('Error checking model status:', error);
+                });
+        }
+
+        function updateModelStatus(status) {
+            console.log('DEBUG: Updating model status:', status);
+
+            const statusText = document.getElementById('statusText');
+            const statusDetails = document.getElementById('statusDetails');
+            const predictBtn = document.getElementById('predictBtn');
+            const trainBtn = document.getElementById('trainBtn');
+
+            if (!statusText || !statusDetails || !predictBtn || !trainBtn) {
+                console.warn('Some status elements not found');
+                return;
             }
-            
-            // Enable prediction form
-            document.getElementById('batPredictionForm').style.opacity = '1';
-            document.getElementById('batPredictionForm').style.pointerEvents = 'auto';
-            
-        } else {
-            showAlert('error', `❌ ${data.message}`);
-        }
-        
-    } catch (error) {
-        console.error('DEBUG: Model loading/training failed:', error);
-        showAlert('error', '❌ Failed to load models. Please try again.');
-    } finally {
-        const trainBtn = document.getElementById('trainBtn');
-        trainBtn.innerHTML = '<i class="bi bi-cpu"></i> Load Models';
-        trainBtn.disabled = false;
-    }
-}
 
-function predictBatSpecies() {
-    const formData = new FormData(document.getElementById('batPredictionForm'));
-    const data = Object.fromEntries(formData);
-    
-    console.log('DEBUG: Form data collected:', data);
-    
-    // Show loading
-    document.getElementById('loadingSpinner').style.display = 'block';
-    document.getElementById('predictionResults').style.display = 'none';
-    document.getElementById('noResults').style.display = 'none';
-    
-    console.log('DEBUG: Sending prediction request...');
-    
-    fetch('/bat-ml/predict-bat', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => {
-        console.log('DEBUG: Response status:', response.status);
-        return response.json();
-    })
-    .then(data => {
-        console.log('DEBUG: Response data:', data);
-        document.getElementById('loadingSpinner').style.display = 'none';
-        
-        if (data.success) {
-            console.log('DEBUG: Prediction successful, showing results...');
-            showPredictionResults(data);
-        } else {
-            console.log('DEBUG: Prediction failed:', data.message);
-            showAlert('warning', data.message);
-            document.getElementById('noResults').style.display = 'block';
-        }
-    })
-    .catch(error => {
-        console.error('DEBUG: Prediction error:', error);
-        showAlert('warning', 'Prediction failed. Please try again.');
-        document.getElementById('loadingSpinner').style.display = 'none';
-        document.getElementById('noResults').style.display = 'block';
-    });
-}
+            if (status.trained) {
+                statusText.textContent = 'Models Ready';
+                statusText.className = 'status-value status-trained';
 
-function showPredictionResults(data) {
-    console.log('DEBUG: showPredictionResults called with data:', data);
-    
-    const results = data.predictions;
-    console.log('DEBUG: Extracted results:', results);
-    
-    // Check if result elements exist
-    const genusPredictionEl = document.getElementById('genusPrediction');
-    const genusConfidenceEl = document.getElementById('genusConfidence');
-    const genusAlternativesEl = document.getElementById('genusAlternatives');
-    const speciesPredictionEl = document.getElementById('speciesPrediction');
-    const speciesConfidenceEl = document.getElementById('speciesConfidence');
-    const speciesAlternativesEl = document.getElementById('speciesAlternatives');
-    const modelInfoEl = document.getElementById('modelInfo');
-    
-    // Taxonomic classification elements
-    const taxonomyKingdomEl = document.getElementById('taxonomy-kingdom');
-    const taxonomyPhylumEl = document.getElementById('taxonomy-phylum');
-    const taxonomyClassEl = document.getElementById('taxonomy-class');
-    const taxonomyOrderEl = document.getElementById('taxonomy-order');
-    const taxonomyFamilyEl = document.getElementById('taxonomy-family');
-    const taxonomyGenusEl = document.getElementById('taxonomy-genus');
-    const taxonomySpeciesEl = document.getElementById('taxonomy-species');
-    const taxonomyScientificNameEl = document.getElementById('taxonomy-scientific-name');
-    
-    console.log('DEBUG: Elements found:', {
-        genusPrediction: !!genusPredictionEl,
-        genusConfidence: !!genusConfidenceEl,
-        genusAlternatives: !!genusAlternativesEl,
-        speciesPrediction: !!speciesPredictionEl,
-        speciesConfidence: !!speciesConfidenceEl,
-        speciesAlternatives: !!speciesAlternativesEl,
-        modelInfo: !!modelInfoEl,
-        taxonomyElements: !!(taxonomyKingdomEl && taxonomyPhylumEl && taxonomyClassEl && 
-                            taxonomyOrderEl && taxonomyFamilyEl && taxonomyGenusEl && 
-                            taxonomySpeciesEl && taxonomyScientificNameEl)
-    });
-    
-    if (!genusPredictionEl || !genusConfidenceEl || !genusAlternativesEl || 
-        !speciesPredictionEl || !speciesConfidenceEl || !speciesAlternativesEl || 
-        !modelInfoEl || !taxonomyKingdomEl || !taxonomyPhylumEl || !taxonomyClassEl || 
-        !taxonomyOrderEl || !taxonomyFamilyEl || !taxonomyGenusEl || 
-        !taxonomySpeciesEl || !taxonomyScientificNameEl) {
-        console.warn('Some prediction elements not found, skipping results display');
-        return;
-    }
-    
-    console.log('DEBUG: All elements found, updating display...');
-    
-    // Genus prediction
-    genusPredictionEl.textContent = results.genus;
-    genusConfidenceEl.textContent = results.genus_confidence.toFixed(1) + '%';
-    
-    // Genus alternatives
-    const genusAlternatives = results.top_genus_predictions
-        .filter(pred => pred.name !== results.genus)
-        .slice(0, 3)
-        .map(pred => `
+                // Update accuracy values
+                const genusAccuracyEl = document.getElementById('genusAccuracy');
+                const speciesAccuracyEl = document.getElementById('speciesAccuracy');
+
+                if (genusAccuracyEl) genusAccuracyEl.textContent = status.genus_accuracy.toFixed(1) + '%';
+                if (speciesAccuracyEl) speciesAccuracyEl.textContent = status.species_accuracy.toFixed(1) + '%';
+
+                statusDetails.style.display = 'block';
+                predictBtn.disabled = false;
+                trainBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Retrain Model';
+                trainBtn.disabled = false;
+                trainBtn.classList.remove('btn-primary');
+                trainBtn.classList.add('btn-outline-primary');
+
+                modelTrained = true;
+            } else {
+                statusText.textContent = 'Not Loaded';
+                statusText.className = 'status-value status-not-trained';
+                statusDetails.style.display = 'none';
+                predictBtn.disabled = true;
+                trainBtn.innerHTML = '<i class="bi bi-cpu"></i> Load Models';
+                trainBtn.disabled = false;
+
+                modelTrained = false;
+            }
+        }
+
+        async function trainModel() {
+            try {
+                const trainBtn = document.getElementById('trainBtn');
+                trainBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Loading Models...';
+                trainBtn.disabled = true;
+
+                console.log('DEBUG: Starting model loading/training...');
+
+                const response = await fetch('/bat-ml/train-bat-model', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ force: true })
+                });
+
+                // After training, restore button style
+                trainBtn.classList.remove('btn-outline-primary');
+                trainBtn.classList.add('btn-primary');
+
+                const data = await response.json();
+                console.log('DEBUG: Model response:', data);
+
+                if (data.success) {
+                    if (data.pre_trained) {
+                        showAlert('success', '✅ Pre-trained models loaded successfully!');
+                    } else {
+                        showAlert('success', '✅ New models trained and saved successfully!');
+                    }
+
+                    // Update model status
+                    updateModelStatus({
+                        trained: true,
+                        genus_accuracy: data.genus_accuracy,
+                        species_accuracy: data.species_accuracy,
+                        sample_count: data.sample_count
+                    });
+
+                    // Show feature importance
+                    if (data.feature_importance) {
+                        showFeatureImportance(data.feature_importance);
+                    }
+
+                    // Enable prediction form
+                    document.getElementById('batPredictionForm').style.opacity = '1';
+                    document.getElementById('batPredictionForm').style.pointerEvents = 'auto';
+
+                } else {
+                    showAlert('error', `❌ ${data.message}`);
+                }
+
+            } catch (error) {
+                console.error('DEBUG: Model loading/training failed:', error);
+                showAlert('error', '❌ Failed to load models. Please try again.');
+            } finally {
+                const trainBtn = document.getElementById('trainBtn');
+                trainBtn.innerHTML = '<i class="bi bi-cpu"></i> Load Models';
+                trainBtn.disabled = false;
+            }
+        }
+
+        function predictBatSpecies() {
+            const formData = new FormData(document.getElementById('batPredictionForm'));
+            const data = Object.fromEntries(formData);
+
+            console.log('DEBUG: Form data collected:', data);
+
+            // Show loading
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('predictionResults').style.display = 'none';
+            document.getElementById('noResults').style.display = 'none';
+
+            console.log('DEBUG: Sending prediction request...');
+
+            fetch('/bat-ml/predict-bat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => {
+                    console.log('DEBUG: Response status:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('DEBUG: Response data:', data);
+                    document.getElementById('loadingSpinner').style.display = 'none';
+
+                    if (data.success) {
+                        console.log('DEBUG: Prediction successful, showing results...');
+                        showPredictionResults(data);
+                    } else {
+                        console.log('DEBUG: Prediction failed:', data.message);
+                        showAlert('warning', data.message);
+                        document.getElementById('noResults').style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('DEBUG: Prediction error:', error);
+                    showAlert('warning', 'Prediction failed. Please try again.');
+                    document.getElementById('loadingSpinner').style.display = 'none';
+                    document.getElementById('noResults').style.display = 'block';
+                });
+        }
+
+        function showPredictionResults(data) {
+            console.log('DEBUG: showPredictionResults called with data:', data);
+
+            const results = data.predictions;
+            console.log('DEBUG: Extracted results:', results);
+
+            // Check if result elements exist
+            const genusPredictionEl = document.getElementById('genusPrediction');
+            const genusConfidenceEl = document.getElementById('genusConfidence');
+            const genusAlternativesEl = document.getElementById('genusAlternatives');
+            const speciesPredictionEl = document.getElementById('speciesPrediction');
+            const speciesConfidenceEl = document.getElementById('speciesConfidence');
+            const speciesAlternativesEl = document.getElementById('speciesAlternatives');
+            const modelInfoEl = document.getElementById('modelInfo');
+
+            // Taxonomic classification elements
+            const taxonomyKingdomEl = document.getElementById('taxonomy-kingdom');
+            const taxonomyPhylumEl = document.getElementById('taxonomy-phylum');
+            const taxonomyClassEl = document.getElementById('taxonomy-class');
+            const taxonomyOrderEl = document.getElementById('taxonomy-order');
+            const taxonomyFamilyEl = document.getElementById('taxonomy-family');
+            const taxonomyGenusEl = document.getElementById('taxonomy-genus');
+            const taxonomySpeciesEl = document.getElementById('taxonomy-species');
+            const taxonomyScientificNameEl = document.getElementById('taxonomy-scientific-name');
+
+            console.log('DEBUG: Elements found:', {
+                genusPrediction: !!genusPredictionEl,
+                genusConfidence: !!genusConfidenceEl,
+                genusAlternatives: !!genusAlternativesEl,
+                speciesPrediction: !!speciesPredictionEl,
+                speciesConfidence: !!speciesConfidenceEl,
+                speciesAlternatives: !!speciesAlternativesEl,
+                modelInfo: !!modelInfoEl,
+                taxonomyElements: !!(taxonomyKingdomEl && taxonomyPhylumEl && taxonomyClassEl &&
+                    taxonomyOrderEl && taxonomyFamilyEl && taxonomyGenusEl &&
+                    taxonomySpeciesEl && taxonomyScientificNameEl)
+            });
+
+            if (!genusPredictionEl || !genusConfidenceEl || !genusAlternativesEl ||
+                !speciesPredictionEl || !speciesConfidenceEl || !speciesAlternativesEl ||
+                !modelInfoEl || !taxonomyKingdomEl || !taxonomyPhylumEl || !taxonomyClassEl ||
+                !taxonomyOrderEl || !taxonomyFamilyEl || !taxonomyGenusEl ||
+                !taxonomySpeciesEl || !taxonomyScientificNameEl) {
+                console.warn('Some prediction elements not found, skipping results display');
+                return;
+            }
+
+            console.log('DEBUG: All elements found, updating display...');
+
+            // Genus prediction
+            genusPredictionEl.textContent = results.genus;
+            genusConfidenceEl.textContent = results.genus_confidence.toFixed(1) + '%';
+
+            // Genus alternatives
+            const genusAlternatives = results.top_genus_predictions
+                .filter(pred => pred.name !== results.genus)
+                .slice(0, 3)
+                .map(pred => `
             <div class="alt-prediction">
                 <span class="alt-prediction-name">${pred.name}</span>
                 <span class="alt-prediction-confidence">${pred.confidence.toFixed(1)}%</span>
             </div>
         `).join('');
-    genusAlternativesEl.innerHTML = genusAlternatives;
-    
-    // Species prediction
-    speciesPredictionEl.textContent = results.species;
-    speciesConfidenceEl.textContent = results.species_confidence.toFixed(1) + '%';
-    
-    // Species alternatives
-    const speciesAlternatives = results.top_species_predictions
-        .filter(pred => pred.name !== results.species)
-        .slice(0, 3)
-        .map(pred => `
+            genusAlternativesEl.innerHTML = genusAlternatives;
+
+            // Species prediction
+            speciesPredictionEl.textContent = results.species;
+            speciesConfidenceEl.textContent = results.species_confidence.toFixed(1) + '%';
+
+            // Species alternatives
+            const speciesAlternatives = results.top_species_predictions
+                .filter(pred => pred.name !== results.species)
+                .slice(0, 3)
+                .map(pred => `
             <div class="alt-prediction">
                 <span class="alt-prediction-name">${pred.name}</span>
                 <span class="alt-prediction-confidence">${pred.confidence.toFixed(1)}%</span>
             </div>
         `).join('');
-    speciesAlternativesEl.innerHTML = speciesAlternatives;
-    
-    // Taxonomic classification
-    if (results.classification) {
-        console.log('DEBUG: Updating taxonomic classification:', results.classification);
-        taxonomyKingdomEl.textContent = results.classification.kingdom || '-';
-        taxonomyPhylumEl.textContent = results.classification.phylum || '-';
-        taxonomyClassEl.textContent = results.classification.class || '-';
-        taxonomyOrderEl.textContent = results.classification.order || '-';
-        taxonomyFamilyEl.textContent = results.classification.family || '-';
-        taxonomyGenusEl.textContent = results.classification.genus || '-';
-        taxonomySpeciesEl.textContent = results.classification.species || '-';
-        taxonomyScientificNameEl.textContent = results.classification.scientific_name || '-';
-    }
-    
-    // Model info
-    const modelInfo = data.model_info;
-    modelInfoEl.innerHTML = `
+            speciesAlternativesEl.innerHTML = speciesAlternatives;
+
+            // Taxonomic classification
+            if (results.classification) {
+                console.log('DEBUG: Updating taxonomic classification:', results.classification);
+                taxonomyKingdomEl.textContent = results.classification.kingdom || '-';
+                taxonomyPhylumEl.textContent = results.classification.phylum || '-';
+                taxonomyClassEl.textContent = results.classification.class || '-';
+                taxonomyOrderEl.textContent = results.classification.order || '-';
+                taxonomyFamilyEl.textContent = results.classification.family || '-';
+                taxonomyGenusEl.textContent = results.classification.genus || '-';
+                taxonomySpeciesEl.textContent = results.classification.species || '-';
+                taxonomyScientificNameEl.textContent = results.classification.scientific_name || '-';
+            }
+
+            // Model info
+            const modelInfo = data.model_info;
+            modelInfoEl.innerHTML = `
         <div class="status-item">
             <span class="status-label">Genus Model Accuracy:</span>
             <span class="status-value">${modelInfo.genus_accuracy.toFixed(1)}%</span>
@@ -1101,27 +1178,27 @@ function showPredictionResults(data) {
             <span class="status-value">${modelInfo.species_accuracy.toFixed(1)}%</span>
         </div>
     `;
-    
-    const resultsDiv = document.getElementById('predictionResults');
-    console.log('DEBUG: Showing results div, current display:', resultsDiv.style.display);
-    resultsDiv.style.display = 'block';
-    console.log('DEBUG: Results div now displayed');
-}
 
-function showFeatureImportance(importance) {
-    const container = document.getElementById('importanceBars');
-    const importanceDiv = document.getElementById('featureImportance');
-    
-    if (!container || !importanceDiv) {
-        console.warn('Feature importance elements not found, skipping display');
-        return;
-    }
-    
-    // Show genus importance
-    const genusImportance = importance.genus;
-    const genusBars = Object.entries(genusImportance)
-        .sort((a, b) => b[1] - a[1])
-        .map(([feature, value]) => `
+            const resultsDiv = document.getElementById('predictionResults');
+            console.log('DEBUG: Showing results div, current display:', resultsDiv.style.display);
+            resultsDiv.style.display = 'block';
+            console.log('DEBUG: Results div now displayed');
+        }
+
+        function showFeatureImportance(importance) {
+            const container = document.getElementById('importanceBars');
+            const importanceDiv = document.getElementById('featureImportance');
+
+            if (!container || !importanceDiv) {
+                console.warn('Feature importance elements not found, skipping display');
+                return;
+            }
+
+            // Show genus importance
+            const genusImportance = importance.genus;
+            const genusBars = Object.entries(genusImportance)
+                .sort((a, b) => b[1] - a[1])
+                .map(([feature, value]) => `
             <div class="importance-item">
                 <span class="importance-label">${feature}</span>
                 <div class="importance-bar">
@@ -1130,287 +1207,287 @@ function showFeatureImportance(importance) {
                 <span class="importance-value">${(value * 100).toFixed(1)}%</span>
             </div>
         `).join('');
-    
-    container.innerHTML = genusBars;
-    importanceDiv.style.display = 'block';
-}
 
-function showAlert(type, message) {
-    // Remove existing alerts
-    const existingAlert = document.querySelector('.alert');
-    if (existingAlert) {
-        existingAlert.remove();
-    }
-    
-    // Create new alert
-    const alert = document.createElement('div');
-    alert.className = `alert alert-${type}`;
-    alert.innerHTML = `
+            container.innerHTML = genusBars;
+            importanceDiv.style.display = 'block';
+        }
+
+        function showAlert(type, message) {
+            // Remove existing alerts
+            const existingAlert = document.querySelector('.alert');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+
+            // Create new alert
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = `
         <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
         ${message}
     `;
-    
-    // Insert at the top of the container
-    const container = document.querySelector('.bat-identification-container');
-    container.insertBefore(alert, container.firstChild);
-    
-    // Remove after 5 seconds
-    setTimeout(() => {
-        alert.remove();
-    }, 5000);
-}
 
-// Batch Processing Variables
-let batchData = [];
-let batchResults = [];
-let isProcessing = false;
+            // Insert at the top of the container
+            const container = document.querySelector('.bat-identification-container');
+            container.insertBefore(alert, container.firstChild);
 
-// Excel File Upload Handler
-document.getElementById('excelFile').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-                
-                batchData = jsonData;
-                document.getElementById('processBatch').disabled = false;
-                
-                showAlert('success', `Loaded ${batchData.length} records from Excel file`);
-            } catch (error) {
-                showAlert('error', 'Failed to read Excel file: ' + error.message);
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    }
-});
+            // Remove after 5 seconds
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
 
-// Process Batch Button Handler
-document.getElementById('processBatch').addEventListener('click', async function() {
-    if (!modelTrained) {
-        showAlert('warning', 'Please train the model first before processing batch');
-        return;
-    }
-    
-    if (batchData.length === 0) {
-        showAlert('warning', 'Please upload an Excel file first');
-        return;
-    }
-    
-    isProcessing = true;
-    batchResults = [];
-    
-    // Show progress section
-    document.getElementById('batchProgress').style.display = 'block';
-    document.getElementById('batchResults').style.display = 'none';
-    document.getElementById('processBatch').disabled = true;
-    document.getElementById('downloadResults').disabled = true;
-    
-    // Initialize progress
-    updateProgress(0, batchData.length);
-    
-    // Process records in parallel batches for better performance
-    const batchSize = 20; // Process 20 records at a time
-    const batches = [];
-    
-    for (let i = 0; i < batchData.length; i += batchSize) {
-        batches.push(batchData.slice(i, i + batchSize));
-    }
-    
-    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-        const batch = batches[batchIndex];
-        
-        try {
-            // Prepare batch data for API
-            const batchRequestData = batch.map(record => {
-                const sex = record.Sex || record.sex || '';
-                const status = record.Status || record.status || '';
-                const fa = record.FA || record.fa || record['FA (mm)'] || record['forearm_mm'] || '';
-                const tib = record.TIB || record.tib || record['TIB (mm)'] || record['tibia_mm'] || '';
-                const weight = record.W || record.w || record['W (g)'] || record['weight_g'] || '';
-                
-                return {
-                    Sex: sex.toString(),
-                    Status: status.toString(),
-                    FA: fa.toString(),
-                    TIB: tib.toString(),
-                    W: weight.toString()
+        // Batch Processing Variables
+        let batchData = [];
+        let batchResults = [];
+        let isProcessing = false;
+
+        // Excel File Upload Handler
+        document.getElementById('excelFile').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                        batchData = jsonData;
+                        document.getElementById('processBatch').disabled = false;
+
+                        showAlert('success', `Loaded ${batchData.length} records from Excel file`);
+                    } catch (error) {
+                        showAlert('error', 'Failed to read Excel file: ' + error.message);
+                    }
                 };
-            });
-            
-            // Make batch prediction request
-            const response = await fetch('/bat-ml/predict-bat-batch', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(batchRequestData)
-            });
-            
-            const result = await response.json();
-            
-            if (!result.success) {
-                throw new Error(result.message || 'Batch prediction failed');
+                reader.readAsArrayBuffer(file);
             }
-            
-            // Process results
-            const batchResults_partial = result.results.map((prediction, index) => {
-                const rowNumber = batchIndex * batchSize + index + 1;
-                const originalRecord = batch[index];
-                
-                if (prediction.success) {
-                    return {
-                        row: rowNumber,
-                        status: 'success',
-                        originalData: originalRecord,
-                        inputData: batchRequestData[index],
-                        prediction: prediction.predictions,
-                        modelInfo: prediction.model_info,
-                        confidence: prediction.predictions.genus_confidence
-                    };
-                } else {
-                    return {
-                        row: rowNumber,
-                        status: 'error',
-                        error: prediction.message,
-                        originalData: originalRecord
-                    };
-                }
-            });
-            
-            batchResults.push(...batchResults_partial);
-            
-        } catch (error) {
-            // If batch request fails, fall back to individual requests
-            console.warn('Batch request failed, falling back to individual requests:', error);
-            
-            const promises = batch.map(async (record, index) => {
-                const rowNumber = batchIndex * batchSize + index + 1;
-                try {
-                    const result = await processSingleRecord(record, rowNumber);
-                    return result;
-                } catch (error) {
-                    return {
-                        row: rowNumber,
-                        status: 'error',
-                        error: error.message,
-                        originalData: record
-                    };
-                }
-            });
-            
-            const batchResults_partial = await Promise.all(promises);
-            batchResults.push(...batchResults_partial);
-        }
-        
-        // Update progress after each batch
-        const processedCount = Math.min((batchIndex + 1) * batchSize, batchData.length);
-        updateProgress(processedCount, batchData.length);
-        
-        // Small delay only between batches to prevent server overload
-        if (batchIndex < batches.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 25));
-        }
-    }
-    
-    // Show results
-    displayBatchResults();
-    
-    isProcessing = false;
-    document.getElementById('processBatch').disabled = false;
-    document.getElementById('downloadResults').disabled = false;
-    
-    showAlert('success', `Batch processing completed. ${batchResults.length} records processed.`);
-});
-
-// Process Single Record
-async function processSingleRecord(record, rowNumber) {
-    // Extract and validate data
-    const sex = record.Sex || record.sex || '';
-    const status = record.Status || record.status || '';
-    const fa = record.FA || record.fa || record['FA (mm)'] || record['forearm_mm'] || '';
-    const tib = record.TIB || record.tib || record['TIB (mm)'] || record['tibia_mm'] || '';
-    const weight = record.W || record.w || record['W (g)'] || record['weight_g'] || '';
-    
-    // Validate required fields
-    if (!sex || !status || !fa || !tib || !weight) {
-        throw new Error('Missing required fields');
-    }
-    
-    // Prepare request data
-    const requestData = {
-        Sex: sex.toString(),
-        Status: status.toString(),
-        FA: fa.toString(),
-        TIB: tib.toString(),
-        W: weight.toString()
-    };
-    
-    try {
-        const response = await fetch('/bat-ml/predict-bat', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestData)
         });
-        
-        const result = await response.json();
-        
-        if (!result.success) {
-            throw new Error(result.message || 'Prediction failed');
+
+        // Process Batch Button Handler
+        document.getElementById('processBatch').addEventListener('click', async function () {
+            if (!modelTrained) {
+                showAlert('warning', 'Please train the model first before processing batch');
+                return;
+            }
+
+            if (batchData.length === 0) {
+                showAlert('warning', 'Please upload an Excel file first');
+                return;
+            }
+
+            isProcessing = true;
+            batchResults = [];
+
+            // Show progress section
+            document.getElementById('batchProgress').style.display = 'block';
+            document.getElementById('batchResults').style.display = 'none';
+            document.getElementById('processBatch').disabled = true;
+            document.getElementById('downloadResults').disabled = true;
+
+            // Initialize progress
+            updateProgress(0, batchData.length);
+
+            // Process records in parallel batches for better performance
+            const batchSize = 20; // Process 20 records at a time
+            const batches = [];
+
+            for (let i = 0; i < batchData.length; i += batchSize) {
+                batches.push(batchData.slice(i, i + batchSize));
+            }
+
+            for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+                const batch = batches[batchIndex];
+
+                try {
+                    // Prepare batch data for API
+                    const batchRequestData = batch.map(record => {
+                        const sex = record.Sex || record.sex || '';
+                        const status = record.Status || record.status || '';
+                        const fa = record.FA || record.fa || record['FA (mm)'] || record['forearm_mm'] || '';
+                        const tib = record.TIB || record.tib || record['TIB (mm)'] || record['tibia_mm'] || '';
+                        const weight = record.W || record.w || record['W (g)'] || record['weight_g'] || '';
+
+                        return {
+                            Sex: sex.toString(),
+                            Status: status.toString(),
+                            FA: fa.toString(),
+                            TIB: tib.toString(),
+                            W: weight.toString()
+                        };
+                    });
+
+                    // Make batch prediction request
+                    const response = await fetch('/bat-ml/predict-bat-batch', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(batchRequestData)
+                    });
+
+                    const result = await response.json();
+
+                    if (!result.success) {
+                        throw new Error(result.message || 'Batch prediction failed');
+                    }
+
+                    // Process results
+                    const batchResults_partial = result.results.map((prediction, index) => {
+                        const rowNumber = batchIndex * batchSize + index + 1;
+                        const originalRecord = batch[index];
+
+                        if (prediction.success) {
+                            return {
+                                row: rowNumber,
+                                status: 'success',
+                                originalData: originalRecord,
+                                inputData: batchRequestData[index],
+                                prediction: prediction.predictions,
+                                modelInfo: prediction.model_info,
+                                confidence: prediction.predictions.genus_confidence
+                            };
+                        } else {
+                            return {
+                                row: rowNumber,
+                                status: 'error',
+                                error: prediction.message,
+                                originalData: originalRecord
+                            };
+                        }
+                    });
+
+                    batchResults.push(...batchResults_partial);
+
+                } catch (error) {
+                    // If batch request fails, fall back to individual requests
+                    console.warn('Batch request failed, falling back to individual requests:', error);
+
+                    const promises = batch.map(async (record, index) => {
+                        const rowNumber = batchIndex * batchSize + index + 1;
+                        try {
+                            const result = await processSingleRecord(record, rowNumber);
+                            return result;
+                        } catch (error) {
+                            return {
+                                row: rowNumber,
+                                status: 'error',
+                                error: error.message,
+                                originalData: record
+                            };
+                        }
+                    });
+
+                    const batchResults_partial = await Promise.all(promises);
+                    batchResults.push(...batchResults_partial);
+                }
+
+                // Update progress after each batch
+                const processedCount = Math.min((batchIndex + 1) * batchSize, batchData.length);
+                updateProgress(processedCount, batchData.length);
+
+                // Small delay only between batches to prevent server overload
+                if (batchIndex < batches.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 25));
+                }
+            }
+
+            // Show results
+            displayBatchResults();
+
+            isProcessing = false;
+            document.getElementById('processBatch').disabled = false;
+            document.getElementById('downloadResults').disabled = false;
+
+            showAlert('success', `Batch processing completed. ${batchResults.length} records processed.`);
+        });
+
+        // Process Single Record
+        async function processSingleRecord(record, rowNumber) {
+            // Extract and validate data
+            const sex = record.Sex || record.sex || '';
+            const status = record.Status || record.status || '';
+            const fa = record.FA || record.fa || record['FA (mm)'] || record['forearm_mm'] || '';
+            const tib = record.TIB || record.tib || record['TIB (mm)'] || record['tibia_mm'] || '';
+            const weight = record.W || record.w || record['W (g)'] || record['weight_g'] || '';
+
+            // Validate required fields
+            if (!sex || !status || !fa || !tib || !weight) {
+                throw new Error('Missing required fields');
+            }
+
+            // Prepare request data
+            const requestData = {
+                Sex: sex.toString(),
+                Status: status.toString(),
+                FA: fa.toString(),
+                TIB: tib.toString(),
+                W: weight.toString()
+            };
+
+            try {
+                const response = await fetch('/bat-ml/predict-bat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.message || 'Prediction failed');
+                }
+
+                return {
+                    row: rowNumber,
+                    status: 'success',
+                    originalData: record,
+                    inputData: requestData,
+                    prediction: result.predictions,
+                    modelInfo: result.model_info,
+                    confidence: result.predictions.genus_confidence
+                };
+
+            } catch (error) {
+                throw new Error(`Prediction failed: ${error.message}`);
+            }
         }
-        
-        return {
-            row: rowNumber,
-            status: 'success',
-            originalData: record,
-            inputData: requestData,
-            prediction: result.predictions,
-            modelInfo: result.model_info,
-            confidence: result.predictions.genus_confidence
-        };
-        
-    } catch (error) {
-        throw new Error(`Prediction failed: ${error.message}`);
-    }
-}
 
-// Update Progress
-function updateProgress(processed, total) {
-    const percentage = Math.round((processed / total) * 100);
-    document.getElementById('progressBar').style.width = percentage + '%';
-    document.getElementById('progressText').textContent = percentage + '%';
-    document.getElementById('processedCount').textContent = processed;
-    document.getElementById('totalCount').textContent = total;
-}
+        // Update Progress
+        function updateProgress(processed, total) {
+            const percentage = Math.round((processed / total) * 100);
+            document.getElementById('progressBar').style.width = percentage + '%';
+            document.getElementById('progressText').textContent = percentage + '%';
+            document.getElementById('processedCount').textContent = processed;
+            document.getElementById('totalCount').textContent = total;
+        }
 
-// Display Batch Results
-function displayBatchResults() {
-    const tbody = document.getElementById('resultsTableBody');
-    tbody.innerHTML = '';
-    
-    let successCount = 0;
-    let warningCount = 0;
-    let errorCount = 0;
-    
-    batchResults.forEach(result => {
-        const row = document.createElement('tr');
-        
-        if (result.status === 'success') {
-            successCount++;
-            const confidence = result.confidence;
-            const confidenceClass = confidence >= 80 ? 'confidence-high' : 
-                                  confidence >= 60 ? 'confidence-medium' : 'confidence-low';
-            
-            // Get taxonomy data
-            const taxonomy = result.prediction.classification || {};
-            
-            row.innerHTML = `
+        // Display Batch Results
+        function displayBatchResults() {
+            const tbody = document.getElementById('resultsTableBody');
+            tbody.innerHTML = '';
+
+            let successCount = 0;
+            let warningCount = 0;
+            let errorCount = 0;
+
+            batchResults.forEach(result => {
+                const row = document.createElement('tr');
+
+                if (result.status === 'success') {
+                    successCount++;
+                    const confidence = result.confidence;
+                    const confidenceClass = confidence >= 80 ? 'confidence-high' :
+                        confidence >= 60 ? 'confidence-medium' : 'confidence-low';
+
+                    // Get taxonomy data
+                    const taxonomy = result.prediction.classification || {};
+
+                    row.innerHTML = `
                 <td>${result.row}</td>
                 <td><span class="status-indicator status-success"><i class="bi bi-check-circle"></i> Success</span></td>
                 <td>${result.inputData.Sex}</td>
@@ -1429,9 +1506,9 @@ function displayBatchResults() {
                 <td class="${confidenceClass}">${confidence.toFixed(1)}%</td>
                 <td>-</td>
             `;
-        } else if (result.status === 'error') {
-            errorCount++;
-            row.innerHTML = `
+                } else if (result.status === 'error') {
+                    errorCount++;
+                    row.innerHTML = `
                 <td>${result.row}</td>
                 <td><span class="status-indicator status-error"><i class="bi bi-x-circle"></i> Error</span></td>
                 <td>${result.originalData.Sex || result.originalData.sex || '-'}</td>
@@ -1450,111 +1527,111 @@ function displayBatchResults() {
                 <td>-</td>
                 <td>${result.error || result.message || 'Unknown error'}</td>
             `;
-        }
-        
-        tbody.appendChild(row);
-    });
-    
-    // Update statistics
-    document.getElementById('successCount').textContent = successCount;
-    document.getElementById('warningCount').textContent = warningCount;
-    document.getElementById('errorCount').textContent = errorCount;
-    
-    // Show results section
-    document.getElementById('batchResults').style.display = 'block';
-    
-    // Add tooltips to truncated cells
-    addTooltipsToTable();
-}
+                }
 
-// Add tooltips to table cells with truncated content
-function addTooltipsToTable() {
-    const table = document.getElementById('resultsTable');
-    if (!table) return;
-    
-    const cells = table.querySelectorAll('td');
-    cells.forEach((cell, index) => {
-        const text = cell.textContent;
-        const columnIndex = index % 17; // 17 columns total
-        
-        // Always add tooltips for notes column (column 17, index 16)
-        if (columnIndex === 16 && text && text !== '-' && text !== 'Unknown error') {
-            cell.title = text;
-            return;
-        }
-        
-        // Add tooltips for other columns if text is long
-        if (text && text !== '-' && text.length > 10) {
-            cell.title = text;
-        }
-    });
-}
+                tbody.appendChild(row);
+            });
 
-// Download Results
-document.getElementById('downloadResults').addEventListener('click', function() {
-    if (batchResults.length === 0) {
-        showAlert('warning', 'No results to download');
-        return;
-    }
-    
-    // Prepare data for export
-    const exportData = batchResults.map(result => {
-        if (result.status === 'success') {
-            const taxonomy = result.prediction.classification || {};
-            return {
-                'Row': result.row,
-                'Status': 'Success',
-                'Original Sex': result.inputData.Sex,
-                'Original Status': result.inputData.Status,
-                'Original FA (mm)': result.inputData.FA,
-                'Original TIB (mm)': result.inputData.TIB,
-                'Original W (g)': result.inputData.W,
-                'Kingdom': taxonomy.kingdom || '-',
-                'Phylum': taxonomy.phylum || '-',
-                'Class': taxonomy.class || '-',
-                'Order': taxonomy.order || '-',
-                'Family': taxonomy.family || '-',
-                'Genus': result.prediction.genus,
-                'Species': result.prediction.species,
-                'Scientific Name': taxonomy.scientific_name || '-',
-                'Genus Confidence (%)': result.prediction.genus_confidence,
-                'Species Confidence (%)': result.prediction.species_confidence,
-                'Notes': '-'
-            };
-        } else {
-            return {
-                'Row': result.row,
-                'Status': 'Error',
-                'Original Sex': result.originalData.Sex || result.originalData.sex || '',
-                'Original Status': result.originalData.Status || result.originalData.status || '',
-                'Original FA (mm)': result.originalData.FA || result.originalData.fa || '',
-                'Original TIB (mm)': result.originalData.TIB || result.originalData.tib || '',
-                'Original W (g)': result.originalData.W || result.originalData.w || '',
-                'Kingdom': '-',
-                'Phylum': '-',
-                'Class': '-',
-                'Order': '-',
-                'Family': '-',
-                'Genus': '-',
-                'Species': '-',
-                'Scientific Name': '-',
-                'Genus Confidence (%)': '',
-                'Species Confidence (%)': '',
-                'Notes': result.error
-            };
+            // Update statistics
+            document.getElementById('successCount').textContent = successCount;
+            document.getElementById('warningCount').textContent = warningCount;
+            document.getElementById('errorCount').textContent = errorCount;
+
+            // Show results section
+            document.getElementById('batchResults').style.display = 'block';
+
+            // Add tooltips to truncated cells
+            addTooltipsToTable();
         }
-    });
-    
-    // Create worksheet
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Bat ID Results');
-    
-    // Download file
-    const fileName = `bat_id_results_${new Date().toISOString().slice(0, 10)}.xlsx`;
-    XLSX.writeFile(wb, fileName);
-    
-    showAlert('success', `Results downloaded as ${fileName}`);
-});
-</script>
-{% endblock %}
+
+        // Add tooltips to table cells with truncated content
+        function addTooltipsToTable() {
+            const table = document.getElementById('resultsTable');
+            if (!table) return;
+
+            const cells = table.querySelectorAll('td');
+            cells.forEach((cell, index) => {
+                const text = cell.textContent;
+                const columnIndex = index % 17; // 17 columns total
+
+                // Always add tooltips for notes column (column 17, index 16)
+                if (columnIndex === 16 && text && text !== '-' && text !== 'Unknown error') {
+                    cell.title = text;
+                    return;
+                }
+
+                // Add tooltips for other columns if text is long
+                if (text && text !== '-' && text.length > 10) {
+                    cell.title = text;
+                }
+            });
+        }
+
+        // Download Results
+        document.getElementById('downloadResults').addEventListener('click', function () {
+            if (batchResults.length === 0) {
+                showAlert('warning', 'No results to download');
+                return;
+            }
+
+            // Prepare data for export
+            const exportData = batchResults.map(result => {
+                if (result.status === 'success') {
+                    const taxonomy = result.prediction.classification || {};
+                    return {
+                        'Row': result.row,
+                        'Status': 'Success',
+                        'Original Sex': result.inputData.Sex,
+                        'Original Status': result.inputData.Status,
+                        'Original FA (mm)': result.inputData.FA,
+                        'Original TIB (mm)': result.inputData.TIB,
+                        'Original W (g)': result.inputData.W,
+                        'Kingdom': taxonomy.kingdom || '-',
+                        'Phylum': taxonomy.phylum || '-',
+                        'Class': taxonomy.class || '-',
+                        'Order': taxonomy.order || '-',
+                        'Family': taxonomy.family || '-',
+                        'Genus': result.prediction.genus,
+                        'Species': result.prediction.species,
+                        'Scientific Name': taxonomy.scientific_name || '-',
+                        'Genus Confidence (%)': result.prediction.genus_confidence,
+                        'Species Confidence (%)': result.prediction.species_confidence,
+                        'Notes': '-'
+                    };
+                } else {
+                    return {
+                        'Row': result.row,
+                        'Status': 'Error',
+                        'Original Sex': result.originalData.Sex || result.originalData.sex || '',
+                        'Original Status': result.originalData.Status || result.originalData.status || '',
+                        'Original FA (mm)': result.originalData.FA || result.originalData.fa || '',
+                        'Original TIB (mm)': result.originalData.TIB || result.originalData.tib || '',
+                        'Original W (g)': result.originalData.W || result.originalData.w || '',
+                        'Kingdom': '-',
+                        'Phylum': '-',
+                        'Class': '-',
+                        'Order': '-',
+                        'Family': '-',
+                        'Genus': '-',
+                        'Species': '-',
+                        'Scientific Name': '-',
+                        'Genus Confidence (%)': '',
+                        'Species Confidence (%)': '',
+                        'Notes': result.error
+                    };
+                }
+            });
+
+            // Create worksheet
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Bat ID Results');
+
+            // Download file
+            const fileName = `bat_id_results_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+
+            showAlert('success', `Results downloaded as ${fileName}`);
+        });
+    </script>
+    {% endblock %}

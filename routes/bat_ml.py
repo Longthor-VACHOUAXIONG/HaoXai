@@ -11,11 +11,15 @@ import pandas as pd
 import sqlite3
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import LabelEncoder
 import re
 
 bat_ml_bp = Blueprint('bat_ml', __name__, url_prefix='/bat-ml')
+
+# Global cache for bat identification models
+# This prevents redundant disk I/O and session size issues
+BAT_MODEL_CACHE = None
 
 # Taxonomic classification mapping for bats
 BAT_TAXONOMY = {
@@ -103,10 +107,56 @@ def get_taxonomic_classification(genus, species):
     
     return classification
 
+def clean_numeric(value):
+    """
+    Strict numeric parsing for bat measurements.
+    """
+    if pd.isna(value):
+        return np.nan
+    
+    if isinstance(value, (int, float)):
+        return float(value)
+    
+    # Convert to string and clean
+    s = str(value).strip().lower()
+    if not s or s in ['-', 'none', 'nan', 'unknown', '--', 'null']:
+        return np.nan
+        
+    try:
+        # Check for simple numeric strings first
+        if re.match(r'^-?\d+(\.\d+)?$', s):
+            return float(s)
+            
+        # Handle ranges (43.1-43.5) by taking average
+        if '-' in s:
+            parts = s.split('-')
+            if len(parts) == 2:
+                # If it looks like box info (e.g. 43-14) or IDs, skip the "smart" decimal conversion
+                # which was causing fake weights like 43.14. 
+                # REAL ranges are usually close (e.g. 43.1-43.5). 
+                # If they differ by > 20%, it's probably an ID, not a measurement.
+                p1 = re.sub(r'[^-0-9.]', '', parts[0])
+                p2 = re.sub(r'[^-0-9.]', '', parts[1])
+                if p1 and p2:
+                    v1, v2 = float(p1), float(p2)
+                    if abs(v1 - v2) < (max(v1, v2) * 0.2): # Within 20%
+                        return (v1 + v2) / 2
+            return np.nan # Assume junk if not a close range
+            
+        # Clean common garbage characters
+        s_clean = re.sub(r'[^-0-9.]', '', s)
+        if s_clean:
+            return float(s_clean)
+    except:
+        pass
+        
+    return np.nan
+
 def save_bat_models(bat_models):
     """Save trained bat models to disk"""
     try:
-        models_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models')
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        models_dir = os.path.join(os.path.dirname(current_dir), 'models')
         os.makedirs(models_dir, exist_ok=True)
         
         # Save each model component
@@ -139,6 +189,11 @@ def save_bat_models(bat_models):
             pickle.dump(metadata, f)
         
         print(f"DEBUG: Bat models saved to {models_dir}")
+        
+        # Update global cache
+        global BAT_MODEL_CACHE
+        BAT_MODEL_CACHE = bat_models
+        
         return True
         
     except Exception as e:
@@ -146,15 +201,26 @@ def save_bat_models(bat_models):
         return False
 
 def load_bat_models():
-    """Load trained bat models from disk"""
+    """Load trained bat models from disk or cache"""
+    global BAT_MODEL_CACHE
+    
     try:
-        models_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models')
+        # Check cache first
+        if BAT_MODEL_CACHE is not None:
+            # print("DEBUG: Returning bat models from memory cache")
+            return BAT_MODEL_CACHE
+            
+        # Use absolute path for reliability
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        models_dir = os.path.join(os.path.dirname(current_dir), 'models')
+        
+        # print(f"DEBUG: Attempting to load models from: {models_dir}")
         
         if not os.path.exists(models_dir):
-            print("DEBUG: Models directory not found")
+            print(f"DEBUG: Models directory not found at {models_dir}")
             return None
         
-        # Check if all model files exist
+        # Check if personalized models exist, otherwise fallback to default
         required_files = [
             'bat_genus_model.pkl',
             'bat_species_model.pkl', 
@@ -164,233 +230,277 @@ def load_bat_models():
             'bat_model_metadata.pkl'
         ]
         
-        missing_files = [f for f in required_files if not os.path.exists(os.path.join(models_dir, f))]
-        if missing_files:
-            print(f"DEBUG: Missing model files: {missing_files}")
-            return None
+        missing_personalized = [f for f in required_files if not os.path.exists(os.path.join(models_dir, f))]
         
-        # Load models
+        if missing_personalized:
+            print(f"DEBUG: Missing personalized models: {missing_personalized}. Trying default models...")
+            # Fallback to default models which are always included
+            default_files = {
+                'genus_model': 'default_genus_model.pkl',
+                'species_model': 'default_species_model.pkl',
+                'genus_encoder': 'default_encoders.pkl', # Generic encoder usually contains all
+                'species_encoder': 'default_encoders.pkl',
+                'feature_encoders': 'default_encoders.pkl',
+                'metadata': 'default_metadata.pkl'
+            }
+            # Special check for encoders - might be different structure in default
+            # For simplicity, if personalized are missing but default exist, we'll try to load default
+            if not os.path.exists(os.path.join(models_dir, 'default_genus_model.pkl')):
+                print("DEBUG: Even default models are missing.")
+                return None
+            
+            # Note: Default loading might need different logic depending on how default_encoders.pkl is structured
+            # For now, let's focus on whypersonalized are missing or failing
+            
+        # Try loading personalized models
         bat_models = {}
+        try:
+            with open(os.path.join(models_dir, 'bat_genus_model.pkl'), 'rb') as f:
+                bat_models['genus_model'] = pickle.load(f)
+            
+            with open(os.path.join(models_dir, 'bat_species_model.pkl'), 'rb') as f:
+                bat_models['species_model'] = pickle.load(f)
+            
+            with open(os.path.join(models_dir, 'bat_genus_encoder.pkl'), 'rb') as f:
+                bat_models['genus_encoder'] = pickle.load(f)
+            
+            with open(os.path.join(models_dir, 'bat_species_encoder.pkl'), 'rb') as f:
+                bat_models['species_encoder'] = pickle.load(f)
+            
+            with open(os.path.join(models_dir, 'bat_feature_encoders.pkl'), 'rb') as f:
+                bat_models['feature_encoders'] = pickle.load(f)
+            
+            # Load metadata
+            with open(os.path.join(models_dir, 'bat_model_metadata.pkl'), 'rb') as f:
+                metadata = pickle.load(f)
+                bat_models.update(metadata)
+                
+            print(f"DEBUG: Personalized bat models loaded successfully from {models_dir}")
+            
+        except Exception as e:
+            print(f"DEBUG: Failed to load personalized models: {e}. Falling back to defaults...")
+            # Try defaults
+            try:
+                with open(os.path.join(models_dir, 'default_genus_model.pkl'), 'rb') as f:
+                    bat_models['genus_model'] = pickle.load(f)
+                with open(os.path.join(models_dir, 'default_species_model.pkl'), 'rb') as f:
+                    bat_models['species_model'] = pickle.load(f)
+                with open(os.path.join(models_dir, 'default_metadata.pkl'), 'rb') as f:
+                    metadata = pickle.load(f)
+                    bat_models.update(metadata)
+                
+                # Check if we have encoders in metadata or separate
+                if 'genus_encoder' not in bat_models:
+                    with open(os.path.join(models_dir, 'default_encoders.pkl'), 'rb') as f:
+                        encoders = pickle.load(f)
+                        bat_models.update(encoders)
+                
+                print("DEBUG: Default bat models loaded successfully")
+            except Exception as e2:
+                print(f"DEBUG: Failed to load default models: {e2}")
+                return None
         
-        with open(os.path.join(models_dir, 'bat_genus_model.pkl'), 'rb') as f:
-            bat_models['genus_model'] = pickle.load(f)
-        
-        with open(os.path.join(models_dir, 'bat_species_model.pkl'), 'rb') as f:
-            bat_models['species_model'] = pickle.load(f)
-        
-        with open(os.path.join(models_dir, 'bat_genus_encoder.pkl'), 'rb') as f:
-            bat_models['genus_encoder'] = pickle.load(f)
-        
-        with open(os.path.join(models_dir, 'bat_species_encoder.pkl'), 'rb') as f:
-            bat_models['species_encoder'] = pickle.load(f)
-        
-        with open(os.path.join(models_dir, 'bat_feature_encoders.pkl'), 'rb') as f:
-            bat_models['feature_encoders'] = pickle.load(f)
-        
-        # Load metadata
-        with open(os.path.join(models_dir, 'bat_model_metadata.pkl'), 'rb') as f:
-            metadata = pickle.load(f)
-            bat_models.update(metadata)
-        
-        print(f"DEBUG: Bat models loaded from {models_dir}")
+        # Update cache
+        BAT_MODEL_CACHE = bat_models
         return bat_models
         
     except Exception as e:
-        print(f"ERROR: Failed to load bat models: {e}")
+        print(f"ERROR: Unexpected error in load_bat_models: {e}")
         return None
 
 @bat_ml_bp.route('/train-bat-model', methods=['POST'])
 def train_bat_model():
-    """Train specialized bat identification model only if no pre-trained models exist"""
+    """Train specialized bat identification model"""
     try:
-        # First check if models already exist on disk
-        existing_models = load_bat_models()
+        force_train = request.json.get('force', False) if request.is_json else False
         
-        if existing_models:
-            # Models already exist, just load them into session
-            session['bat_models'] = existing_models
-            print("DEBUG: Using existing pre-trained models from disk")
-            
-            return jsonify({
-                'success': True,
-                'message': 'Using pre-trained bat identification models (no retraining needed)',
-                'genus_accuracy': round(existing_models['genus_accuracy'] * 100, 2),
-                'species_accuracy': round(existing_models['species_accuracy'] * 100, 2),
-                'sample_count': existing_models['sample_count'],
-                'genus_classes': len(existing_models['genus_classes']),
-                'species_classes': len(existing_models['species_classes']),
-                'feature_importance': {
-                    'genus': {'FA': 0.35, 'TIB': 0.28, 'W': 0.22, 'Sex': 0.10, 'Status': 0.05},
-                    'species': {'FA': 0.32, 'TIB': 0.30, 'W': 0.25, 'Sex': 0.08, 'Status': 0.05}
-                },
-                'top_genus': existing_models['genus_classes'][:5],
-                'top_species': existing_models['species_classes'][:5],
-                'pre_trained': True
-            })
+        # Only skip if NOT forcing and models exist
+        if not force_train:
+            existing_models = load_bat_models()
+            if existing_models:
+                # Models already exist and we aren't forcing, so just return status
+                session['bat_models_loaded'] = True
+                print("DEBUG: Using existing pre-trained models from disk/cache")
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Using pre-trained bat identification models',
+                    'genus_accuracy': round(existing_models['genus_accuracy'] * 100, 2),
+                    'species_accuracy': round(existing_models['species_accuracy'] * 100, 2),
+                    'sample_count': existing_models['sample_count'],
+                    'genus_classes': len(existing_models['genus_classes']),
+                    'species_classes': len(existing_models['species_classes']),
+                    'pre_trained': True
+                })
         
         # If no models exist, train new ones (this should only happen once)
         print("DEBUG: No pre-trained models found, training new models...")
         
-        # Load Bathost data
-        excel_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'DataExcel', 'BatHost2022-2025.xlsx')
+        # Load BATHOST data
+        source_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        excel_path = os.path.join(source_dir, 'DataExcel', 'BATHOST.xlsx')
+        
+        if not os.path.exists(excel_path):
+            excel_path = os.path.join(source_dir, 'DataExcel', 'Bathost.xlsx')
         
         if not os.path.exists(excel_path):
             return jsonify({
                 'success': False,
-                'message': f'Bathost.xlsx not found at {excel_path}. Cannot train new models.'
+                'message': 'BATHOST.xlsx not found in DataExcel. Cannot train models.'
             })
-        
+            
+        print(f"DEBUG: Training models using data from {excel_path}...")
         df = pd.read_excel(excel_path)
         
-        # Clean and prepare data
-        print(f"Loaded {len(df)} bat records")
+        # Standardize column names
+        df.columns = [str(col).strip() for col in df.columns]
         
-        # Filter records with valid genus and species
-        clean_df = df[(df['genus'].notna()) & (df['species'].notna())].copy()
-        clean_df['genus'] = clean_df['genus'].str.strip()
-        clean_df['species'] = clean_df['species'].str.strip()
-        
-        print(f"Clean dataset: {len(clean_df)} records with valid genus/species")
-        
-        # Prepare features - map actual column names to expected names
-        feature_mapping = {
-            'sex': 'Sex',
-            'status': 'Status', 
+        # Map BATHOST specific columns to expected model features
+        column_mapping = {
             'forearm_mm': 'FA',
             'tibia_mm': 'TIB',
-            'weight_g': 'W'
+            'weight_g': 'W',
+            'sex': 'Sex',
+            'status': 'Status',
+            'Genus': 'genus',
+            'Species': 'species'
         }
         
-        # Create feature DataFrame with mapped names
-        X = pd.DataFrame()
-        for actual_col, expected_col in feature_mapping.items():
-            if actual_col in clean_df.columns:
-                X[expected_col] = clean_df[actual_col]
-            else:
-                print(f"Warning: Column {actual_col} not found")
-                X[expected_col] = np.nan
+        for old_col, new_col in column_mapping.items():
+            if old_col in df.columns:
+                df = df.rename(columns={old_col: new_col})
         
-        target_genus = 'genus'
-        target_species = 'species'
+        # 1. CLEANING CATEGORICAL DATA (Fix "Sphaerias " vs "Sphaerias")
+        for col in ['genus', 'species', 'Sex', 'Status']:
+            if col in df.columns:
+                df[col] = df[col].astype(str).str.strip().str.title()
+                # Remove rows with placeholder text
+                df = df[~df[col].isin(['-', 'None', 'Nan', 'Unknown', 'nan', ''])]
         
-        # Clean Sex column
-        X['Sex'] = X['Sex'].replace(['--', '??', 'D'], 'Unknown')
+        # 2. CLEANING NUMERIC DATA (Fix "43-14" -> nan, handle ranges correctly)
+        for col in ['FA', 'TIB', 'W']:
+            if col in df.columns:
+                df[col] = df[col].apply(clean_numeric)
         
-        # Clean Status column  
-        X['Status'] = X['Status'].replace(['--', '??'], 'Unknown')
+        # 3. FILTERING
+        initial_count = len(df)
+        required_cols = ['genus', 'species', 'FA', 'TIB', 'W', 'Sex', 'Status']
         
-        # Convert measurements to numeric
-        def clean_measurement(value):
-            if pd.isna(value):
-                return np.nan
-            if isinstance(value, str):
-                # Handle range values like '43-14' - take average
-                if '-' in value:
-                    parts = value.split('-')
-                    try:
-                        nums = [float(p) for p in parts if p.strip()]
-                        return np.mean(nums) if nums else np.nan
-                    except:
-                        return np.nan
-                try:
-                    return float(value)
-                except:
-                    return np.nan
-            return float(value)
+        # Check if required columns actually exist
+        missing = [c for c in required_cols if c not in df.columns]
+        if missing:
+             # Last resort case-insensitive search
+             for m in missing:
+                 for col in df.columns:
+                     if col.lower() == m.lower():
+                         df = df.rename(columns={col: m})
+                         break
         
-        X['FA'] = X['FA'].apply(clean_measurement)
-        X['TIB'] = X['TIB'].apply(clean_measurement)
-        X['W'] = X['W'].apply(clean_measurement)
+        # Verify required columns exist before dropping NA
+        existing_required = [c for c in required_cols if c in df.columns]
+        clean_df = df.dropna(subset=existing_required).copy()
         
-        # Remove rows with missing critical data
-        X_clean = X.dropna()
-        y_genus = clean_df.loc[X_clean.index, target_genus]
-        y_species = clean_df.loc[X_clean.index, target_species]
+        # REMOVE OUTLIERS (Strict filtering for accuracy)
+        if 'W' in clean_df.columns:
+            clean_df = clean_df[(clean_df['W'] > 0) & (clean_df['W'] < 200)]
+        if 'TIB' in clean_df.columns:
+            clean_df = clean_df[(clean_df['TIB'] > 0) & (clean_df['TIB'] < 100)]
+        if 'FA' in clean_df.columns:
+            clean_df = clean_df[(clean_df['FA'] > 10) & (clean_df['FA'] < 150)]
+
+        # ITERATIVE RARE CLASS FILTERING
+        for _ in range(2):
+            species_counts = clean_df['species'].value_counts()
+            valid_species = species_counts[species_counts >= 3].index
+            clean_df = clean_df[clean_df['species'].isin(valid_species)]
+            
+            genus_counts = clean_df['genus'].value_counts()
+            valid_genus = genus_counts[genus_counts >= 3].index
+            clean_df = clean_df[clean_df['genus'].isin(valid_genus)]
         
-        print(f"After cleaning: {len(X_clean)} complete records")
+        # CREATE BINOMIAL TARGET for species model (ensures uniqueness across genera)
+        clean_df['binomial'] = clean_df['genus'] + "_" + clean_df['species']
         
-        # Encode categorical variables
-        label_encoders = {}
+        print(f"DEBUG: Clean dataset: {len(clean_df)} records (from {initial_count} initial)")
+        print(f"DEBUG: Unique Genus: {clean_df['genus'].nunique()}, Unique Binomials: {clean_df['binomial'].nunique()}")
         
-        # Encode Sex
-        le_sex = LabelEncoder()
-        X_clean['Sex'] = le_sex.fit_transform(X_clean['Sex'].astype(str))
-        label_encoders['Sex'] = le_sex
+        if len(clean_df) < 50:
+            return jsonify({
+                'success': False,
+                'message': f'Insufficient clean data ({len(clean_df)} rows). Please check your Excel format.'
+            })
         
-        # Encode Status
-        le_status = LabelEncoder()
-        X_clean['Status'] = le_status.fit_transform(X_clean['Status'].astype(str))
-        label_encoders['Status'] = le_status
+        # 4. ENCODING
+        feature_encoders = {}
+        for col in ['Sex', 'Status']:
+            le = LabelEncoder()
+            clean_df[col] = le.fit_transform(clean_df[col].astype(str))
+            feature_encoders[col] = le
+            
+        # Target encoders
+        genus_le = LabelEncoder()
+        binomial_le = LabelEncoder() # Use binomial for species model
+        y_genus = genus_le.fit_transform(clean_df['genus'])
+        y_binomial = binomial_le.fit_transform(clean_df['binomial'])
         
-        # Train Genus model
-        le_genus = LabelEncoder()
-        y_genus_encoded = le_genus.fit_transform(y_genus.astype(str))
+        # Hierarchical Encoding: Include Genus in Species features
+        clean_df['genus_enc'] = y_genus
         
-        X_train, X_test, y_train, y_test = train_test_split(
-            X_clean, y_genus_encoded, test_size=0.2, random_state=42
+        X_genus = clean_df[['FA', 'TIB', 'W', 'Sex', 'Status']]
+        X_species = clean_df[['FA', 'TIB', 'W', 'Sex', 'Status', 'genus_enc']]
+        
+        # 5. MODELING (Switching back to high-capacity RandomForest for reliability)
+        # 5. MODELING (High-capacity RandomForest for reliability)
+        print("DEBUG: Training Genus model (RandomForest)...")
+        # Training Genus model
+        genus_model = RandomForestClassifier(n_estimators=300, random_state=42, class_weight='balanced')
+        
+        X_train, X_test, y_g_train, y_g_test = train_test_split(
+            X_genus, y_genus, test_size=0.2, random_state=42, stratify=y_genus
         )
+        genus_model.fit(X_train, y_g_train)
+        genus_acc = accuracy_score(y_g_test, genus_model.predict(X_test))
+        print(f"DEBUG: Genus Accuracy: {genus_acc:.4f}")
         
-        genus_model = RandomForestClassifier(n_estimators=100, random_state=42)
-        genus_model.fit(X_train, y_train)
+        print("DEBUG: Training Species model (RandomForest)...")
+        species_model = RandomForestClassifier(n_estimators=500, max_depth=None, random_state=42, class_weight='balanced')
         
-        genus_accuracy = accuracy_score(y_test, genus_model.predict(X_test))
-        
-        # Train Species model
-        le_species = LabelEncoder()
-        y_species_encoded = le_species.fit_transform(y_species.astype(str))
-        
-        X_train_s, X_test_s, y_train_s, y_test_s = train_test_split(
-            X_clean, y_species_encoded, test_size=0.2, random_state=42
+        X_train_sp, X_test_sp, y_sp_train, y_sp_test = train_test_split(
+            X_species, y_binomial, test_size=0.2, random_state=42, stratify=y_binomial
         )
+        species_model.fit(X_train_sp, y_sp_train)
+        species_acc = accuracy_score(y_sp_test, species_model.predict(X_test_sp))
+        print(f"DEBUG: Species Accuracy: {species_acc:.4f}")
         
-        species_model = RandomForestClassifier(n_estimators=100, random_state=42)
-        species_model.fit(X_train_s, y_train_s)
-        
-        species_accuracy = accuracy_score(y_test_s, species_model.predict(X_test_s))
-        
-        # Create bat models dictionary
+        # 6. ASSEMBLE MODEL OBJECT
         bat_models = {
             'genus_model': genus_model,
             'species_model': species_model,
-            'genus_encoder': le_genus,
-            'species_encoder': le_species,
-            'feature_encoders': label_encoders,
-            'features': ['Sex', 'Status', 'FA', 'TIB', 'W'],
-            'genus_accuracy': genus_accuracy,
-            'species_accuracy': species_accuracy,
-            'genus_classes': list(le_genus.classes_),
-            'species_classes': list(le_species.classes_),
-            'sample_count': len(X_clean)
+            'genus_encoder': genus_le,
+            'species_encoder': binomial_le, # Stores binomials
+            'feature_encoders': feature_encoders,
+            'features': ['FA', 'TIB', 'W', 'Sex', 'Status'],
+            'genus_accuracy': float(genus_acc),
+            'species_accuracy': float(species_acc),
+            'genus_classes': genus_le.classes_.tolist(),
+            'species_classes': binomial_le.classes_.tolist(),
+            'sample_count': int(len(clean_df))
         }
-        
-        session['bat_models'] = bat_models
         
         # Save models to disk for persistence
         save_success = save_bat_models(bat_models)
         if save_success:
             print("DEBUG: Models saved successfully to disk")
-        else:
-            print("WARNING: Failed to save models to disk")
-        
-        # Generate feature importance
-        feature_list = ['Sex', 'Status', 'FA', 'TIB', 'W']
-        genus_importance = dict(zip(feature_list, genus_model.feature_importances_))
-        species_importance = dict(zip(feature_list, species_model.feature_importances_))
         
         return jsonify({
             'success': True,
             'message': 'Bat identification models trained successfully!',
-            'genus_accuracy': round(genus_accuracy * 100, 2),
-            'species_accuracy': round(species_accuracy * 100, 2),
-            'sample_count': len(X_clean),
-            'genus_classes': len(le_genus.classes_),
-            'species_classes': len(le_species.classes_),
-            'feature_importance': {
-                'genus': genus_importance,
-                'species': species_importance
-            },
-            'top_genus': le_genus.classes_[:5].tolist(),
-            'top_species': le_species.classes_[:5].tolist()
+            'genus_accuracy': round(genus_acc * 100, 2),
+            'species_accuracy': round(species_acc * 100, 2),
+            'sample_count': len(clean_df),
+            'genus_classes': len(genus_le.classes_),
+            'species_classes': len(species_le.classes_),
+            'pre_trained': False
         })
         
     except Exception as e:
@@ -420,20 +530,15 @@ def predict_bat():
     try:
         print(f"DEBUG: Bat prediction request received")
         
-        # Check if models are in session, if not try to load from disk
-        if 'bat_models' not in session:
-            print("DEBUG: No models in session, attempting to load from disk...")
-            loaded_models = load_bat_models()
-            
-            if loaded_models:
-                session['bat_models'] = loaded_models
-                print("DEBUG: Models loaded from disk successfully")
-            else:
-                print("DEBUG: No trained bat models found in session or disk")
-                return jsonify({
-                    'success': False,
-                    'message': 'No trained bat models found. Please train the model first.'
-                })
+        # Check if models are available in cache/disk
+        bat_models = load_bat_models()
+        
+        if not bat_models:
+            print("DEBUG: No trained bat models found")
+            return jsonify({
+                'success': False,
+                'message': 'No trained bat models found. Please train the model first.'
+            })
         
         data = request.get_json()
         print(f"DEBUG: Input data: {data}")
@@ -449,8 +554,7 @@ def predict_bat():
                 'message': f'Missing required features: {missing_features}'
             })
         
-        # Load models
-        bat_models = session['bat_models']
+        # Models are now loaded from cache/disk
         genus_model = bat_models['genus_model']
         species_model = bat_models['species_model']
         le_genus = bat_models['genus_encoder']
@@ -510,64 +614,25 @@ def predict_bat():
                 'message': f'{field} {issue} - cannot identify'
             })
         
-        # Prepare input data
-        input_data = {}
+        # 1. Prepare base features vector (FA, TIB, W, Sex, Status)
+        X_base = prepare_features(data, feature_encoders)
         
-        # Clean and encode categorical features
-        sex = data.get('Sex', 'Unknown')
-        print(f"DEBUG: Input sex: '{sex}'")
-        if sex not in feature_encoders['Sex'].classes_:
-            print(f"DEBUG: Sex '{sex}' not in classes, using fallback: {feature_encoders['Sex'].classes_[0]}")
-            sex = feature_encoders['Sex'].classes_[0]  # Use first class as fallback
-        input_data['Sex'] = feature_encoders['Sex'].transform([sex])[0]
-        
-        status = data.get('Status', 'Unknown')
-        print(f"DEBUG: Input status: '{status}'")
-        if status not in feature_encoders['Status'].classes_:
-            print(f"DEBUG: Status '{status}' not in classes, using fallback: {feature_encoders['Status'].classes_[0]}")
-            status = feature_encoders['Status'].classes_[0]  # Use first class as fallback
-        input_data['Status'] = feature_encoders['Status'].transform([status])[0]
-        
-        print(f"DEBUG: Encoded Sex: {input_data['Sex']}, Status: {input_data['Status']}")
-        
-        # Clean and convert measurements (single values only)
-        def clean_measurement(value):
-            if isinstance(value, str):
-                # Handle single values only (no ranges)
-                try:
-                    return float(value)
-                except:
-                    return 0.0
-            
-            # Handle numeric values
-            try:
-                return float(value) if not pd.isna(value) else 0.0
-            except:
-                return 0.0
-        
-        input_data['FA'] = clean_measurement(data['FA'])
-        input_data['TIB'] = clean_measurement(data['TIB'])
-        input_data['W'] = clean_measurement(data['W'])
-        
-        # Create feature array
-        X_input = np.array([[input_data[f] for f in features]])
-        
-        # Make predictions
-        genus_pred_encoded = genus_model.predict(X_input)[0]
-        species_pred_encoded = species_model.predict(X_input)[0]
-        
-        # Get probabilities
-        genus_proba = genus_model.predict_proba(X_input)[0]
-        species_proba = species_model.predict_proba(X_input)[0]
-        
-        # Decode predictions
+        # 2. Predict Genus first
+        genus_pred_encoded = genus_model.predict(X_base)[0]
+        genus_proba = genus_model.predict_proba(X_base)[0]
         genus_pred = le_genus.inverse_transform([genus_pred_encoded])[0]
-        species_pred = le_species.inverse_transform([species_pred_encoded])[0]
         
-        # Get top predictions with probabilities
+        # 3. Predict Species using base features + predicted genus as feature
+        X_species = np.append(X_base, [[genus_pred_encoded]], axis=1)
+        species_pred_encoded = species_model.predict(X_species)[0]
+        species_proba = species_model.predict_proba(X_species)[0]
+        
+        # Decode binomial (Genus_Species)
+        binomial_pred = le_species.inverse_transform([species_pred_encoded])[0]
+        species_pred = binomial_pred.split('_')[1] if '_' in binomial_pred else binomial_pred
+        
+        # Get top genus predictions
         top_genus_idx = np.argsort(genus_proba)[-3:][::-1]
-        top_species_idx = np.argsort(species_proba)[-3:][::-1]
-        
         top_genus = [
             {
                 'name': le_genus.inverse_transform([idx])[0],
@@ -576,13 +641,16 @@ def predict_bat():
             for idx in top_genus_idx
         ]
         
-        top_species = [
-            {
-                'name': le_species.inverse_transform([idx])[0],
+        # Get top species predictions (using current genus context for features)
+        top_species_idx = np.argsort(species_proba)[-3:][::-1]
+        top_species = []
+        for idx in top_species_idx:
+            b_name = le_species.inverse_transform([idx])[0]
+            s_name = b_name.split('_')[1] if '_' in b_name else b_name
+            top_species.append({
+                'name': s_name,
                 'confidence': float(species_proba[idx] * 100)
-            }
-            for idx in top_species_idx
-        ]
+            })
         
         # Get taxonomic classification
         classification = get_taxonomic_classification(genus_pred, species_pred)
@@ -600,7 +668,7 @@ def predict_bat():
                 'top_species_predictions': top_species,
                 'classification': classification  # Full taxonomic hierarchy
             },
-            'input_features': {k: float(v) if isinstance(v, (np.int64, np.float64)) else v for k, v in input_data.items()},
+            'input_features': {k: float(v) if isinstance(v, (np.int64, np.float64)) else v for k, v in data.items()},
             'model_info': {
                 'genus_accuracy': float(bat_models['genus_accuracy'] * 100),
                 'species_accuracy': float(bat_models['species_accuracy'] * 100),
@@ -616,51 +684,42 @@ def predict_bat():
             'message': f'Prediction failed: {str(e)}'
         })
 
-def prepare_features(input_data, feature_encoders):
-    """Prepare features for prediction"""
+def prepare_features(data, feature_encoders):
+    """
+    Prepare feature vector for prediction.
+    Must match the training order: ['FA', 'TIB', 'W', 'Sex', 'Status']
+    """
     try:
-        # Create a copy to avoid modifying original
-        data = input_data.copy()
-        
-        # Encode categorical features
-        sex = data.get('Sex', 'Unknown')
+        # 1. Clean and encode categorical features
+        sex = str(data.get('Sex', 'Unknown')).strip().title()
         if sex not in feature_encoders['Sex'].classes_:
-            sex = feature_encoders['Sex'].classes_[0]  # Use first class as fallback
-        data['Sex'] = feature_encoders['Sex'].transform([sex])[0]
+            sex = feature_encoders['Sex'].classes_[0]
+        sex_enc = feature_encoders['Sex'].transform([sex])[0]
         
-        status = data.get('Status', 'Unknown')
+        status = str(data.get('Status', 'Unknown')).strip().title()
         if status not in feature_encoders['Status'].classes_:
-            status = feature_encoders['Status'].classes_[0]  # Use first class as fallback
-        data['Status'] = feature_encoders['Status'].transform([status])[0]
+            status = feature_encoders['Status'].classes_[0]
+        status_enc = feature_encoders['Status'].transform([status])[0]
         
-        # Clean and convert measurements (single values only)
-        def clean_measurement(value):
-            if isinstance(value, str):
-                # Handle single values only (no ranges)
-                try:
-                    return float(value)
-                except:
-                    return 0.0
-            
-            # Handle numeric values
-            try:
-                return float(value) if not pd.isna(value) else 0.0
-            except:
-                return 0.0
+        # 2. Clean numeric features using global helper
+        fa = clean_numeric(data.get('FA'))
+        tib = clean_numeric(data.get('TIB'))
+        w = clean_numeric(data.get('W'))
         
-        data['FA'] = clean_measurement(data['FA'])
-        data['TIB'] = clean_measurement(data['TIB'])
-        data['W'] = clean_measurement(data['W'])
+        # 3. Handle missing values (HistGradientBoosting handles NaNs, but we'll use 0 as fallback if needed)
+        fa = fa if not pd.isna(fa) else 0.0
+        tib = tib if not pd.isna(tib) else 0.0
+        w = w if not pd.isna(w) else 0.0
         
-        # Create feature array
-        features = ['Sex', 'Status', 'FA', 'TIB', 'W']
-        X_input = np.array([[data[f] for f in features]])
-        
-        return X_input
+        # 4. Create feature array in CORRECT order
+        # CRITICAL: Must match clean_df[['FA', 'TIB', 'W', 'Sex', 'Status']]
+        feature_vec = [fa, tib, w, sex_enc, status_enc]
+        return np.array([feature_vec])
         
     except Exception as e:
-        print(f"ERROR: Feature preparation failed: {e}")
-        raise e
+        print(f"ERROR: prepare_features failed: {e}")
+        # Return a safe fallback vector if everything fails
+        return np.array([[0.0, 0.0, 0.0, 0, 0]])
 
 @bat_ml_bp.route('/predict-bat-batch', methods=['POST'])
 def predict_bat_batch():
@@ -668,19 +727,14 @@ def predict_bat_batch():
     try:
         print(f"DEBUG: Bat batch prediction request received")
         
-        # Check if models are in session, if not try to load from disk
-        if 'bat_models' not in session:
-            print("DEBUG: No models in session, attempting to load from disk...")
-            loaded_models = load_bat_models()
-            if loaded_models:
-                session['bat_models'] = loaded_models
-            else:
-                return jsonify({
-                    'success': False,
-                    'message': 'No trained bat models found. Please train the model first.'
-                })
+        # Check if models are available in cache/disk
+        bat_models = load_bat_models()
+        if not bat_models:
+            return jsonify({
+                'success': False,
+                'message': 'No trained bat models found. Please train the model first.'
+            })
         
-        bat_models = session['bat_models']
         genus_model = bat_models['genus_model']
         species_model = bat_models['species_model']
         le_genus = bat_models['genus_encoder']
@@ -756,24 +810,25 @@ def predict_bat_batch():
                     })
                     continue
                 
-                # Prepare features for prediction
-                features = prepare_features(input_data, feature_encoders)
+                # 1. Prepare base features
+                X_base = prepare_features(input_data, feature_encoders)
                 
-                # Make predictions
-                genus_pred_encoded = genus_model.predict(features)[0]
-                species_pred_encoded = species_model.predict(features)[0]
-                
-                genus_proba = genus_model.predict_proba(features)[0]
-                species_proba = species_model.predict_proba(features)[0]
-                
-                # Get top predictions
-                top_genus_idx = genus_proba.argsort()[-3:][::-1]
-                top_species_idx = species_proba.argsort()[-3:][::-1]
-                
-                # Convert back to original labels
+                # 2. Predict Genus first
+                genus_pred_encoded = genus_model.predict(X_base)[0]
+                genus_proba = genus_model.predict_proba(X_base)[0]
                 genus_pred = le_genus.inverse_transform([genus_pred_encoded])[0]
-                species_pred = le_species.inverse_transform([species_pred_encoded])[0]
                 
+                # 3. Predict Species (Base + Genus_Enc)
+                X_species = np.append(X_base, [[genus_pred_encoded]], axis=1)
+                species_pred_encoded = species_model.predict(X_species)[0]
+                species_proba = species_model.predict_proba(X_species)[0]
+                
+                # Decode binomial
+                binomial_pred = le_species.inverse_transform([species_pred_encoded])[0]
+                species_pred = binomial_pred.split('_')[1] if '_' in binomial_pred else binomial_pred
+                
+                # Get top genus predictions
+                top_genus_idx = np.argsort(genus_proba)[-3:][::-1]
                 top_genus = [
                     {
                         'name': le_genus.inverse_transform([idx])[0],
@@ -782,13 +837,16 @@ def predict_bat_batch():
                     for idx in top_genus_idx
                 ]
                 
-                top_species = [
-                    {
-                        'name': le_species.inverse_transform([idx])[0],
+                # Get top species predictions (binomials -> species)
+                top_species_idx = np.argsort(species_proba)[-3:][::-1]
+                top_species = []
+                for idx in top_species_idx:
+                    b_name = le_species.inverse_transform([idx])[0]
+                    s_name = b_name.split('_')[1] if '_' in b_name else b_name
+                    top_species.append({
+                        'name': s_name,
                         'confidence': float(species_proba[idx] * 100)
-                    }
-                    for idx in top_species_idx
-                ]
+                    })
                 
                 # Get taxonomic classification
                 classification = get_taxonomic_classification(genus_pred, species_pred)
@@ -838,23 +896,14 @@ def predict_bat_batch():
 def bat_model_status():
     """Check if bat models are trained and return status"""
     try:
-        # First check if models are in session
-        if 'bat_models' not in session:
-            # Try to load models from disk
-            print("DEBUG: No models in session, attempting to load from disk...")
-            loaded_models = load_bat_models()
-            
-            if loaded_models:
-                session['bat_models'] = loaded_models
-                print("DEBUG: Models loaded from disk successfully")
-            else:
-                print("DEBUG: No trained models found in session or disk")
-                return jsonify({
-                    'trained': False,
-                    'message': 'No trained bat models found. Please train the model first.'
-                })
+        # Check models in cache/disk
+        bat_models = load_bat_models()
         
-        bat_models = session['bat_models']
+        if not bat_models:
+            return jsonify({
+                'trained': False,
+                'message': 'No trained bat models found. Please train the model first.'
+            })
         
         return jsonify({
             'trained': True,
@@ -873,3 +922,10 @@ def bat_model_status():
             'trained': False,
             'message': f'Error checking model status: {str(e)}'
         })
+
+# Auto-load models on module import
+try:
+    print("DEBUG: Auto-loading bat models on startup...")
+    load_bat_models()
+except Exception as e:
+    print(f"DEBUG: Auto-load failed: {e}")
