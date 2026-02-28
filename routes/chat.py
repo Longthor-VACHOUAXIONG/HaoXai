@@ -5570,4 +5570,3 @@ def delete_version(version_id):
             'success': False,
             'error': f'Error deleting version: {str(e)}'
         }), 500
-

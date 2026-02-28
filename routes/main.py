@@ -160,4 +160,3 @@ def schema():
 def bat_identification():
     """Bat species identification page"""
     return render_template('bat_identification.html')
-

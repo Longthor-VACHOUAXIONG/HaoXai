@@ -331,4 +331,3 @@ CAN2Database*.db.backup*
 CAN2Database*.db-shm
 CAN2Database*.db-wal
 today.db
-

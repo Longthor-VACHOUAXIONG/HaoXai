@@ -2611,4 +2611,3 @@ def background_cleanup(session_id, upload_folder, socketio):
                 'error': str(e),
                 'timestamp': datetime.datetime.now().isoformat()
             })
-

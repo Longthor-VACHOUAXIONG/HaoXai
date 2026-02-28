@@ -362,6 +362,4 @@ Database Change → Event Trigger → SocketIO → Client Update
 
 ---
 
-**Document Version**: 1.0  
-
-
+**Document Version**: 1.0

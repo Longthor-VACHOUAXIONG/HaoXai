@@ -685,4 +685,3 @@ document.addEventListener('DOMContentLoaded', () => {
 // Make it globally available
 window.HaoXaiRealtime = HaoXaiRealtime;
 window.realtimeClient = realtimeClient;
-

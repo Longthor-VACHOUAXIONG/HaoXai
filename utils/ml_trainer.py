@@ -758,4 +758,3 @@ class DatabaseTrainer:
                 info['models_available'].append(model_name)
         
         return info
-

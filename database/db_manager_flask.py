@@ -705,4 +705,3 @@ def init_db(app):
     # Ensure upload folder exists
     with app.app_context():
         os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-

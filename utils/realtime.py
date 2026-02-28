@@ -58,4 +58,3 @@ def notify_database_stats(socketio, stats):
 
 # Import datetime for timestamp generation
 import datetime
-

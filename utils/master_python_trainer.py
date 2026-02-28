@@ -1022,4 +1022,3 @@ def train_master_python(db_config, db_type='sqlite'):
 if __name__ == '__main__':
     db_path = 'd:/MyFiles/Program_Last_version/HaoXai_structure_latest_V - Copy/DataExcel/CAN2-With-Referent-Key.db'
     train_master_python(db_path, 'sqlite')
-

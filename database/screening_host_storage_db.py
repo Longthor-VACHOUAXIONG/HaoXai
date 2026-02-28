@@ -1,4 +1,4 @@
-﻿from database.db_manager import DatabaseManager
+from database.db_manager import DatabaseManager
 class ScreeningHostStorageManager:
     def __init__(self, db_connection, connection_type="mysql"):
         self.db_connection = db_connection

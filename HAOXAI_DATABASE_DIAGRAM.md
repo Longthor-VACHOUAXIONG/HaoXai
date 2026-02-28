@@ -362,4 +362,3 @@ LEFT JOIN storage_locations sl ON s.source_id = sl.sample_tube_id;
 - Proper indexing ensures fast lookups by sample ID
 
 This ER diagram represents the corrected and optimized database schema with proper environmental sample integration! 🎯
-

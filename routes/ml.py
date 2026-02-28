@@ -674,4 +674,3 @@ def train_chat_model():
             'success': False,
             'message': f'Training failed: {str(e)}'
         }), 500
-
