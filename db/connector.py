@@ -1,3 +1,4 @@
+# HaoXai - Database Connector
 def execute_query(self, query):
     try:
         cursor = self.connection.cursor()

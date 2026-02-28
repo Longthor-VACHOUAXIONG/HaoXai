@@ -1,5 +1,5 @@
-# constants.py
-"""Global constants for the Virology application."""
+# HaoXai - Research Intelligence
+"""Global constants for HaoXai application."""
 AMBIGUOUS_LOOKUP = {
     "R": set("AG"), "Y": set("CT"), "S": set("GC"), "W": set("AT"),
     "K": set("GT"), "M": set("AC"), "B": set("CGT"), "D": set("AGT"),
