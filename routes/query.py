@@ -127,6 +127,74 @@ def pip_install():
         }), 500
 
 
+@query_bp.route('/notebook/explain', methods=['POST'])
+def explain_code():
+    """Provide explanation for code snippets"""
+    try:
+        data = request.json
+        code = data.get('code', '').strip()
+        context = data.get('context', 'Code')
+        
+        if not code:
+            return jsonify({'explanation': 'No code provided to explain.'})
+
+        # Heuristic-based intelligent explanation
+        explanation = []
+        
+        # 1. Identify Language/Detect Patterns
+        is_sql = any(k in code.upper() for k in ['SELECT', 'FROM', 'WHERE', 'JOIN', 'INSERT', 'UPDATE', 'DELETE'])
+        is_r = any(k in code for k in ['<-', 'library(', 'ggplot(', 'dplyr::'])
+        is_python = not is_sql and not is_r
+
+        explanation.append(f"### 💡 Code Insight ({context})")
+        
+        if is_sql:
+            explanation.append("**Type:** SQL Query")
+            if 'SELECT' in code.upper():
+                explanation.append("• **Purpose:** Retrieves specific data columns from one or more database tables.")
+            if 'JOIN' in code.upper():
+                explanation.append("• **Relational Logic:** Combines rows from multiple tables based on a related column.")
+            if 'WHERE' in code.upper():
+                explanation.append("• **Filtering:** Uses conditions to narrow down results (lookup/filter).")
+            if 'GROUP BY' in code.upper():
+                explanation.append("• **Aggregation:** Organizes data into groups to perform calculations (like COUNT or SUM).")
+        
+        elif is_r:
+            explanation.append("**Type:** R Statistical Script")
+            if 'library(' in code:
+                libs = re.findall(r'library\((.*?)\)', code)
+                explanation.append(f"• **Dependencies:** Loading external libraries: {', '.join(libs)}")
+            if 'ggplot' in code:
+                explanation.append("• **Visualization:** Using Grammar of Graphics (ggplot2) to create a visual chart.")
+            if '<-' in code:
+                explanation.append("• **Assignment:** Storing a value or data structure into a variable using the R assignment operator.")
+
+        else:
+            explanation.append("**Type:** Python Script")
+            if 'import' in code:
+                libs = re.findall(r'import\s+([\w\.]+)', code)
+                explanation.append(f"• **Imports:** Uses modules like: {', '.join(libs)}")
+            if 'pd.' in code or 'pandas' in code:
+                explanation.append("• **Data Frames:** Processing tabular data using the Pandas library.")
+            if 'plt.' in code or 'matplotlib' in code:
+                explanation.append("• **Plotting:** Generating scientific visualizations via Matplotlib.")
+            if 'def ' in code:
+                explanation.append("• **Definition:** Encapsulates logic into a reusable function.")
+
+        explanation.append("\n**How it works:**")
+        explanation.append("This snippet represents a functional block of logic designed to interact with your data. "
+                           "In a browser, you might search for the specific libraries or syntax shown here to find deeper documentation.")
+        
+        # Check for obvious errors
+        if 'error' in code.lower() or 'exception' in code.lower():
+            explanation.append("\n⚠️ **Note:** This code contains references to error handling, which is used to prevent the program from crashing if something goes wrong.")
+
+        return jsonify({'explanation': '\n'.join(explanation)})
+
+    except Exception as e:
+        return jsonify({'explanation': f'Analysis error: {str(e)}'}), 500
+
+
 @query_bp.route('/notebook/r-install', methods=['POST'])
 def r_install():
     """Install R packages via install.packages()"""

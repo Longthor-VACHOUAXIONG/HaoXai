@@ -1091,6 +1091,84 @@
         color: var(--text-primary);
         font-size: 13px;
     }
+
+    /* Explanation UI */
+    .search-result-actions {
+        display: flex;
+        gap: 6px;
+    }
+
+    .search-action-btn {
+        background: rgba(88, 166, 255, 0.1);
+        border: 1px solid rgba(88, 166, 255, 0.2);
+        color: var(--accent-info);
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-size: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .search-action-btn:hover {
+        background: var(--accent-info);
+        color: white;
+    }
+
+    .search-result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+    }
+
+    .explanation-loading {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--accent-info);
+        font-size: 13px;
+    }
+
+    .explanation-header {
+        margin-bottom: 15px;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 10px;
+    }
+
+    .explanation-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--accent-info);
+        margin-top: 10px;
+    }
+
+    .explanation-content {
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--text-secondary);
+        background: var(--bg-tertiary);
+        padding: 12px;
+        border-radius: var(--radius-sm);
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .back-btn {
+        background: none;
+        border: 1px solid var(--border-color);
+        color: var(--text-muted);
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        cursor: pointer;
+    }
+
+    .back-btn:hover {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+    }
 </style>
 {% endblock %}
 
@@ -3071,11 +3149,11 @@
 
     // --- Global Universal Search Logic ---
     function handleGlobalSearch(event) {
-        const query = event.target.value.toLowerCase().trim();
+        const query = (event.target.value || '').toLowerCase().trim();
         const resultsContainer = document.getElementById('search-results');
 
-        if (!query || query.length < 2) {
-            resultsContainer.innerHTML = '<div class="placeholder-text">Type at least 2 characters to search...</div>';
+        if (!query) {
+            resultsContainer.innerHTML = '<div class="placeholder-text">Type to search everything...</div>';
             return;
         }
 
@@ -3101,7 +3179,7 @@
             }
         });
 
-        // 2. Search Database Tables (if loaded)
+        // 2. Search Database Tables
         if (typeof databaseSchema !== 'undefined' && databaseSchema) {
             Object.keys(databaseSchema).forEach(tableName => {
                 if (tableName.toLowerCase().includes(query)) {
@@ -3143,8 +3221,26 @@
             }
         });
 
+        // 4. Browser-like Web Search
+        results.push({
+            type: 'Web',
+            icon: 'fa-google',
+            title: `Search Google for "${query}"`,
+            snippet: 'Search external documentation and tutorials',
+            action: () => window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank')
+        });
+        results.push({
+            type: 'Web',
+            icon: 'fa-stack-overflow',
+            title: `Search Stack Overflow for "${query}"`,
+            snippet: 'Search developer community answers',
+            action: () => window.open(`https://stackoverflow.com/search?q=${encodeURIComponent(query)}`, '_blank')
+        });
+
         renderSearchResults(results);
     }
+
+    let previousSearchResultsHTML = '';
 
     function renderSearchResults(results) {
         const resultsContainer = document.getElementById('search-results');
@@ -3154,12 +3250,27 @@
         }
 
         resultsContainer.innerHTML = '';
-        results.slice(0, 15).forEach(res => {
+        results.forEach(res => {
             const item = document.createElement('div');
             item.className = 'search-result-item';
+
+            let actionButtons = '';
+            if (res.type === 'Cell') {
+                actionButtons = `
+                    <div class="search-result-actions">
+                        <button class="search-action-btn explain" onclick="event.stopPropagation(); explainSearchResult('${res.type}', '${res.title}')" title="Explain this">
+                            <i class="fas fa-magic"></i> Explain
+                        </button>
+                    </div>
+                `;
+            }
+
             item.innerHTML = `
                 <div class="search-result-type">${res.type}</div>
-                <div class="search-result-title"><i class="fas ${res.icon} mr-2"></i> ${res.title}</div>
+                <div class="search-result-header">
+                    <div class="search-result-title"><i class="fas ${res.icon} mr-2"></i> ${res.title}</div>
+                    ${actionButtons}
+                </div>
                 <div class="search-result-snippet">${res.snippet}</div>
             `;
             item.onclick = res.action;
@@ -3167,6 +3278,64 @@
         });
     }
 
+    async function explainSearchResult(type, title) {
+        const cellResults = cells.filter((c, i) => `Cell #${i + 1}` === title);
+        let content = '';
+        if (cellResults.length > 0) {
+            content = cellResults[0].editor?.getValue() || '';
+        }
+
+        if (!content) return;
+
+        const resultsContainer = document.getElementById('search-results');
+        previousSearchResultsHTML = resultsContainer.innerHTML;
+
+        resultsContainer.innerHTML = `
+            <div class="explanation-loading">
+                <i class="fas fa-circle-notch fa-spin"></i> Analyzing code...
+            </div>
+        `;
+        resultsContainer.parentElement.scrollTop = 0;
+
+        try {
+            const response = await fetch('/query/notebook/explain', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: content, context: type })
+            });
+
+            if (!response.ok) throw new Error('API Error');
+
+            const result = await response.json();
+
+            resultsContainer.innerHTML = `
+                <div class="explanation-panel-active" style="padding: 10px;">
+                    <div class="explanation-header" style="margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                        <button class="back-btn" onclick="restoreSearchResults()" style="background: none; border: 1px solid var(--border-color); color: var(--text-muted); padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; margin-bottom: 8px;">
+                            <i class="fas fa-arrow-left"></i> Back to Results
+                        </button>
+                        <div class="explanation-title" style="font-size: 14px; font-weight: 600; color: var(--accent-info);">${title} Insight</div>
+                    </div>
+                    <div class="explanation-content" style="background: var(--bg-tertiary); padding: 12px; border-radius: 4px; font-size: 12px; line-height: 1.6; color: var(--text-secondary);">
+                        ${result.explanation.replace(/\n/g, '<br>').replace(/### (.*?)<br>/g, '<h4 style="color: var(--accent-info); margin: 10px 0 5px 0;">$1</h4>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
+                    </div>
+                </div>
+            `;
+        } catch (e) {
+            resultsContainer.innerHTML = `
+                <div class="explanation-error" style="padding: 20px; text-align: center; color: var(--text-muted);">
+                    <i class="fas fa-exclamation-triangle" style="color: var(--accent-danger); font-size: 24px; margin-bottom: 10px;"></i>
+                    <p>Analysis failed.</p>
+                    <button onclick="restoreSearchResults()" class="back-btn" style="margin-top: 10px;">Go back</button>
+                </div>
+            `;
+        }
+    }
+
+    function restoreSearchResults() {
+        const resultsContainer = document.getElementById('search-results');
+        resultsContainer.innerHTML = previousSearchResultsHTML;
+    }
     function updateEditorFontSize() {
         const size = document.getElementById('settings-font-size').value;
         document.documentElement.style.setProperty('--editor-font-size', size);
