@@ -37,8 +37,8 @@
         --gradient-accent: linear-gradient(135deg, #58a6ff 0%, #bc8cff 100%);
         --gradient-success: linear-gradient(135deg, #3fb950 0%, #39d2c0 100%);
         --gradient-danger: linear-gradient(135deg, #f85149 0%, #da3633 100%);
-        --glass-bg: rgba(22, 27, 34, 0.85);
-        --glass-border: rgba(48, 54, 61, 0.6);
+        --glass-bg: #161b22;
+        --glass-border: #30363d;
         --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
         --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
         --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
@@ -67,9 +67,20 @@
         -moz-osx-font-smoothing: grayscale;
     }
 
-    /* Hide the main app sidebar toggle in the IDE page */
-    #sidebarToggle {
+    /* Hide global app UI to prevent ghosting/clutter */
+    #sidebar,
+    .navbar,
+    .status-bar {
         display: none !important;
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+        margin-top: 0 !important;
+        padding: 0 !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        overflow: hidden !important;
     }
 
     .ide-container {
