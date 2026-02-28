@@ -494,7 +494,7 @@
                     <li>
                         <div class="feature-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;"><i
                                 class="bi bi-search"></i></div>
-                        <span>Find sample CANB_ANA25_001</span>
+                        <span>Find sample</span>
                     </li>
                     <li>
                         <div class="feature-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;"><i
@@ -509,7 +509,7 @@
                 <div class="sidebar-title">
                     <i class="bi bi-cpu me-2"></i>ML Model Training
                 </div>
-                
+
                 <!-- Model Type Selection -->
                 <div class="mb-3">
                     <label class="form-label small text-muted">Model Type</label>
@@ -550,7 +550,8 @@
             <!-- Header -->
             <div class="chat-header-bar">
                 <div class="chat-header-info">
-                    <img src="/static/logo-icon.svg" alt="HaoXai" style="width: 44px; height: 44px; border-radius: 14px;">
+                    <img src="/static/logo-icon.svg" alt="HaoXai"
+                        style="width: 44px; height: 44px; border-radius: 14px;">
                     <div>
                         <div class="fw-semibold">HaoXai Assistant</div>
                         <div class="ai-status">
@@ -573,7 +574,8 @@
             <div class="chat-messages-area" id="chat-messages">
                 <!-- Welcome Message -->
                 <div class="message-row ai">
-                    <img src="/static/logo-icon.svg" alt="HaoXai" style="width: 32px; height: 32px; border-radius: 10px;">
+                    <img src="/static/logo-icon.svg" alt="HaoXai"
+                        style="width: 32px; height: 32px; border-radius: 10px;">
                     <div>
                         <div class="message-content">
                             Hello! I'm your HaoXai AI Assistant. How can I help you today?
@@ -587,18 +589,6 @@
             <div class="chat-input-bar">
                 <!-- Quick Prompts -->
                 <div class="quick-prompts">
-                    <div class="prompt-chip" onclick="sendQuick('Show me host statistics')">
-                        <i class="bi bi-bar-chart-line"></i>Host Stats
-                    </div>
-                    <div class="prompt-chip" onclick="sendQuick('Help with SQL query')">
-                        <i class="bi bi-code-slash"></i>SQL Help
-                    </div>
-                    <div class="prompt-chip" onclick="sendQuick('Explain database schema')">
-                        <i class="bi bi-diagram-3"></i>Schema
-                    </div>
-                    <div class="prompt-chip" onclick="sendQuick('Analyze screening results')">
-                        <i class="bi bi-clipboard-data"></i>Analysis
-                    </div>
                     <div class="prompt-chip" onclick="document.getElementById('excel-upload').click()">
                         <i class="bi bi-file-earmark-excel"></i>Upload Excel
                     </div>
@@ -879,66 +869,66 @@
 
         function trainMLModelAuto() {
             const modelType = document.getElementById('ml-model-type').value;
-            
+
             // Show training status
             const statusDiv = document.getElementById('ml-status');
             const statusText = document.getElementById('ml-status-text');
             statusDiv.style.display = 'block';
             statusDiv.className = 'alert alert-info small';
             statusText.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div>Training models on all tables...';
-            
+
             // Hide previous results
             document.getElementById('ml-results').style.display = 'none';
-            
+
             // Train models on all tables automatically
             fetch('/ml/chat/train-auto', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ model_type: modelType })
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    currentMLModels = data.details;
-                    statusDiv.className = 'alert alert-success small';
-                    statusText.innerHTML = `<i class="bi bi-check-circle me-1"></i>Trained ${data.models_trained} models successfully!`;
-                    
-                    // Show results
-                    const resultsDiv = document.getElementById('ml-results');
-                    const metricsDiv = document.getElementById('ml-metrics');
-                    
-                    // Display summary of all trained models
-                    let summaryHtml = `<div class="mb-2"><strong>Models Trained:</strong> ${data.models_trained}</div>`;
-                    if (data.failed_tables > 0) {
-                        summaryHtml += `<div class="text-warning small mt-1"><strong>Failed Tables:</strong> ${data.failed_tables}</div>`;
-                    }
-                    
-                    // Show individual model summaries
-                    summaryHtml += '<div class="mt-2" style="max-height: 200px; overflow-y: auto;">';
-                    data.model_summaries.forEach(model => {
-                        summaryHtml += `
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        currentMLModels = data.details;
+                        statusDiv.className = 'alert alert-success small';
+                        statusText.innerHTML = `<i class="bi bi-check-circle me-1"></i>Trained ${data.models_trained} models successfully!`;
+
+                        // Show results
+                        const resultsDiv = document.getElementById('ml-results');
+                        const metricsDiv = document.getElementById('ml-metrics');
+
+                        // Display summary of all trained models
+                        let summaryHtml = `<div class="mb-2"><strong>Models Trained:</strong> ${data.models_trained}</div>`;
+                        if (data.failed_tables > 0) {
+                            summaryHtml += `<div class="text-warning small mt-1"><strong>Failed Tables:</strong> ${data.failed_tables}</div>`;
+                        }
+
+                        // Show individual model summaries
+                        summaryHtml += '<div class="mt-2" style="max-height: 200px; overflow-y: auto;">';
+                        data.model_summaries.forEach(model => {
+                            summaryHtml += `
                             <div class="alert alert-secondary small mb-1">
                                 <strong>${model.table}</strong><br>
                                 <small>Samples: ${model.samples} | Features: ${model.features} | Accuracy: ${model.accuracy}</small>
                             </div>
                         `;
-                    });
-                    summaryHtml += '</div>';
-                    
-                    metricsDiv.innerHTML = summaryHtml;
-                    resultsDiv.style.display = 'block';
-                    
-                    // Add message to chat
-                    addMessage(`🐍 ML Training Complete!\n\nSuccessfully trained ${data.models_trained} ${modelType} models across all database tables.\n\n${data.models_trained > 0 ? 'Model Details:\n' + data.model_summaries.map(m => `• ${m.table}: ${m.samples} samples, ${m.features} features, ${m.accuracy} accuracy`).join('\n') : ''}\n\nAll models are ready for predictions.`, 'ai');
-                } else {
+                        });
+                        summaryHtml += '</div>';
+
+                        metricsDiv.innerHTML = summaryHtml;
+                        resultsDiv.style.display = 'block';
+
+                        // Add message to chat
+                        addMessage(`🐍 ML Training Complete!\n\nSuccessfully trained ${data.models_trained} ${modelType} models across all database tables.\n\n${data.models_trained > 0 ? 'Model Details:\n' + data.model_summaries.map(m => `• ${m.table}: ${m.samples} samples, ${m.features} features, ${m.accuracy} accuracy`).join('\n') : ''}\n\nAll models are ready for predictions.`, 'ai');
+                    } else {
+                        statusDiv.className = 'alert alert-danger small';
+                        statusText.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>' + data.message;
+                    }
+                })
+                .catch(error => {
                     statusDiv.className = 'alert alert-danger small';
-                    statusText.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>' + data.message;
-                }
-            })
-            .catch(error => {
-                statusDiv.className = 'alert alert-danger small';
-                statusText.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Training failed';
-            });
+                    statusText.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Training failed';
+                });
         }
 
         function formatMLMetrics(metrics) {
@@ -954,22 +944,22 @@
                 showToast('No trained models available', 'warning');
                 return;
             }
-            
+
             // Show available models
-            let modelList = currentMLModels.map(model => 
+            let modelList = currentMLModels.map(model =>
                 `• ${model.table}: ${model.metrics.samples} samples, ${model.metrics.features} features`
             ).join('\n');
-            
+
             // Create dynamic examples based on actual trained tables
             let uniqueTables = [...new Set(currentMLModels.map(model => model.table))];
             let examples = '';
-            
+
             if (uniqueTables.length >= 2) {
                 examples = `Example: "Predict using the ${uniqueTables[0]} table model" or "Show me predictions from ${uniqueTables[1]} table"`;
             } else if (uniqueTables.length === 1) {
                 examples = `Example: "Predict using the ${uniqueTables[0]} table model"`;
             }
-            
+
             addMessage(`🐍 ML Models Ready!\n\nAvailable models for predictions:\n${modelList}\n\nYou can ask me to make predictions using any of the trained models. ${examples}`, 'ai');
         }
     </script>
