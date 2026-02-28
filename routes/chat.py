@@ -1,5 +1,5 @@
 """
-AI Chat Interface for HaoXai
+Research Chat Interface for HaoXai
 Natural language queries about virology data
 """
 import sqlite3
@@ -14,7 +14,7 @@ import flask
 from datetime import datetime
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'utils'))
-from ml_trainer import DatabaseTrainer
+from Statistical_trainer import DatabaseTrainer
 from master_sql_trainer import MasterSQLTrainer
 from master_python_trainer import MasterPythonTrainer
 
@@ -116,8 +116,8 @@ def parse_field_date(field_id):
     
     return 'N/A'
 
-def get_smart_ai():
-    """Get Smart AI instance - now using FREE local AI"""
+def get_intelligence_engine():
+    """Get Research Intelligence instance - now using FREE local AI"""
     db_type = session.get('db_type', 'sqlite')
     
     if db_type == 'sqlite':
@@ -125,10 +125,10 @@ def get_smart_ai():
     else:
         db_config = session.get('db_params')
     
-    return SmartLocalAI(db_config, db_type)
+    return IntelligenceEngine(db_config, db_type)
 
-class SmartLocalAI:
-    """Smart Local AI - FREE, dynamically queries any connected database with ML enhancement"""
+class IntelligenceEngine:
+    """Local Research Intelligence - FREE, dynamically queries any connected database with Statistical enhancement"""
     
     def __init__(self, db_config, db_type='sqlite'):
         self.db_config = db_config
@@ -140,16 +140,16 @@ class SmartLocalAI:
         self.master_python_trainer = None
         self.master_models_loaded = False
         
-        # Initialize ML trainer
+        # Initialize Statistical trainer
         try:
             self.trainer = DatabaseTrainer(db_config, db_type)
             self.models_loaded = self.trainer.load_models()
             if self.models_loaded:
-                print("✅ ML models loaded successfully")
+                print("✅ Statistical models loaded successfully")
             else:
                 print("ℹ️ No trained models available - using rule-based approach")
         except Exception as e:
-            print(f"⚠️ Error loading ML models: {e}")
+            print(f"⚠️ Error loading Statistical models: {e}")
             self.trainer = None
         
         # Initialize Master SQL trainer
@@ -179,9 +179,9 @@ class SmartLocalAI:
             self.master_python_trainer = None
         
         if self.master_models_loaded:
-            print("🚀 Master Intelligence models loaded successfully!")
+            print("🚀 Master Engine models loaded successfully!")
         elif self.models_loaded:
-            print("🧠 Enhanced ML models loaded successfully!")
+            print("🧠 Enhanced Statistical models loaded successfully!")
         else:
             print("ℹ️ Using basic rule-based approach")
     
@@ -724,32 +724,32 @@ class SmartLocalAI:
             return {}
     
     def analyze_question(self, question):
-        """Analyze question using ML models when available, fallback to rule-based approach"""
-        # Try ML approach first if models are available
+        """Analyze question using Statistical models when available, fallback to rule-based approach"""
+        # Try Statistical approach first if models are available
         if self.models_loaded and self.trainer:
             try:
                 # Use trained models for prediction
                 intent_prediction = self.trainer.predict_intent(question)
                 table_prediction = self.trainer.predict_table(question)
                 
-                print(f"DEBUG: ML predictions - Intent: {intent_prediction}, Table: {table_prediction}")
+                print(f"DEBUG: Statistical predictions - Intent: {intent_prediction}, Table: {table_prediction}")
                 
-                # If ML predictions are confident enough, use them
-                ml_analysis = self._ml_analysis(question, intent_prediction, table_prediction)
-                if ml_analysis:
-                    print(f"✅ Using ML analysis for: {question}")
-                    return ml_analysis
+                # If Statistical predictions are confident enough, use them
+                Statistical_analysis = self._ml_analysis(question, intent_prediction, table_prediction)
+                if Statistical_analysis:
+                    print(f"✅ Using Statistical analysis for: {question}")
+                    return Statistical_analysis
                 else:
-                    print(f"⚠️ ML analysis failed, falling back to rule-based")
+                    print(f"⚠️ Statistical analysis failed, falling back to rule-based")
             except Exception as e:
-                print(f"⚠️ ML analysis failed, falling back to rule-based: {e}")
+                print(f"⚠️ Statistical analysis failed, falling back to rule-based: {e}")
         
         # Fallback to rule-based analysis
         print(f"ℹ️ Using rule-based analysis for: {question}")
         return self._rule_based_analysis(question)
     
     def _ml_analysis(self, question, intent_prediction, table_prediction):
-        """Use ML models to analyze the question"""
+        """Use Statistical models to analyze the question"""
         try:
             # Check if predictions are confident enough (lowered threshold further)
             min_confidence = 0.2  # 20% minimum confidence (very permissive)
@@ -771,15 +771,15 @@ class SmartLocalAI:
                     }
                 }
                 
-                print(f"✅ Using ML analysis - Intent: {intent_prediction['intent']} (confidence: {intent_prediction['confidence']:.2f}), Table: {table_prediction['table']} (confidence: {table_prediction['confidence']:.2f})")
+                print(f"✅ Using Statistical analysis - Intent: {intent_prediction['intent']} (confidence: {intent_prediction['confidence']:.2f}), Table: {table_prediction['table']} (confidence: {table_prediction['confidence']:.2f})")
                 return analysis
             
             else:
-                print(f"⚠️ ML confidence too low - Intent: {intent_prediction['confidence']:.2f}, Table: {table_prediction['confidence']:.2f}")
+                print(f"⚠️ Statistical confidence too low - Intent: {intent_prediction['confidence']:.2f}, Table: {table_prediction['confidence']:.2f}")
                 return None
             
         except Exception as e:
-            print(f"Error in ML analysis: {e}")
+            print(f"Error in Statistical analysis: {e}")
             return None
     
     def _rule_based_analysis(self, question):
@@ -841,7 +841,7 @@ class SmartLocalAI:
         return analysis
     
     def _extract_keywords_enhanced(self, question):
-        """Enhanced keyword extraction for ML models"""
+        """Enhanced keyword extraction for Statistical models"""
         import re
         
         keywords = []
@@ -864,7 +864,7 @@ class SmartLocalAI:
         return list(dict.fromkeys(keywords))
     
     def generate_sql(self, analysis):
-        """Generate SQL query - use ML predictions when available, fallback to all tables"""
+        """Generate SQL query - use Statistical predictions when available, fallback to all tables"""
         schema = self.get_schema()
         
         if not schema:
@@ -872,11 +872,11 @@ class SmartLocalAI:
         
         results = []
         
-        # If ML analysis provided specific tables, use them first
+        # If Statistical analysis provided specific tables, use them first
         if 'ml_confidence' in analysis and analysis['tables']:
-            # Use ML-predicted tables with high confidence
+            # Use Statistical-predicted tables with high confidence
             target_tables = analysis['tables']
-            print(f"🎯 ML targeting tables: {target_tables}")
+            print(f"🎯 Statistical targeting tables: {target_tables}")
             
             for table in target_tables:
                 if table in schema:
@@ -884,9 +884,9 @@ class SmartLocalAI:
                     if query_result:
                         results.append(query_result)
             
-            # If no results from ML-predicted tables, fallback to broader search
+            # If no results from Statistical-predicted tables, fallback to broader search
             if not results:
-                print("🔄 ML tables yielded no results, expanding search...")
+                print("🔄 Statistical tables yielded no results, expanding search...")
                 all_tables = list(schema.keys())
                 for table in all_tables:
                     if table not in target_tables:
@@ -1035,11 +1035,11 @@ class SmartLocalAI:
             return None
     
     def format_response(self, question, results, analysis):
-        """Format query results with ML-enhanced responses"""
+        """Format query results with Statistical-enhanced responses"""
         if not results:
             return self._get_help_message(question)
         
-        # Check if we have ML confidence info and use enhanced formatting
+        # Check if we have Statistical confidence info and use enhanced formatting
         if 'ml_confidence' in analysis:
             return self._format_ml_response(question, results, analysis)
         
@@ -1059,15 +1059,15 @@ class SmartLocalAI:
         return "I found some data but couldn't format it properly. Try a more specific question."
     
     def _format_ml_response(self, question, results, analysis):
-        """Format response with ML-enhanced information"""
+        """Format response with Statistical-enhanced information"""
         response_parts = []
         
-        # Add ML confidence info
+        # Add Statistical confidence info
         if 'ml_confidence' in analysis:
             confidence = analysis['ml_confidence']
-            response_parts.append(f"🤖 **AI Analysis** (Confidence: {(confidence.get('intent', 0) * 100):.1f}%)")
+            response_parts.append(f"🤖 **Statistical Analysis** (Confidence: {(confidence.get('intent', 0) * 100):.1f}%)")
         
-        # Format results based on ML predictions
+        # Format results based on Statistical predictions
         results_found = False
         for result in results:
             if result['type'] == 'data' and result['rows']:
@@ -3628,7 +3628,7 @@ class SmartLocalAI:
             return None
             
         except Exception as e:
-            print(f"DEBUG: Error in Master Intelligence analysis: {str(e)}")
+            print(f"DEBUG: Error in Master Engine analysis: {str(e)}")
             return None
     
     def _execute_master_sql_query(self, question, sql_analysis):
@@ -3805,7 +3805,7 @@ conn.close()
             elif 'machine learning' in question.lower() or 'predict' in question.lower():
                 return '''🤖 **Python Machine Learning Suggestion**
 
-Based on your request for "{}", here's a Python ML template:
+Based on your request for "{}", here's a Python Statistical template:
 
 ```python
 import pandas as pd
@@ -3879,7 +3879,7 @@ print(feature_importance)
 conn.close()
 ```
 
-🎯 **This ML model will:**
+🎯 **This Statistical model will:**
 • Predict coronavirus positivity based on host characteristics
 • Identify the most important predictive features
 • Provide classification metrics and confusion matrix
@@ -3894,7 +3894,7 @@ conn.close()
             return None
     
     def ask(self, question):
-        """Main entry point - Master Intelligence approach: Master SQL/Python first, then fallback"""
+        """Main entry point - Master Engine approach: Master SQL/Python first, then fallback"""
         try:
             # Check for Excel upload related questions first
             question_lower = question.lower()
@@ -3917,14 +3917,14 @@ I can help you automatically fill Excel files with sample data from the database
 
             # FUNCTION 0: Try Master SQL/Python Intelligence first
             if self.master_models_loaded:
-                print("=== FUNCTION 0: Master Intelligence Analysis ===")
+                print("=== FUNCTION 0: Master Engine Analysis ===")
                 master_result = self._master_intelligence_analysis(question)
                 
                 if master_result and not self._is_empty_result(master_result):
-                    print("✓ Master Intelligence found results")
+                    print("✓ Master Engine found results")
                     return master_result
                 else:
-                    print("✗ Master Intelligence found no results")
+                    print("✗ Master Engine found no results")
 
             # FUNCTION 1: Try database structure approach
             print("=== FUNCTION 1: Database Structure Search ===")
@@ -3951,8 +3951,8 @@ I can help you automatically fill Excel files with sample data from the database
             return self._get_help_message(question)
             
         except Exception as e:
-            print(f"Error in Master Intelligence search: {str(e)}")
-            return f"I'm a Master Intelligence AI for your database! I can dynamically query any connected database with advanced SQL and Python capabilities.\n\nError: {str(e)}\n\nTry asking:\n- 'Compare coronavirus positivity rates across provinces'\n- 'Create a dashboard for screening results visualization'\n- 'Explain the complete research workflow for bat virology studies'\n- 'Show me host information for sample CANB_TIS23_L_075'"
+            print(f"Error in Master Engine search: {str(e)}")
+            return f"I'm a Master Engine AI for your database! I can dynamically query any connected database with advanced SQL and Python capabilities.\n\nError: {str(e)}\n\nTry asking:\n- 'Compare coronavirus positivity rates across provinces'\n- 'Create a dashboard for screening results visualization'\n- 'Explain the complete research workflow for bat virology studies'\n- 'Show me host information for sample CANB_TIS23_L_075'"
     
     def _database_structure_search(self, question):
         """Function 1: Search using known database structure"""
@@ -4504,8 +4504,8 @@ I couldn't find any information matching '{question}' in the database.
 
 """
 
-def get_smart_ai():
-    """Get Smart AI instance - now using FREE local AI"""
+def get_intelligence_engine():
+    """Get Research Intelligence instance - now using FREE local AI"""
     db_type = session.get('db_type', 'sqlite')
     
     if db_type == 'sqlite':
@@ -4513,10 +4513,10 @@ def get_smart_ai():
     else:
         db_config = session.get('db_params')
     
-    return SmartLocalAI(db_config, db_type)
+    return IntelligenceEngine(db_config, db_type)
 
 def get_ai_chat():
-    """Get or initialize AI chat instance using current session database"""
+    """Get or initialize Research Chat instance using current session database"""
     db_type = session.get('db_type', 'sqlite')
     
     if db_type == 'sqlite':
@@ -4527,7 +4527,7 @@ def get_ai_chat():
         db_config = session.get('db_params')
         
     print(f"DEBUG: Chat connection request - Type: {db_type}, Config available: {db_config is not None}")
-    return SmartLocalAI(db_config, db_type)
+    return IntelligenceEngine(db_config, db_type)
 
 @chat_bp.route('/')
 def chat_interface():
@@ -4545,7 +4545,7 @@ def chat_interface():
 
 @chat_bp.route('/ask', methods=['POST'])
 def ask_question():
-    """Handle AI chat questions with SmartLocalAI"""
+    """Handle Research Chat questions with IntelligenceEngine"""
     data = request.get_json()
     question = data.get('question', '')
     
@@ -4553,9 +4553,9 @@ def ask_question():
         return jsonify({'error': 'No question provided'}), 400
     
     try:
-        # Check if this is an ML prediction request
+        # Check if this is an Statistical prediction request
         question_lower = question.lower()
-        ml_keywords = ['predict', 'prediction', 'model', 'ml', 'machine learning']
+        Statistical_keywords = ['predict', 'prediction', 'model', 'ml', 'machine learning']
         
         # Get dynamic table keywords from trained models
         table_keywords = []
@@ -4586,22 +4586,22 @@ def ask_question():
         
         print(f"DEBUG: Chat question received: {question}")
         print(f"DEBUG: Question lower: {question_lower}")
-        print(f"DEBUG: ML keywords found: {[kw for kw in ml_keywords if kw in question_lower]}")
+        print(f"DEBUG: Statistical keywords found: {[kw for kw in Statistical_keywords if kw in question_lower]}")
         print(f"DEBUG: Table keywords found: {[tk for tk in table_keywords if tk in question_lower]}")
         
-        if (any(keyword in question_lower for keyword in ml_keywords) and 
+        if (any(keyword in question_lower for keyword in Statistical_keywords) and 
             any(table in question_lower for table in table_keywords)):
-            print("DEBUG: Routing to ML prediction endpoint")
-            # Route to ML prediction endpoint with request data
-            from routes.ml import ml_predict
+            print("DEBUG: Routing to Statistical prediction endpoint")
+            # Route to Statistical prediction endpoint with request data
+            from routes.ml import Statistical_predict
             
-            # Temporarily set flask.request.data for ML prediction function
+            # Temporarily set flask.request.data for Statistical prediction function
             original_request_data = getattr(flask.request, 'data', None)
             flask.request.data = {'query': question}
             print(f"DEBUG: Set flask.request.data to: {question}")
             
             try:
-                result = ml_predict()
+                result = Statistical_predict()
                 # Restore original request data
                 if original_request_data is not None:
                     flask.request.data = original_request_data
@@ -4618,8 +4618,8 @@ def ask_question():
         else:
             print("DEBUG: Routing to regular AI")
         
-        # Use SmartLocalAI for dynamic, intelligent responses
-        smart_ai = get_smart_ai()
+        # Use IntelligenceEngine for dynamic, intelligent responses
+        smart_ai = get_intelligence_engine()
         response = smart_ai.ask(question)
         
         return jsonify({'success': True, 'answer': response})
@@ -4686,7 +4686,7 @@ def upload_excel():
             return jsonify({'error': 'No sample IDs found in the file'}), 400
         
         # Process each sample and enrich data using simple, reliable approach
-        smart_ai = get_smart_ai()
+        smart_ai = get_intelligence_engine()
         enriched_data = []
         
         # Get all columns from the original Excel file (except sample ID column)
@@ -5004,13 +5004,13 @@ def upload_sample_list():
         if not sample_ids:
             return jsonify({'error': 'No sample IDs found in the file'}), 400
         
-        # Process samples using the new SmartLocalAI for dynamic queries
-        smart_ai = get_smart_ai()
+        # Process samples using the new IntelligenceEngine for dynamic queries
+        smart_ai = get_intelligence_engine()
         results = []
         
         for sample_id in sample_ids[:100]:  # Process up to 100 samples
             try:
-                # Use SmartLocalAI to find sample information dynamically
+                # Use IntelligenceEngine to find sample information dynamically
                 response = smart_ai.ask(f"Find sample {sample_id}")
                 results.append({
                     'SampleId': sample_id,
@@ -5115,7 +5115,7 @@ def get_suggestions():
         'suggestions': suggestions
     })
 
-# ML Training Routes
+# Statistical Training Routes
 @chat_bp.route('/training')
 def training_interface():
     """ML model training interface"""
@@ -5162,7 +5162,7 @@ def get_training_status():
 
 @chat_bp.route('/training/start', methods=['POST'])
 def start_training():
-    """Start ML model training"""
+    """Start Statistical model training"""
     try:
         data = request.get_json()
         force_retrain = data.get('force_retrain', False)
@@ -5194,7 +5194,7 @@ def start_training():
                 }), 400
         
         # Start training (this might take time)
-        print("Starting ML model training...")
+        print("Starting Statistical model training...")
         success = trainer.train_all_models()
         
         if success:

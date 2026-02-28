@@ -5,7 +5,7 @@
 {% block extra_css %}
 <style>
     /* Simple flex layout for chat */
-    .ai-chat-layout {
+    .hub-chat-layout {
         display: flex;
         height: calc(100vh - 200px);
         gap: 20px;
@@ -44,7 +44,7 @@
         gap: 12px;
     }
 
-    .ai-avatar-large {
+    .hub-avatar-large {
         width: 44px;
         height: 44px;
         border-radius: 14px;
@@ -56,7 +56,7 @@
         box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
     }
 
-    .ai-status {
+    .engine-status {
         display: flex;
         align-items: center;
         gap: 6px;
@@ -132,7 +132,7 @@
         background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
     }
 
-    .message-avatar-small.ai {
+    .message-avatar-small.engine {
         background: rgba(6, 182, 212, 0.15);
         border: 1px solid rgba(6, 182, 212, 0.3);
         color: #06b6d4;
@@ -153,7 +153,7 @@
         box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
     }
 
-    .message-row.ai .message-content {
+    .message-row.engine .message-content {
         background: rgba(30, 41, 59, 0.8);
         border: 1px solid rgba(148, 163, 184, 0.15);
         color: var(--text-primary);
@@ -460,7 +460,7 @@
     </div>
 
     <!-- Chat Layout -->
-    <div class="ai-chat-layout">
+    <div class="hub-chat-layout">
         <!-- Sidebar -->
         <div class="chat-sidebar">
             <!-- Welcome -->
@@ -552,7 +552,7 @@
                         style="width: 44px; height: 44px; border-radius: 14px;">
                     <div>
                         <div class="fw-semibold">HaoXai Intelligence</div>
-                        <div class="ai-status">
+                        <div class="engine-status">
                             <span class="status-dot"></span>
                             <span>Online</span>
                         </div>
@@ -571,7 +571,7 @@
             <!-- Messages -->
             <div class="chat-messages-area" id="chat-messages">
                 <!-- Welcome Message -->
-                <div class="message-row ai">
+                <div class="message-row engine">
                     <img src="/static/logo-icon.svg" alt="HaoXai"
                         style="width: 32px; height: 32px; border-radius: 10px;">
                     <div>
@@ -658,14 +658,14 @@
                 .then(data => {
                     hideTyping();
                     if (data.success) {
-                        addMessage(data.answer, 'ai');
+                        addMessage(data.answer, 'engine');
                     } else {
-                        addMessage('Sorry, I encountered an error: ' + data.answer, 'ai');
+                        addMessage('Sorry, I encountered an error: ' + data.answer, 'engine');
                     }
                 })
                 .catch(error => {
                     hideTyping();
-                    addMessage('Sorry, I encountered a network error. Please try again.', 'ai');
+                    addMessage('Sorry, I encountered a network error. Please try again.', 'engine');
                 });
         }
 
@@ -677,7 +677,7 @@
             row.className = 'message-row ' + sender;
 
             const avatar = sender === 'user' ? '<i class="bi bi-person-fill"></i>' : '<img src="/static/logo-icon.svg" alt="HaoXai" style="width: 32px; height: 32px; border-radius: 10px;">';
-            const avatarClass = sender === 'user' ? 'user' : 'ai';
+            const avatarClass = sender === 'user' ? 'user' : 'engine';
 
             // Convert newlines to <br> tags for proper display
             const formattedText = text.replace(/\n/g, '<br>');
@@ -699,10 +699,10 @@
         function showTyping() {
             const container = document.getElementById('chat-messages');
             const typingDiv = document.createElement('div');
-            typingDiv.className = 'message-row ai';
+            typingDiv.className = 'message-row engine';
             typingDiv.id = 'typing-indicator';
             typingDiv.innerHTML = `
-            <div class="message-avatar-small ai"><img src="/static/logo-icon.svg" alt="HaoXai" style="width: 32px; height: 32px; border-radius: 10px;"></div>
+            <div class="message-avatar-small engine"><img src="/static/logo-icon.svg" alt="HaoXai" style="width: 32px; height: 32px; border-radius: 10px;"></div>
             <div class="typing-bubble">
                 <div class="dot"></div>
                 <div class="dot"></div>
@@ -721,10 +721,10 @@
         function clearChat() {
             const container = document.getElementById('chat-messages');
             container.innerHTML = `
-            <div class="message-row ai">
-                <div class="message-avatar-small ai"><img src="/static/logo-icon.svg" alt="HaoXai" style="width: 32px; height: 32px; border-radius: 10px;"></div>
+            <div class="message-row engine">
+                <div class="message-avatar-small engine"><img src="/static/logo-icon.svg" alt="HaoXai" style="width: 32px; height: 32px; border-radius: 10px;"></div>
                 <div>
-                    <div class="message-content">Hello! I'm your HaoXai AI Assistant. How can I help you today?</div>
+                    <div class="message-content">Hello! I'm the HaoXai Intelligence Hub. How can I assist with your data analysis today?</div>
                     <div class="message-time">Just now</div>
                 </div>
             </div>
@@ -795,14 +795,14 @@
                         messageHtml += '<br><button onclick="downloadExcel()" class="btn btn-primary btn-sm">' +
                             '<i class="bi bi-download"></i> Download Complete Results (Excel)</button>';
 
-                        addMessage(messageHtml, 'ai');
+                        addMessage(messageHtml, 'engine');
                     } else {
-                        addMessage('Error: ' + (data.error || 'Failed to process file'), 'ai');
+                        addMessage('Error: ' + (data.error || 'Failed to process file'), 'engine');
                     }
                 })
                 .catch(error => {
                     hideTyping();
-                    addMessage('Sorry, upload failed: ' + error.message, 'ai');
+                    addMessage('Sorry, upload failed: ' + error.message, 'engine');
                 })
                 .finally(() => {
                     input.value = ''; // Reset input
@@ -917,7 +917,7 @@
                         resultsDiv.style.display = 'block';
 
                         // Add message to chat
-                        addMessage(`🐍 ML Training Complete!\n\nSuccessfully trained ${data.models_trained} ${modelType} models across all database tables.\n\n${data.models_trained > 0 ? 'Model Details:\n' + data.model_summaries.map(m => `• ${m.table}: ${m.samples} samples, ${m.features} features, ${m.accuracy} accuracy`).join('\n') : ''}\n\nAll models are ready for predictions.`, 'ai');
+                        addMessage(`🐍 ML Training Complete!\n\nSuccessfully trained ${data.models_trained} ${modelType} models across all database tables.\n\n${data.models_trained > 0 ? 'Model Details:\n' + data.model_summaries.map(m => `• ${m.table}: ${m.samples} samples, ${m.features} features, ${m.accuracy} accuracy`).join('\n') : ''}\n\nAll models are ready for predictions.`, 'engine');
                     } else {
                         statusDiv.className = 'alert alert-danger small';
                         statusText.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>' + data.message;
@@ -958,7 +958,7 @@
                 examples = `Example: "Predict using the ${uniqueTables[0]} table model"`;
             }
 
-            addMessage(`🐍 ML Models Ready!\n\nAvailable models for predictions:\n${modelList}\n\nYou can ask me to make predictions using any of the trained models. ${examples}`, 'ai');
+            addMessage(`🐍 ML Models Ready!\n\nAvailable models for predictions:\n${modelList}\n\nYou can ask me to make predictions using any of the trained models. ${examples}`, 'engine');
         }
     </script>
     {% endblock %}
