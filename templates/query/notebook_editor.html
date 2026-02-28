@@ -971,6 +971,126 @@
         line-height: 1.6;
         white-space: pre-wrap;
     }
+
+    /* Search Results */
+    .search-panel {
+        padding: 12px;
+    }
+
+    .search-input-group {
+        position: relative;
+        margin-bottom: 15px;
+    }
+
+    .search-input {
+        width: 100%;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        padding: 8px 32px 8px 12px;
+        color: var(--text-primary);
+        font-size: 13px;
+    }
+
+    .search-icon {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: 12px;
+    }
+
+    .search-results {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .search-result-item {
+        padding: 10px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .search-result-item:hover {
+        background: var(--bg-hover);
+        border-color: var(--accent-primary);
+        transform: translateX(4px);
+    }
+
+    .search-result-type {
+        font-size: 10px;
+        text-transform: uppercase;
+        color: var(--accent-primary);
+        margin-bottom: 4px;
+        font-weight: 700;
+    }
+
+    .search-result-title {
+        font-weight: 600;
+        font-size: 13px;
+        margin-bottom: 2px;
+    }
+
+    .search-result-snippet {
+        font-size: 11px;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .placeholder-text {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-muted);
+        font-size: 12px;
+    }
+
+    /* Settings Panel */
+    .settings-panel {
+        padding: 15px;
+    }
+
+    .settings-section {
+        margin-bottom: 24px;
+    }
+
+    .settings-title {
+        font-size: 11px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        font-weight: 700;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 6px;
+    }
+
+    .settings-item {
+        margin-bottom: 15px;
+    }
+
+    .settings-item label {
+        display: block;
+        font-size: 12px;
+        margin-bottom: 6px;
+        color: var(--text-secondary);
+    }
+
+    .settings-item select {
+        width: 100%;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        padding: 6px 10px;
+        color: var(--text-primary);
+        font-size: 13px;
+    }
 </style>
 {% endblock %}
 
@@ -1077,6 +1197,61 @@
             <div class="sidebar-content">
                 <div class="schema-tree" id="schema-list">
                     <div style="padding: 12px; color: var(--text-muted); text-align: center;">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search View -->
+        <div id="sidebar-search" class="sidebar-view" style="display: none;">
+            <div class="sidebar-header"><span>Universal Search</span></div>
+            <div class="sidebar-content">
+                <div class="search-panel">
+                    <div class="search-input-group">
+                        <input type="text" id="global-search-input" class="search-input"
+                            placeholder="Search files, tables, cells..." onkeyup="handleGlobalSearch(event)">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                    <div id="search-results" class="search-results">
+                        <div class="placeholder-text">Type to search everything...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings View -->
+        <div id="sidebar-settings" class="sidebar-view" style="display: none;">
+            <div class="sidebar-header"><span>Settings</span></div>
+            <div class="sidebar-content settings-panel">
+                <div class="settings-section">
+                    <div class="settings-title">Environment</div>
+                    <!-- R configuration moved here from packages -->
+                    <div id="settings-r-config" class="settings-item">
+                        <label>Rscript Path</label>
+                        <div class="config-input-wrapper">
+                            <input type="text" id="settings-r-path" class="config-input"
+                                placeholder="C:\...\Rscript.exe" onchange="saveSettingsRPath()">
+                            <button class="config-btn" onclick="saveSettingsRPath()"><i
+                                    class="fas fa-save"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-title">Editor Appearance</div>
+                    <div class="settings-item">
+                        <label>Font Size</label>
+                        <select id="settings-font-size" onchange="updateEditorFontSize()">
+                            <option value="12px">12px</option>
+                            <option value="13px" selected>13px</option>
+                            <option value="14px">14px</option>
+                            <option value="16px">16px</option>
+                        </select>
+                    </div>
+                    <div class="settings-item">
+                        <label>Theme</label>
+                        <select id="settings-theme" disabled>
+                            <option value="dark">HaoXai Dark (Default)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2877,7 +3052,130 @@
     }
 
     function toggleSettings() {
-        alert('Settings panel coming soon!');
+        showSidebar('settings');
+        // Pre-fill settings
+        const rPath = localStorage.getItem('rscript_path') || '';
+        document.getElementById('settings-r-path').value = rPath;
+    }
+
+    function saveSettingsRPath() {
+        const path = document.getElementById('settings-r-path').value.trim();
+        if (path) {
+            localStorage.setItem('rscript_path', path);
+            updateStatus('R path saved');
+            // Sync with other inputs
+            const packageRPath = document.getElementById('r-path-input');
+            if (packageRPath) packageRPath.value = path;
+        }
+    }
+
+    // --- Global Universal Search Logic ---
+    function handleGlobalSearch(event) {
+        const query = event.target.value.toLowerCase().trim();
+        const resultsContainer = document.getElementById('search-results');
+
+        if (!query || query.length < 2) {
+            resultsContainer.innerHTML = '<div class="placeholder-text">Type at least 2 characters to search...</div>';
+            return;
+        }
+
+        const results = [];
+
+        // 1. Search Files
+        workspaceFiles.forEach(file => {
+            if (file.name.toLowerCase().includes(query)) {
+                results.push({
+                    type: 'File',
+                    icon: 'fa-file',
+                    title: file.name,
+                    snippet: file.path,
+                    action: () => {
+                        if (file.type === 'directory') {
+                            navigateToFolder(file.path);
+                            showSidebar('files');
+                        } else {
+                            insertFilePath(file.path);
+                        }
+                    }
+                });
+            }
+        });
+
+        // 2. Search Database Tables (if loaded)
+        if (typeof databaseSchema !== 'undefined' && databaseSchema) {
+            Object.keys(databaseSchema).forEach(tableName => {
+                if (tableName.toLowerCase().includes(query)) {
+                    results.push({
+                        type: 'Table',
+                        icon: 'fa-table',
+                        title: tableName,
+                        snippet: `Database table: ${tableName}`,
+                        action: () => {
+                            showSidebar('database');
+                            const item = Array.from(document.querySelectorAll('.schema-item'))
+                                .find(el => el.textContent.includes(tableName));
+                            if (item) item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    });
+                }
+            });
+        }
+
+        // 3. Search Notebook Cells
+        cells.forEach((cell, index) => {
+            const content = cell.editor ? cell.editor.getValue() : '';
+            if (content.toLowerCase().includes(query)) {
+                const line = content.toLowerCase().split('\n').find(l => l.includes(query));
+                results.push({
+                    type: 'Cell',
+                    icon: 'fa-code',
+                    title: `Cell #${index + 1}`,
+                    snippet: line ? line.trim() : 'Match in cell content',
+                    action: () => {
+                        const cellEl = document.getElementById(cell.id);
+                        if (cellEl) {
+                            cellEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            cellEl.classList.add('highlight-cell');
+                            setTimeout(() => cellEl.classList.remove('highlight-cell'), 2000);
+                        }
+                    }
+                });
+            }
+        });
+
+        renderSearchResults(results);
+    }
+
+    function renderSearchResults(results) {
+        const resultsContainer = document.getElementById('search-results');
+        if (results.length === 0) {
+            resultsContainer.innerHTML = '<div class="placeholder-text">No results found</div>';
+            return;
+        }
+
+        resultsContainer.innerHTML = '';
+        results.slice(0, 15).forEach(res => {
+            const item = document.createElement('div');
+            item.className = 'search-result-item';
+            item.innerHTML = `
+                <div class="search-result-type">${res.type}</div>
+                <div class="search-result-title"><i class="fas ${res.icon} mr-2"></i> ${res.title}</div>
+                <div class="search-result-snippet">${res.snippet}</div>
+            `;
+            item.onclick = res.action;
+            resultsContainer.appendChild(item);
+        });
+    }
+
+    function updateEditorFontSize() {
+        const size = document.getElementById('settings-font-size').value;
+        document.documentElement.style.setProperty('--editor-font-size', size);
+        cells.forEach(cell => {
+            if (cell.editor) {
+                cell.editor.getWrapperElement().style.fontSize = size;
+                cell.editor.refresh();
+            }
+        });
     }
 
     // Removed redefined updateStatus and updateConnectionStatus to allow base.html versions to work
