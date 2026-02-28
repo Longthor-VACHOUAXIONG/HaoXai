@@ -312,10 +312,16 @@ def load_bat_models():
 def train_bat_model():
     """Train specialized bat identification model"""
     try:
-        force_train = request.json.get('force', False) if request.is_json else False
+        # Handle both JSON and FormData
+        if request.is_json:
+            force_train = request.json.get('force', False)
+            uploaded_file = None
+        else:
+            force_train = request.form.get('force') == 'true'
+            uploaded_file = request.files.get('file')
         
         # Only skip if NOT forcing and models exist
-        if not force_train:
+        if not force_train and not uploaded_file:
             existing_models = load_bat_models()
             if existing_models:
                 # Models already exist and we aren't forcing, so just return status
@@ -333,24 +339,16 @@ def train_bat_model():
                     'pre_trained': True
                 })
         
-        # If no models exist, train new ones (this should only happen once)
-        print("DEBUG: No pre-trained models found, training new models...")
-        
-        # Load BATHOST data
-        source_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        excel_path = os.path.join(source_dir, 'DataExcel', 'BATHOST.xlsx')
-        
-        if not os.path.exists(excel_path):
-            excel_path = os.path.join(source_dir, 'DataExcel', 'Bathost.xlsx')
-        
-        if not os.path.exists(excel_path):
+        # Prepare dataframe
+        if uploaded_file:
+            print(f"DEBUG: Training models using uploaded custom file: {uploaded_file.filename}")
+            df = pd.read_excel(uploaded_file)
+        else:
+            # Enforce mandatory file upload as per user requirement
             return jsonify({
                 'success': False,
-                'message': 'BATHOST.xlsx not found in DataExcel. Cannot train models.'
+                'message': 'Please select a custom training file (.xlsx) first.'
             })
-            
-        print(f"DEBUG: Training models using data from {excel_path}...")
-        df = pd.read_excel(excel_path)
         
         # Standardize column names
         df.columns = [str(col).strip() for col in df.columns]
@@ -396,30 +394,40 @@ def train_bat_model():
                          df = df.rename(columns={col: m})
                          break
         
+        # FINAL CHECK for required columns (especially for uploaded files)
+        re_missing = [c for c in required_cols if c not in df.columns]
+        if re_missing:
+            return jsonify({
+                'success': False,
+                'message': f'Uploaded file is missing required columns: {", ".join(re_missing)}'
+            })
+
         # Verify required columns exist before dropping NA
         existing_required = [c for c in required_cols if c in df.columns]
         clean_df = df.dropna(subset=existing_required).copy()
         
+        # CREATE BINOMIAL TARGET early for filtering (ensures uniqueness across genera)
+        clean_df['binomial'] = clean_df['genus'] + "_" + clean_df['species']
+        
         # REMOVE OUTLIERS (Strict filtering for accuracy)
         if 'W' in clean_df.columns:
-            clean_df = clean_df[(clean_df['W'] > 0) & (clean_df['W'] < 200)]
+            clean_df = clean_df[(clean_df['W'] > 0) & (clean_df['W'] < 300)]
         if 'TIB' in clean_df.columns:
-            clean_df = clean_df[(clean_df['TIB'] > 0) & (clean_df['TIB'] < 100)]
+            clean_df = clean_df[(clean_df['TIB'] > 0) & (clean_df['TIB'] < 300)]
         if 'FA' in clean_df.columns:
-            clean_df = clean_df[(clean_df['FA'] > 10) & (clean_df['FA'] < 150)]
+            clean_df = clean_df[(clean_df['FA'] > 0) & (clean_df['FA'] < 300)]
 
         # ITERATIVE RARE CLASS FILTERING
+        # We MUST filter on 'binomial' to ensure species models have enough samples
+        # for EVERY unique genus-species combination.
         for _ in range(2):
-            species_counts = clean_df['species'].value_counts()
-            valid_species = species_counts[species_counts >= 3].index
-            clean_df = clean_df[clean_df['species'].isin(valid_species)]
+            binomial_counts = clean_df['binomial'].value_counts()
+            valid_binomials = binomial_counts[binomial_counts >= 3].index
+            clean_df = clean_df[clean_df['binomial'].isin(valid_binomials)]
             
             genus_counts = clean_df['genus'].value_counts()
             valid_genus = genus_counts[genus_counts >= 3].index
             clean_df = clean_df[clean_df['genus'].isin(valid_genus)]
-        
-        # CREATE BINOMIAL TARGET for species model (ensures uniqueness across genera)
-        clean_df['binomial'] = clean_df['genus'] + "_" + clean_df['species']
         
         print(f"DEBUG: Clean dataset: {len(clean_df)} records (from {initial_count} initial)")
         print(f"DEBUG: Unique Genus: {clean_df['genus'].nunique()}, Unique Binomials: {clean_df['binomial'].nunique()}")
@@ -499,7 +507,7 @@ def train_bat_model():
             'species_accuracy': round(species_acc * 100, 2),
             'sample_count': len(clean_df),
             'genus_classes': len(genus_le.classes_),
-            'species_classes': len(species_le.classes_),
+            'species_classes': len(binomial_le.classes_),
             'pre_trained': False
         })
         

@@ -185,8 +185,10 @@ uploads/
 batch_results/
 outputs/
 
-# Model files (keep essential ones)
-!models/*.pkl
+# Model files (too large for standard Git - use LFS or exclude)
+models/*.pkl
+*.pkl
+*.__wz_cache
 enhanced_models/
 complete_models/
 master_python_models/

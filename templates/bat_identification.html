@@ -631,9 +631,19 @@
                 </div>
             </div>
 
-            <button class="btn btn-primary" onclick="trainModel()" id="trainBtn">
-                <i class="bi bi-cpu"></i> Load Models
-            </button>
+            <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                <button class="btn btn-primary" onclick="trainModel()" id="trainBtn">
+                    <i class="bi bi-cpu"></i> Train from File
+                </button>
+                <div style="flex: 1;">
+                    <input type="file" id="trainingFile" accept=".xlsx,.xls" style="display: none;"
+                        onchange="updateTrainingFileName()">
+                    <button class="btn btn-outline-secondary w-100"
+                        onclick="document.getElementById('trainingFile').click()" id="browseTrainBtn">
+                        <i class="bi bi-folder2-open"></i> <span id="trainFileName">Browse Training File...</span>
+                    </button>
+                </div>
+            </div>
 
             <form id="batPredictionForm">
                 <div class="form-group">
@@ -948,7 +958,7 @@
 
                 statusDetails.style.display = 'block';
                 predictBtn.disabled = false;
-                trainBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Retrain Model';
+                trainBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Train from File';
                 trainBtn.disabled = false;
                 trainBtn.classList.remove('btn-primary');
                 trainBtn.classList.add('btn-outline-primary');
@@ -959,7 +969,7 @@
                 statusText.className = 'status-value status-not-trained';
                 statusDetails.style.display = 'none';
                 predictBtn.disabled = true;
-                trainBtn.innerHTML = '<i class="bi bi-cpu"></i> Load Models';
+                trainBtn.innerHTML = '<i class="bi bi-cpu"></i> Train from File';
                 trainBtn.disabled = false;
 
                 modelTrained = false;
@@ -968,18 +978,25 @@
 
         async function trainModel() {
             try {
-                const trainBtn = document.getElementById('trainBtn');
-                trainBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Loading Models...';
-                trainBtn.disabled = true;
+                const trainingFile = document.getElementById('trainingFile').files[0];
 
-                console.log('DEBUG: Starting model loading/training...');
+                if (!trainingFile) {
+                    showAlert('warning', '⚠️ Please select a training file (.xlsx) using the Browse button first.');
+                    return;
+                }
+
+                const trainBtn = document.getElementById('trainBtn');
+                trainBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Training...';
+                const formData = new FormData();
+                formData.append('force', 'true');
+                if (trainingFile) {
+                    formData.append('file', trainingFile);
+                    console.log('DEBUG: Including custom training file:', trainingFile.name);
+                }
 
                 const response = await fetch('/bat-ml/train-bat-model', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ force: true })
+                    body: formData
                 });
 
                 // After training, restore button style
@@ -1022,8 +1039,18 @@
                 showAlert('error', '❌ Failed to load models. Please try again.');
             } finally {
                 const trainBtn = document.getElementById('trainBtn');
-                trainBtn.innerHTML = '<i class="bi bi-cpu"></i> Load Models';
+                trainBtn.innerHTML = '<i class="bi bi-cpu"></i> Train from File';
                 trainBtn.disabled = false;
+            }
+        }
+
+        function updateTrainingFileName() {
+            const file = document.getElementById('trainingFile').files[0];
+            const nameSpan = document.getElementById('trainFileName');
+            if (file) {
+                nameSpan.textContent = file.name;
+            } else {
+                nameSpan.textContent = 'Browse Training File...';
             }
         }
 
