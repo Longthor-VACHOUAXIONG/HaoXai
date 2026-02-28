@@ -3281,8 +3281,10 @@
     async function explainSearchResult(type, title) {
         const cellResults = cells.filter((c, i) => `Cell #${i + 1}` === title);
         let content = '';
+        let output = '';
         if (cellResults.length > 0) {
             content = cellResults[0].editor?.getValue() || '';
+            output = cellResults[0].output || '';
         }
 
         if (!content) return;
@@ -3301,7 +3303,11 @@
             const response = await fetch('/query/notebook/explain', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: content, context: type })
+                body: JSON.stringify({
+                    code: content,
+                    context: type,
+                    output: output
+                })
             });
 
             if (!response.ok) throw new Error('API Error');

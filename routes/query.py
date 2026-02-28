@@ -129,65 +129,75 @@ def pip_install():
 
 @query_bp.route('/notebook/explain', methods=['POST'])
 def explain_code():
-    """Provide explanation for code snippets"""
+    """Provide explanation for code snippets and troubleshoot errors"""
     try:
         data = request.json
         code = data.get('code', '').strip()
         context = data.get('context', 'Code')
+        output_html = data.get('output', '').strip()
         
         if not code:
             return jsonify({'explanation': 'No code provided to explain.'})
 
-        # Heuristic-based intelligent explanation
-        explanation = []
-        
-        # 1. Identify Language/Detect Patterns
+        # 1. Identify Language
         is_sql = any(k in code.upper() for k in ['SELECT', 'FROM', 'WHERE', 'JOIN', 'INSERT', 'UPDATE', 'DELETE'])
         is_r = any(k in code for k in ['<-', 'library(', 'ggplot(', 'dplyr::'])
         is_python = not is_sql and not is_r
 
+        explanation = []
         explanation.append(f"### 💡 Code Insight ({context})")
         
-        if is_sql:
-            explanation.append("**Type:** SQL Query")
-            if 'SELECT' in code.upper():
-                explanation.append("• **Purpose:** Retrieves specific data columns from one or more database tables.")
-            if 'JOIN' in code.upper():
-                explanation.append("• **Relational Logic:** Combines rows from multiple tables based on a related column.")
-            if 'WHERE' in code.upper():
-                explanation.append("• **Filtering:** Uses conditions to narrow down results (lookup/filter).")
-            if 'GROUP BY' in code.upper():
-                explanation.append("• **Aggregation:** Organizes data into groups to perform calculations (like COUNT or SUM).")
-        
-        elif is_r:
-            explanation.append("**Type:** R Statistical Script")
-            if 'library(' in code:
-                libs = re.findall(r'library\((.*?)\)', code)
-                explanation.append(f"• **Dependencies:** Loading external libraries: {', '.join(libs)}")
-            if 'ggplot' in code:
-                explanation.append("• **Visualization:** Using Grammar of Graphics (ggplot2) to create a visual chart.")
-            if '<-' in code:
-                explanation.append("• **Assignment:** Storing a value or data structure into a variable using the R assignment operator.")
+        # 2. Add Type Info
+        if is_sql: explanation.append("**Type:** SQL Query")
+        elif is_r: explanation.append("**Type:** R Statistical Script")
+        else: explanation.append("**Type:** Python Script")
 
+        # 3. Parse Errors if present in output
+        error_msg = ""
+        if 'output-error' in output_html:
+            # Extract plain text from HTML error div
+            error_match = re.search(r'>(.*?)<', output_html.replace('\n', ' '))
+            if error_match:
+                error_msg = error_match.group(1).strip()
+            
+            # Fallback for complex HTML structures
+            if not error_msg or len(error_msg) < 5:
+                error_msg = re.sub('<[^<]+?>', '', output_html).strip()
+
+        if error_msg:
+            explanation.append(f"\n#### ⚠️ Execution Error Detected\n`{error_msg}`")
+            explanation.append("\n**Smart Fix Suggestion:**")
+            
+            # Troubleshooting logic
+            if "name '" in error_msg and "' is not defined" in error_msg:
+                var_name = re.findall(r"name '(.*?)' is not defined", error_msg)
+                var_name = var_name[0] if var_name else "this variable"
+                explanation.append(f"• The variable **{var_name}** is used but hasn't been defined yet. \n• **Fix:** Define it before use (e.g., `{var_name} = 10`) or check for typos.")
+            elif "syntax error" in error_msg.lower():
+                explanation.append("• There is a structural mistake in the code logic. \n• **Fix:** Check for missing commas, unclosed brackets `()`, or mismatched quotes `\" '`.")
+            elif "module not found" in error_msg.lower() or "no module named" in error_msg.lower():
+                explanation.append("• A required library is missing. \n• **Fix:** Install it using the Package Manager (Pip) in the sidebar.")
+            elif "no such table" in error_msg.lower():
+                explanation.append("• The database table you are referencing does not exist. \n• **Fix:** Check the 'Database Schema' sidebar for the correct table names.")
+            elif "could not find function" in error_msg.lower():
+                explanation.append("• An R function is being called without its library. \n• **Fix:** Add `library(your_package)` at the top of the cell.")
+            else:
+                explanation.append("• The execution failed due to an runtime exception. Review the code's logic and data types for inconsistencies.")
         else:
-            explanation.append("**Type:** Python Script")
-            if 'import' in code:
-                libs = re.findall(r'import\s+([\w\.]+)', code)
-                explanation.append(f"• **Imports:** Uses modules like: {', '.join(libs)}")
-            if 'pd.' in code or 'pandas' in code:
-                explanation.append("• **Data Frames:** Processing tabular data using the Pandas library.")
-            if 'plt.' in code or 'matplotlib' in code:
-                explanation.append("• **Plotting:** Generating scientific visualizations via Matplotlib.")
-            if 'def ' in code:
-                explanation.append("• **Definition:** Encapsulates logic into a reusable function.")
+            # Standard explanation if no error
+            explanation.append("\n**Functional Overview:**")
+            if is_sql:
+                if 'SELECT' in code.upper(): explanation.append("• Retrieves and filters data from the database.")
+                if 'JOIN' in code.upper(): explanation.append("• Relates multiple tables using common identifiers.")
+            elif is_r:
+                if 'library(' in code: explanation.append("• Loads specialized statistical and visualization modules.")
+                if 'ggplot' in code: explanation.append("• Generates high-quality data visualizations.")
+            else:
+                if 'import' in code: explanation.append("• Extends functionality using external Python modules.")
+                if 'pd.' in code or 'pandas' in code: explanation.append("• Performs complex data manipulation and analysis.")
 
-        explanation.append("\n**How it works:**")
-        explanation.append("This snippet represents a functional block of logic designed to interact with your data. "
-                           "In a browser, you might search for the specific libraries or syntax shown here to find deeper documentation.")
-        
-        # Check for obvious errors
-        if 'error' in code.lower() or 'exception' in code.lower():
-            explanation.append("\n⚠️ **Note:** This code contains references to error handling, which is used to prevent the program from crashing if something goes wrong.")
+            explanation.append("\n**Efficiency Tip:**")
+            explanation.append("Keep your logic modular. Small, focused cells are easier to debug and faster to execute.")
 
         return jsonify({'explanation': '\n'.join(explanation)})
 
