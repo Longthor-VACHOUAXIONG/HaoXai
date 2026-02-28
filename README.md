@@ -1,4 +1,4 @@
-# 🐉 HaoXai Intelligence
+# <img src="static/logo-icon.svg" width="40" height="40" style="vertical-align: middle; margin-right: 10px;"> HaoXai Intelligence
 
 A specialized research and data management system designed for scientific workflows, laboratory tracking, and AI-accelerated data analysis.
 
