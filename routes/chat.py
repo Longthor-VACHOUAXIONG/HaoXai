@@ -14,7 +14,7 @@ import flask
 from datetime import datetime
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'utils'))
-from Statistical_trainer import DatabaseTrainer
+from ml_trainer import DatabaseTrainer
 from master_sql_trainer import MasterSQLTrainer
 from master_python_trainer import MasterPythonTrainer
 
