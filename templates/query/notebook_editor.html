@@ -37,7 +37,7 @@
         --gradient-accent: linear-gradient(135deg, #58a6ff 0%, #bc8cff 100%);
         --gradient-success: linear-gradient(135deg, #3fb950 0%, #39d2c0 100%);
         --gradient-danger: linear-gradient(135deg, #f85149 0%, #da3633 100%);
-        --glass-bg: #161b22;
+        --glass-bg: rgba(22, 27, 34, 0.95);
         --glass-border: #30363d;
         --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
         --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
@@ -67,25 +67,32 @@
         -moz-osx-font-smoothing: grayscale;
     }
 
-    /* Hide global app UI to prevent ghosting/clutter */
-    #sidebar,
+    /* Refine global app UI for IDE integration */
     .navbar,
     .status-bar {
+        display: flex !important;
+        background: var(--bg-secondary) !important;
+        border-bottom: 1px solid var(--glass-border) !important;
+        backdrop-filter: blur(8px);
+    }
+
+    /* Hide the main app sidebar in the IDE page */
+    #sidebar {
         display: none !important;
     }
 
     .main-content {
         margin-left: 0 !important;
-        margin-top: 0 !important;
+        margin-top: var(--header-height) !important;
         padding: 0 !important;
-        height: 100vh !important;
-        max-height: 100vh !important;
+        height: calc(100vh - var(--header-height)) !important;
+        max-height: calc(100vh - var(--header-height)) !important;
         overflow: hidden !important;
     }
 
     .ide-container {
         display: flex;
-        height: 100vh;
+        height: calc(100vh - var(--header-height) - var(--statusbar-height));
         width: 100vw;
     }
 
@@ -147,6 +154,13 @@
     }
 
     /* Sidebar - Glassmorphism */
+    .activity-separator {
+        height: 1px;
+        background: var(--border-color);
+        margin: 10px 15px;
+        opacity: 0.3;
+    }
+
     .sidebar {
         width: var(--sidebar-width);
         background: var(--glass-bg);
@@ -968,6 +982,10 @@
 <div class="ide-container">
     <!-- Activity Bar -->
     <div class="activity-bar">
+        <div class="activity-item" onclick="window.location.href='/main/dashboard'" title="Home">
+            <i class="fas fa-home"></i>
+        </div>
+        <div class="activity-separator"></div>
         <div class="activity-item active" onclick="showSidebar('files')" title="Explorer">
             <i class="fas fa-folder-open"></i>
         </div>
