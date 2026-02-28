@@ -1,78 +1,73 @@
-# 🐉 HaoXai Intelligence: The Advanced Data Platform
+# 🐉 HaoXai Intelligence
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Flask](https://img.shields.io/badge/Flask-2.0+-green.svg)](https://flask.palletsprojects.com/)
-[![R-Stat](https://img.shields.io/badge/R--Language-Statistical-blue.svg)](https://www.r-project.org/)
-[![AI-Powered](https://img.shields.io/badge/AI-Smart_Fix-orange.svg)](#intelligence-notebook)
-
-**HaoXai Intelligence** is a comprehensive, multi-disciplinary platform designed for high-stakes scientific research and complex data operations. Originally built for virology, it has evolved into a universal intelligence suite that combines machine learning, real-time data processing, and an interactive notebook environment into a single, high-fidelity workstation.
+A specialized research and data management system designed for scientific workflows, laboratory tracking, and AI-accelerated data analysis.
 
 ---
 
-## 🚀 Core Ecosystem
+## 🛠 Features
 
-### 🧪 Advanced Intelligence Notebook
-The heart of the HaoXai console. It provides a premium, IDE-like experience for data scientists and researchers.
-- **Universal Runtime**: Execute **SQL**, **Python**, and **R** in a single workflow.
-- **Smart Fix AI**: Real-time error detection that suggests actionable solutions (e.g., variable definitions, syntax corrections) directly in the insight panel.
-- **Universal Search**: Fast, "Google-like" search across your files, database schemas, and notebook history.
+### 1. Intelligence Notebook & Smart Fix
+- **Multi-Runtime Execution**: Run **SQL**, **Python**, and **R** code blocks in a unified notebook interface.
+- **AI-Powered Troubleshooting**: Automatically detects execution errors (e.g., `NameError`, `SyntaxError`) and provides specific code fix suggestions in the sidebar.
+- **Universal Search**: Integrated search bar that indexes local files, notebook cells, and database schemas, with direct research links to Google and Stack Overflow.
 
-### 💬 AI Data Assistant
-A conversational interface that bridges the gap between raw data and scientific insight.
-- **Natural Language Queries**: Ask complex questions about your database in plain English.
-- **Context-Aware**: Integrates with the ML ecosystem to provide predictive insights and data summaries.
+### 2. Scientific ML & Identification
+- **Bat Taxonomy Identification**: Specialized machine learning models (scikit-learn) trained to identify bat genus and species (e.g., *Hipposideros*, *Rhinolophus*) based on measurement data.
+- **Taxonomic Classification**: Automated lookup of full biological classification for detected species.
 
-### 📂 Database & Data Management Hub
-Enterprise-grade tools for handling colossal datasets with precision.
-- **Auto-Linking Engine**: Advanced logic for mapping relational data across fragmented sources (matches by ID, Date, and secondary metadata).
-- **Excel Power-Tools**: Bulk import, merging, and validation for high-volume scientific spreadsheets.
-- **Secure Infrastructure**: Support for SQLite (portable) and MariaDB/MySQL (enterprise) with connection pooling and automated backups.
+### 3. Laboratory Extraction Tools
+- **Plate Generator**: Automated generation of PCR and cDNA plate layouts (8x12 format) from sample lists.
+- **H2O Randomization**: Intelligent placement of H2O controls within plate layouts to prevent experimental bias.
+- **Extraction Tracking**: Streamlined tracking of samples from environmental collection to laboratory processing.
 
-### 🧬 Specialized Scientific Suite
-Dedicated modules for high-precision scientific workflows.
-- **Bat Identification**: specialized ML models for predictive species identification based on environmental and morphological data.
-- **Extraction Builder Pro**: Streamlined interface for managing sample extractions and laboratory workflows.
-- **Sequence Analysis**: Tools for tracking viral loads, sequence metadata, and experimental timelines.
+### 4. Data Linking & Database Hub
+- **Database Support**: Native connection management for **SQLite**, **MySQL**, and **MariaDB**.
+- **Auto-Linking Engine**: Bulk-link related tables using ID-date matching and metadata patterns to fix fragmented records.
+- **Excel Power-Tools**: specialized import/export logic for large scientific spreadsheets, including data merging and validation.
 
-### 📊 Machine Learning Ecosystem
-A comprehensive dashboard for monitoring and training your intelligence models.
-- **ML Operations**: Monitor model accuracy, loss metrics, and training status in real-time.
-- **Internal Trainers**: Custom scripts for training specialized models on project-specific data clusters.
+### 5. AI Data Assistant
+- **Smart Local Chat**: A chat interface that combines rule-based logic and ML models to query local databases using natural language.
+- **Recursive Profiling**: Automatically traverses foreign key relationships to pull a complete history for any specific sample ID or record.
 
----
-
-## 🛠️ Technical Architecture
-
-| Component | Technology | Role |
-| :--- | :--- | :--- |
-| **Backend** | Python 3.10+ / Flask | Core processing and API orchestration |
-| **Real-time** | SocketIO | Live updates and terminal-like execution feedback |
-| **Intelligence** | OpenAI API / Scikit-Learn | NLP, Smart Fix AI, and predictive modeling |
-| **Frontend** | Vanilla CSS3 / JavaScript | High-performance, frame-less design system |
-| **Editor** | CodeMirror 6 | Multi-language syntax highlighting and autocompletion |
+### 6. Real-time Infrastructure
+- **Live Terminal**: Real-time execution feedback and status updates powered by **SocketIO**.
+- **ML Operations**: A dedicated dashboard for monitoring model training status and accuracy metrics.
 
 ---
 
-## 🚦 Quick Start
+## 🚀 Getting Started
 
-1. **Install Prerequisites**: Ensure you have Python 3.8+ and pip.
-2. **Setup Environment**:
-   ```powershell
+### Prerequisites
+- Python 3.10+
+- Pip package manager
+- (Optional) R environment for R-cell execution
+
+### Installation
+1. Clone the repository:
+   ```bash
    git clone https://github.com/HaoXai-Team/HaoXai.git
    cd HaoXai
+   ```
+2. Install dependencies:
+   ```bash
    pip install -r requirements.txt
    ```
-3. **Configure**: Set your `OPENAI_API_KEY` in the `.env` file or configuration panel.
-4. **Launch**:
-   ```powershell
+3. Initialize configuration:
+   ```bash
+   cp config.example.py config.py
+   ```
+4. Run the application:
+   ```bash
    python app.py
    ```
 
 ---
 
-## 📑 Detailed Documentation
-- [🧬 Architecture Overview](HAOXAI_DESIGN_DOCUMENT.md)
-- [🗄️ Database Schema Guide](HAOXAI_DATABASE_DIAGRAM.md)
+## 📂 Project Structure
+- `routes/`: Functional logic for ML identification, extraction, and AI chat.
+- `templates/`: Premium HTML5 workstation interfaces.
+- `database/`: Cross-database connection and schema management.
+- `utils/`: Core AI trainers and laboratory helper scripts.
 
 ---
-*Developed for excellence in scientific research and data intelligence.*
+*Built for the future of scientific research and data intelligence.*
